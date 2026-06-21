@@ -1485,7 +1485,7 @@ function Quantum:CreateWindow(data)
                 BackgroundTransparency = 1,
                 BorderSizePixel = 0,
                 Visible = not isCollapsed,
-                ClipsDescendants = true,
+                ClipsDescendants = false,
                 ZIndex = 17
             })
 
@@ -1621,7 +1621,7 @@ function Quantum:CreateWindow(data)
 
                 local ToggleBtn = Create("Frame", {
                     Parent = ToggleFrame,
-                    Size = UDim2.new(0, 48, 0, 26),
+                    Size = UDim2.new(0, 36, 0, 20),
                     Position = UDim2.new(1, -52, 0.5, -12),
                     BackgroundColor3 = CurrentTheme.ToggleOff,
                     BorderSizePixel = 0,
@@ -1631,8 +1631,8 @@ function Quantum:CreateWindow(data)
 
                 local ToggleCircle = Create("Frame", {
                     Parent = ToggleBtn,
-                    Size = UDim2.new(0, 14, 0, 14),
-                    Position = UDim2.new(0, 3, 0.5, -6),
+                    Size = UDim2.new(0, 10, 0, 10),
+                    Position = UDim2.new(0, 2, 0.5, -5),
                     BackgroundColor3 = CurrentTheme.Text,
                     BorderSizePixel = 0,
                     ZIndex = 20
@@ -1650,17 +1650,17 @@ function Quantum:CreateWindow(data)
                 local state = default
                 if default then
                     ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOn
-                    ToggleCircle.Position = UDim2.new(0, 28, 0.5, -7)
+                    ToggleCircle.Position = UDim2.new(0, 22, 0.5, -5)
                 end
 
                 ToggleClick.MouseButton1Click:Connect(function()
                     state = not state
                     if state then
                         ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOn
-                        ToggleCircle.Position = UDim2.new(0, 28, 0.5, -7)
+                        ToggleCircle.Position = UDim2.new(0, 22, 0.5, -5)
                     else
                         ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOff
-                        ToggleCircle.Position = UDim2.new(0, 3, 0.5, -7)
+                        ToggleCircle.Position = UDim2.new(0, 2, 0.5, -5)
                     end
                     callback(state)
                 end)
@@ -1680,10 +1680,10 @@ function Quantum:CreateWindow(data)
                         state = val
                         if state then
                             ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOn
-                            ToggleCircle.Position = UDim2.new(0, 28, 0.5, -7)
+                            ToggleCircle.Position = UDim2.new(0, 22, 0.5, -5)
                         else
                             ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOff
-                            ToggleCircle.Position = UDim2.new(0, 3, 0.5, -7)
+                            ToggleCircle.Position = UDim2.new(0, 2, 0.5, -5)
                         end
                         callback(state)
                     end,
@@ -2948,7 +2948,7 @@ function Quantum:CreateWindow(data)
                     BackgroundColor3 = CurrentTheme.Background,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
-                    ClipsDescendants = true,
+                    ClipsDescendants = false,
                     ZIndex = 18
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = LabelFrame})
@@ -2998,7 +2998,7 @@ function Quantum:CreateWindow(data)
                     BackgroundColor3 = CurrentTheme.Background,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
-                    ClipsDescendants = true,
+                    ClipsDescendants = false,
                     ZIndex = 18
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = ParaFrame})
@@ -3293,7 +3293,7 @@ function Quantum:CreateWindow(data)
                     BackgroundColor3 = CurrentTheme.Background,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
-                    ClipsDescendants = true,
+                    ClipsDescendants = false,
                     ZIndex = 18
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = StatusFrame})
