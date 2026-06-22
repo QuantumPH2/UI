@@ -110,7 +110,7 @@ local Config = {
     }
 }
 
-local Icons = {
+local LegacyIcons = {
     Custom = "rbxassetid://109647740279101",
     Home = "rbxassetid://7733960981",
     Settings = "rbxassetid://7734053495",
@@ -266,10 +266,168 @@ local Icons = {
     ["trendingUp"] = "rbxassetid://7734058803",
 }
 
+
+
+
+
+
+local IconModule = {
+    IconsType = "lucide",
+    New = nil,
+    IconThemeTag = nil,
+    Icons = {},
+}
+
+local function FetchIconPack(url)
+    local success, content = pcall(function()
+        if game.HttpGet then
+            return game:HttpGet(url)
+        else
+            return HttpService:GetAsync(url)
+        end
+    end)
+    if success and content and content ~= "" then
+        local ok, result = pcall(loadstring, content)
+        if ok and type(result) == "function" then
+            local ok2, pack = pcall(result)
+            if ok2 and type(pack) == "table" then
+                return pack
+            end
+        end
+    end
+    return nil
+end
+
+local function parseIconString(iconString)
+    if type(iconString) == "string" then
+        local splitIndex = iconString:find(":")
+        if splitIndex then
+            local iconType = iconString:sub(1, splitIndex - 1)
+            local iconName = iconString:sub(splitIndex + 1)
+            return iconType, iconName
+        end
+    end
+    return nil, iconString
+end
+
+function IconModule.AddIcons(packName, iconsData)
+    if type(packName) ~= "string" or type(iconsData) ~= "table" then
+        warn("AddIcons: packName must be string, iconsData must be table")
+        return
+    end
+    if not IconModule.Icons[packName] then
+        IconModule.Icons[packName] = {
+            Icons = {},
+            Spritesheets = {},
+        }
+    end
+    for iconName, iconValue in pairs(iconsData) do
+        if type(iconValue) == "number" or (type(iconValue) == "string" and iconValue:match("^rbxassetid://")) then
+            local imageId = iconValue
+            if type(iconValue) == "number" then
+                imageId = "rbxassetid://" .. tostring(iconValue)
+            end
+            IconModule.Icons[packName].Icons[iconName] = {
+                Image = imageId,
+                ImageRectSize = Vector2.new(0, 0),
+                ImageRectPosition = Vector2.new(0, 0),
+                Parts = nil,
+            }
+            IconModule.Icons[packName].Spritesheets[imageId] = imageId
+        elseif type(iconValue) == "table" then
+            if iconValue.Image and iconValue.ImageRectSize and iconValue.ImageRectPosition then
+                local imageId = iconValue.Image
+                if type(imageId) == "number" then
+                    imageId = "rbxassetid://" .. tostring(imageId)
+                end
+                IconModule.Icons[packName].Icons[iconName] = {
+                    Image = imageId,
+                    ImageRectSize = iconValue.ImageRectSize,
+                    ImageRectPosition = iconValue.ImageRectPosition,
+                    Parts = iconValue.Parts,
+                }
+                if not IconModule.Icons[packName].Spritesheets[imageId] then
+                    IconModule.Icons[packName].Spritesheets[imageId] = imageId
+                end
+            else
+                warn("AddIcons: Invalid spritesheet data format for icon '" .. iconName .. "'")
+            end
+        else
+            warn("AddIcons: Unsupported data type for icon '" .. iconName .. "': " .. type(iconValue))
+        end
+    end
+end
+
+function IconModule.SetIconsType(iconType)
+    IconModule.IconsType = iconType
+end
+
+function IconModule.Icon(Icon, Type, DefaultFormat)
+    DefaultFormat = DefaultFormat ~= false
+    local iconType, iconName = parseIconString(Icon)
+    local targetType = iconType or Type or IconModule.IconsType
+    local targetName = iconName
+    local iconSet = IconModule.Icons[targetType]
+
+    if iconSet and iconSet.Icons and iconSet.Icons[targetName] then
+        return {
+            iconSet.Spritesheets[tostring(iconSet.Icons[targetName].Image)],
+            iconSet.Icons[targetName],
+        }
+    elseif iconSet and iconSet[targetName] and type(iconSet[targetName]) == "string" and string.find(iconSet[targetName], "rbxassetid://") then
+        if DefaultFormat then
+            return {
+                iconSet[targetName],
+                { ImageRectSize = Vector2.new(0, 0), ImageRectPosition = Vector2.new(0, 0) },
+            }
+        else
+            return iconSet[targetName]
+        end
+    end
+    return nil
+end
+
+function IconModule.GetIcon(Icon, Type)
+    return IconModule.Icon(Icon, Type, false)
+end
+
+function IconModule.Icon2(Icon, Type, DefaultFormat)
+    return IconModule.Icon(Icon, Type, true)
+end
+
+
+local packUrls = {
+    lucide = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/lucide/dist/Icons.lua",
+    solar = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/solar/dist/Icons.lua",
+    craft = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/craft/dist/Icons.lua",
+    geist = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/geist/dist/Icons.lua",
+    sfsymbols = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/sfsymbols/dist/Icons.lua",
+    gravity = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/gravity/dist/Icons.lua",
+}
+
+for packName, url in pairs(packUrls) do
+    local pack = FetchIconPack(url)
+    if pack then
+        IconModule.Icons[packName] = pack
+    end
+end
+
+
+
 local function Create(className, properties)
     local instance = Instance.new(className)
     for prop, value in pairs(properties or {}) do
-        instance[prop] = value
+        if prop == "Image" and type(value) == "table" then
+            instance.Image = value.Image
+            if value.ImageRectSize then
+                instance.ImageRectSize = value.ImageRectSize
+            end
+            if value.ImageRectOffset then
+                instance.ImageRectOffset = value.ImageRectOffset
+            end
+        else
+            instance[prop] = value
+        end
     end
     return instance
 end
@@ -290,13 +448,34 @@ local function Round(number, precision)
     return math.round(number * 10^precision) / 10^precision
 end
 
-local function GetIcon(name)
-    if not name then return Icons.Info end
-    if Icons[name] then return Icons[name] end
-    if type(name) == "string" and (name:sub(1, 13) == "rbxassetid://" or name:sub(1, 4) == "http") then
-        return name
+local function GetIcon(name, iconType)
+    if not name then return {Image = LegacyIcons.Info} end
+
+    
+    local iconData = IconModule.Icon2(name, iconType)
+    if iconData then
+        if type(iconData) == "string" then
+            return {Image = iconData}
+        else
+            return {
+                Image = iconData[1],
+                ImageRectSize = iconData[2].ImageRectSize,
+                ImageRectOffset = iconData[2].ImageRectPosition
+            }
+        end
     end
-    return Icons.Info
+
+    
+    if LegacyIcons[name] then 
+        return {Image = LegacyIcons[name]} 
+    end
+
+    
+    if type(name) == "string" and (name:sub(1, 13) == "rbxassetid://" or name:sub(1, 4) == "http") then
+        return {Image = name}
+    end
+
+    return {Image = LegacyIcons.Info}
 end
 
 local function NormalizeOption(opt)
@@ -347,7 +526,7 @@ local function RegisterDropdown(menu, arrow, btnRef)
     return data
 end
 
--- Config Manager
+
 local ConfigManager = {}
 ConfigManager.__index = ConfigManager
 
@@ -457,7 +636,7 @@ function ConfigManager:BindElement(key, elementType, getValueFunc, setValueFunc)
     end
 end
 
--- Notify System (Instant, no animation)
+
 local NotifyScreen = nil
 local NotifyLayout = nil
 local ActiveNotifications = {}
@@ -582,7 +761,7 @@ local function CreateFloatingIcon(customIcon)
         FloatingIconScreen:Destroy()
     end
 
-    local iconToUse = customIcon or Icons.Custom
+    local iconToUse = customIcon and GetIcon(customIcon) or GetIcon("Custom")
 
     FloatingIconScreen = Create("ScreenGui", {
         Name = "QuantumFloatingIcon",
@@ -592,7 +771,7 @@ local function CreateFloatingIcon(customIcon)
         Enabled = true
     })
 
-    -- Backdrop: dark rounded background, slightly bigger than the icon
+    
     local Backdrop = Create("Frame", {
         Name = "Backdrop",
         Parent = FloatingIconScreen,
@@ -1059,7 +1238,7 @@ function Quantum:CreateWindow(data)
         ZIndex = 15
     })
 
-    -- Search Box in Sidebar
+    
     local SearchFrame = Create("Frame", {
         Parent = Sidebar,
         Size = UDim2.new(1, -10, 0, 32),
@@ -1259,7 +1438,7 @@ function Quantum:CreateWindow(data)
     WindowAPI.Config:Load()
     WindowAPI.Config:StartAutoSave()
 
-    -- Auto Save Config API (callable from script)
+    
     WindowAPI.EnableAutoSave = function(_, interval)
         WindowAPI.Config:EnableAutoSave(interval)
     end
@@ -2215,7 +2394,7 @@ function Quantum:CreateWindow(data)
                         Arrow.Rotation = 180
                         SearchBox.Text = ""
                         BuildOptions("")
-                        -- Start heartbeat to track button position while scrolling
+                        
                         ddData.HeartbeatConn = RunService.Heartbeat:Connect(function()
                             if ddData.IsOpen and DropdownBtn and DropdownBtn.Parent then
                                 UpdateMenuPosition()
@@ -2229,7 +2408,7 @@ function Quantum:CreateWindow(data)
                     end
                 end)
 
-                -- Close dropdown when scrolling the content area
+                
                 TabContent:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
                     if ddData.IsOpen then
                         ddData.IsOpen = false
@@ -2637,7 +2816,7 @@ function Quantum:CreateWindow(data)
                         Arrow.Rotation = 180
                         SearchBox.Text = ""
                         BuildOptions()
-                        -- Start heartbeat to track button position while scrolling
+                        
                         ddData.HeartbeatConn = RunService.Heartbeat:Connect(function()
                             if ddData.IsOpen and DropdownBtn and DropdownBtn.Parent then
                                 UpdateMenuPosition()
@@ -2651,7 +2830,7 @@ function Quantum:CreateWindow(data)
                     end
                 end)
 
-                -- Close dropdown when scrolling the content area
+                
                 TabContent:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
                     if ddData.IsOpen then
                         ddData.IsOpen = false
@@ -3066,7 +3245,7 @@ function Quantum:CreateWindow(data)
                     end
                 end)
 
-                -- Ensure size is correct after layout
+                
                 task.spawn(function()
                     for i = 1, 5 do
                         task.wait(0.1)
@@ -3359,7 +3538,7 @@ function Quantum:CreateWindow(data)
             return SectionAPI
         end
 
-        -- TabAPI convenience methods (WindUI-style compatibility)
+        
         function TabAPI:Section(data)
             local sec = self:CreateSection(data)
             self._CurrentSection = sec
@@ -3429,7 +3608,7 @@ function Quantum:CreateWindow(data)
         return TabAPI
     end
 
-    -- Search functionality
+    
     SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
         local text = SearchBox.Text:lower()
         for _, tab in ipairs(TabButtons) do
