@@ -1814,6 +1814,7 @@ function Quantum:CreateWindow(data)
                 local default = toggleData.Default or false
                 local callback = toggleData.Callback or function() end
                 local desc = toggleData.Desc
+                local flag = toggleData.Flag or toggleData.ConfigKey
 
                 local hasDesc = desc and desc ~= ""
                 local frameHeight = hasDesc and 42 or 30
@@ -1912,6 +1913,9 @@ function Quantum:CreateWindow(data)
                         ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOff
                         ToggleCircle.Position = UDim2.new(0, 3, 0.5, -10)
                     end
+                    if flag and WindowAPI.Config then
+                        WindowAPI.Config:Set(flag, state)
+                    end
                     callback(state)
                 end)
 
@@ -1935,10 +1939,16 @@ function Quantum:CreateWindow(data)
                             ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOff
                             ToggleCircle.Position = UDim2.new(0, 3, 0.5, -10)
                         end
+                        if flag and WindowAPI.Config then
+                            WindowAPI.Config:Set(flag, state)
+                        end
                         callback(state)
                     end,
                     Get = function() return state end
                 }
+                if flag and WindowAPI.Config then
+                    WindowAPI.Config:BindElement(flag, "Toggle", API.Get, API.Set)
+                end
                 return API
             end
 
@@ -1952,6 +1962,7 @@ function Quantum:CreateWindow(data)
                 local increment = sliderData.Increment or 1
                 local callback = sliderData.Callback or function() end
                 local desc = sliderData.Desc
+                local flag = sliderData.Flag or sliderData.ConfigKey
 
                 local hasDesc = desc and desc ~= ""
                 local frameHeight = hasDesc and 50 or 40
@@ -2058,6 +2069,9 @@ function Quantum:CreateWindow(data)
                     Fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
                     Knob.Position = UDim2.new((value - min) / (max - min), -6, 0.5, -6)
                     ValueLabel.Text = tostring(value)
+                    if flag and WindowAPI.Config then
+                        WindowAPI.Config:Set(flag, value)
+                    end
                     callback(value)
                 end
 
@@ -2101,10 +2115,16 @@ function Quantum:CreateWindow(data)
                         Fill.Size = UDim2.new((val - min) / (max - min), 0, 1, 0)
                         Knob.Position = UDim2.new((val - min) / (max - min), -6, 0.5, -6)
                         ValueLabel.Text = tostring(val)
+                        if flag and WindowAPI.Config then
+                            WindowAPI.Config:Set(flag, val)
+                        end
                         callback(val)
                     end,
                     Get = function() return tonumber(ValueLabel.Text) or default end
                 }
+                if flag and WindowAPI.Config then
+                    WindowAPI.Config:BindElement(flag, "Slider", API.Get, API.Set)
+                end
                 return API
             end
 
@@ -2200,6 +2220,7 @@ function Quantum:CreateWindow(data)
                 local default = dropdownData.Default or ""
                 local callback = dropdownData.Callback or function() end
                 local desc = dropdownData.Desc
+                local flag = dropdownData.Flag or dropdownData.ConfigKey
 
                 local hasDesc = desc and desc ~= ""
                 local frameHeight = hasDesc and 42 or 28
@@ -2403,6 +2424,9 @@ function Quantum:CreateWindow(data)
                                 local selText, _ = NormalizeOption(selected)
                                 DropdownBtn.Text = selText
                                 DropdownBtn.TextColor3 = CurrentTheme.Text
+                                if flag and WindowAPI.Config then
+                                    WindowAPI.Config:Set(flag, selected)
+                                end
                                 callback(selected)
                                 ddData.IsOpen = false
                                 MenuFrame.Visible = false
@@ -2557,10 +2581,16 @@ function Quantum:CreateWindow(data)
                     local selText, _ = NormalizeOption(selected)
                     DropdownBtn.Text = selText
                     DropdownBtn.TextColor3 = CurrentTheme.Text
+                    if flag and WindowAPI.Config then
+                        WindowAPI.Config:Set(flag, selected)
+                    end
                     callback(selected)
                 end
                 function DropdownAPI:Get()
                     return selected
+                end
+                if flag and WindowAPI.Config then
+                    WindowAPI.Config:BindElement(flag, "Dropdown", DropdownAPI.Get, DropdownAPI.Set)
                 end
                 return DropdownAPI
             end
@@ -2573,6 +2603,7 @@ function Quantum:CreateWindow(data)
                 local default = dropdownData.Default or {}
                 local callback = dropdownData.Callback or function() end
                 local desc = dropdownData.Desc
+                local flag = dropdownData.Flag or dropdownData.ConfigKey
 
                 local hasDesc = desc and desc ~= ""
                 local frameHeight = hasDesc and 42 or 28
@@ -2833,6 +2864,9 @@ function Quantum:CreateWindow(data)
                                 checkMark.Visible = true
                             end
                             UpdateButtonText()
+                            if flag and WindowAPI.Config then
+                                WindowAPI.Config:Set(flag, selected)
+                            end
                             callback(selected)
                         end)
 
@@ -2975,10 +3009,16 @@ function Quantum:CreateWindow(data)
                         for _, v in ipairs(values) do table.insert(selected, v) end
                     end
                     UpdateButtonText()
+                    if flag and WindowAPI.Config then
+                        WindowAPI.Config:Set(flag, selected)
+                    end
                     callback(selected)
                 end
                 function MultiDropdownAPI:Get()
                     return selected
+                end
+                if flag and WindowAPI.Config then
+                    WindowAPI.Config:BindElement(flag, "MultiDropdown", MultiDropdownAPI.Get, MultiDropdownAPI.Set)
                 end
                 return MultiDropdownAPI
             end
@@ -2991,6 +3031,7 @@ function Quantum:CreateWindow(data)
                 local default = inputData.Default or ""
                 local callback = inputData.Callback or function() end
                 local desc = inputData.Desc
+                local flag = inputData.Flag or inputData.ConfigKey
 
                 local hasDesc = desc and desc ~= ""
                 local frameHeight = hasDesc and 42 or 28
@@ -3064,6 +3105,9 @@ function Quantum:CreateWindow(data)
                 Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = InputBox})
 
                 InputBox.FocusLost:Connect(function(enterPressed)
+                    if flag and WindowAPI.Config then
+                        WindowAPI.Config:Set(flag, InputBox.Text)
+                    end
                     callback(InputBox.Text, enterPressed)
                 end)
 
@@ -3075,9 +3119,17 @@ function Quantum:CreateWindow(data)
                 end)
 
                 local API = {
-                    Set = function(text) InputBox.Text = text end,
+                    Set = function(text) 
+                        InputBox.Text = text
+                        if flag and WindowAPI.Config then
+                            WindowAPI.Config:Set(flag, text)
+                        end
+                    end,
                     Get = function() return InputBox.Text end
                 }
+                if flag and WindowAPI.Config then
+                    WindowAPI.Config:BindElement(flag, "Input", API.Get, API.Set)
+                end
                 return API
             end
 
@@ -3088,6 +3140,7 @@ function Quantum:CreateWindow(data)
                 local default = bindData.Default or Enum.KeyCode.LeftShift
                 local callback = bindData.Callback or function() end
                 local desc = bindData.Desc
+                local flag = bindData.Flag or bindData.ConfigKey
 
                 local hasDesc = desc and desc ~= ""
                 local frameHeight = hasDesc and 42 or 28
@@ -3167,6 +3220,9 @@ function Quantum:CreateWindow(data)
                             BindBtn.Text = input.KeyCode.Name
                             listening = false
                             conn:Disconnect()
+                            if flag and WindowAPI.Config then
+                                WindowAPI.Config:Set(flag, input.KeyCode.Name)
+                            end
                             callback(input.KeyCode)
                         end
                     end)
@@ -3184,7 +3240,28 @@ function Quantum:CreateWindow(data)
                     BindBtn.TextColor3 = theme.Text
                 end)
 
-                return {Set = function(key) default = key; BindBtn.Text = key.Name end, Get = function() return default end}
+                local API = {
+                    Set = function(key) 
+                        if typeof(key) == "string" then
+                            local ok, enumItem = pcall(function() return Enum.KeyCode[key] end)
+                            if ok and enumItem then
+                                default = enumItem
+                                BindBtn.Text = key
+                            end
+                        elseif typeof(key) == "EnumItem" then
+                            default = key
+                            BindBtn.Text = key.Name
+                        end
+                        if flag and WindowAPI.Config then
+                            WindowAPI.Config:Set(flag, typeof(default) == "EnumItem" and default.Name or tostring(default))
+                        end
+                    end,
+                    Get = function() return default end
+                }
+                if flag and WindowAPI.Config then
+                    WindowAPI.Config:BindElement(flag, "Keybind", API.Get, API.Set)
+                end
+                return API
             end
 
             function SectionAPI:CreateLabel(labelData)
@@ -3347,6 +3424,7 @@ function Quantum:CreateWindow(data)
                 local default = pickerData.Default or Color3.fromRGB(255, 255, 255)
                 local callback = pickerData.Callback or function() end
                 local desc = pickerData.Desc
+                local flag = pickerData.Flag or pickerData.ConfigKey
 
                 local hasDesc = desc and desc ~= ""
                 local frameHeight = hasDesc and 42 or 28
@@ -3495,6 +3573,9 @@ function Quantum:CreateWindow(data)
                     local b = math.clamp(tonumber(BInput.Text) or 255, 0, 255)
                     local newColor = Color3.fromRGB(r, g, b)
                     ColorPreview.BackgroundColor3 = newColor
+                    if flag and WindowAPI.Config then
+                        WindowAPI.Config:Set(flag, {R = r, G = g, B = b})
+                    end
                     callback(newColor)
                     colorOpen = false
                     ColorMenu.Visible = false
@@ -3510,7 +3591,32 @@ function Quantum:CreateWindow(data)
                     ApplyBtn.BackgroundColor3 = theme.Accent
                 end)
 
-                return {Set = function(c) ColorPreview.BackgroundColor3 = c; callback(c) end, Get = function() return ColorPreview.BackgroundColor3 end}
+                local API = {
+                    Set = function(c)
+                        if type(c) == "table" and c.R and c.G and c.B then
+                            c = Color3.fromRGB(c.R, c.G, c.B)
+                        end
+                        ColorPreview.BackgroundColor3 = c
+                        RInput.Text = tostring(math.round(c.R * 255))
+                        GInput.Text = tostring(math.round(c.G * 255))
+                        BInput.Text = tostring(math.round(c.B * 255))
+                        if flag and WindowAPI.Config then
+                            WindowAPI.Config:Set(flag, {R = math.round(c.R * 255), G = math.round(c.G * 255), B = math.round(c.B * 255)})
+                        end
+                        callback(c)
+                    end,
+                    Get = function() return ColorPreview.BackgroundColor3 end
+                }
+                if flag and WindowAPI.Config then
+                    WindowAPI.Config:BindElement(flag, "ColorPicker", API.Get, function(val)
+                        if type(val) == "table" and val.R and val.G and val.B then
+                            API.Set(Color3.fromRGB(val.R, val.G, val.B))
+                        elseif typeof(val) == "Color3" then
+                            API.Set(val)
+                        end
+                    end)
+                end
+                return API
             end
 
             function SectionAPI:CreateDivider()
