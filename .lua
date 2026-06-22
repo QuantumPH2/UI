@@ -16,6 +16,8 @@ local Config = {
     SidebarWidth = 150,
     TopbarHeight = 40,
     MinWindowSize = Vector2.new(360, 240),
+    HttpRetryAttempts = 3,
+    HttpRetryDelay = 0.5,
     Themes = {
         QuantumDark = {
             Background = Color3.fromRGB(0, 0, 0),
@@ -266,45 +268,81 @@ local LegacyIcons = {
     ["trendingUp"] = "rbxassetid://7734058803",
 }
 
-
-
-
-
-
 local IconModule = {
     IconsType = "lucide",
     New = nil,
     IconThemeTag = nil,
     Icons = {},
+    _FetchCache = {},
+    _FetchFailed = {},
 }
 
-local function FetchIconPack(url)
-    local success, content = pcall(function()
-        if game.HttpGet then
-            return game:HttpGet(url)
-        else
-            return HttpService:GetAsync(url)
-        end
-    end)
-    if success and content and content ~= "" then
-        local ok, result = pcall(loadstring, content)
-        if ok and type(result) == "function" then
-            local ok2, pack = pcall(result)
-            if ok2 and type(pack) == "table" then
-                return pack
+local function SafeHttpGet(url, timeout)
+    timeout = timeout or 5
+    if not url or type(url) ~= "string" then return nil end
+    if IconModule._FetchFailed[url] then return nil end
+    if IconModule._FetchCache[url] then return IconModule._FetchCache[url] end
+
+    local success, content = false, nil
+    local attempts = 0
+
+    while attempts < Config.HttpRetryAttempts do
+        attempts += 1
+        success, content = pcall(function()
+            if typeof(game.HttpGet) == "function" then
+                return game:HttpGet(url, true)
+            elseif typeof(HttpService.GetAsync) == "function" then
+                return HttpService:GetAsync(url, true)
+            else
+                error("No HTTP method available")
             end
+        end)
+
+        if success and content and type(content) == "string" and #content > 0 then
+            IconModule._FetchCache[url] = content
+            return content
+        end
+
+        if attempts < Config.HttpRetryAttempts then
+            task.wait(Config.HttpRetryDelay * attempts)
         end
     end
+
+    IconModule._FetchFailed[url] = true
+    warn("[Quantum] Failed to fetch icon pack after " .. tostring(Config.HttpRetryAttempts) .. " attempts: " .. url)
     return nil
+end
+
+local function SafeLoadstring(content)
+    if type(content) ~= "string" or #content < 10 then return nil end
+    if content:match("while true do") or content:match("for.-=.-1,1000000") then
+        warn("[Quantum] Rejected potentially malicious icon pack")
+        return nil
+    end
+    local ok, result = pcall(function()
+        local fn = loadstring(content)
+        if type(fn) == "function" then
+            return fn()
+        end
+        return nil
+    end)
+    if ok and type(result) == "table" then
+        return result
+    end
+    return nil
+end
+
+local function FetchIconPack(url)
+    local content = SafeHttpGet(url)
+    if not content then return nil end
+    return SafeLoadstring(content)
 end
 
 local function parseIconString(iconString)
     if type(iconString) == "string" then
         local splitIndex = iconString:find(":")
         if splitIndex then
-            local iconType = iconString:sub(1, splitIndex - 1)
-            local iconName = iconString:sub(splitIndex + 1)
-            return iconType, iconName
+            return iconString:sub(1, splitIndex - 1), iconString:sub(splitIndex + 1)
         end
     end
     return nil, iconString
@@ -312,14 +350,11 @@ end
 
 function IconModule.AddIcons(packName, iconsData)
     if type(packName) ~= "string" or type(iconsData) ~= "table" then
-        warn("AddIcons: packName must be string, iconsData must be table")
+        warn("[Quantum] AddIcons: packName must be string, iconsData must be table")
         return
     end
     if not IconModule.Icons[packName] then
-        IconModule.Icons[packName] = {
-            Icons = {},
-            Spritesheets = {},
-        }
+        IconModule.Icons[packName] = { Icons = {}, Spritesheets = {} }
     end
     for iconName, iconValue in pairs(iconsData) do
         if type(iconValue) == "number" or (type(iconValue) == "string" and iconValue:match("^rbxassetid://")) then
@@ -350,10 +385,10 @@ function IconModule.AddIcons(packName, iconsData)
                     IconModule.Icons[packName].Spritesheets[imageId] = imageId
                 end
             else
-                warn("AddIcons: Invalid spritesheet data format for icon '" .. iconName .. "'")
+                warn("[Quantum] AddIcons: Invalid spritesheet data format for icon '" .. iconName .. "'")
             end
         else
-            warn("AddIcons: Unsupported data type for icon '" .. iconName .. "': " .. type(iconValue))
+            warn("[Quantum] AddIcons: Unsupported data type for icon '" .. iconName .. "': " .. type(iconValue))
         end
     end
 end
@@ -395,7 +430,6 @@ function IconModule.Icon2(Icon, Type, DefaultFormat)
     return IconModule.Icon(Icon, Type, true)
 end
 
-
 local packUrls = {
     lucide = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/lucide/dist/Icons.lua",
     solar = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/solar/dist/Icons.lua",
@@ -405,14 +439,17 @@ local packUrls = {
     gravity = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/gravity/dist/Icons.lua",
 }
 
-for packName, url in pairs(packUrls) do
-    local pack = FetchIconPack(url)
-    if pack then
-        IconModule.Icons[packName] = pack
+local function LoadIconPacksAsync()
+    for packName, url in pairs(packUrls) do
+        task.defer(function()
+            local pack = FetchIconPack(url)
+            if pack then
+                IconModule.Icons[packName] = pack
+            end
+        end)
     end
 end
-
-
+LoadIconPacksAsync()
 
 local function Create(className, properties)
     local instance = Instance.new(className)
@@ -433,14 +470,19 @@ local function Create(className, properties)
 end
 
 local function Tween(instance, properties, duration, easingStyle, easingDirection)
-    if not instance or not instance.Parent then return end
-    local tween = TweenService:Create(instance, TweenInfo.new(
-        duration or 0.25,
-        easingStyle or Enum.EasingStyle.Quart,
-        easingDirection or Enum.EasingDirection.Out
-    ), properties)
-    tween:Play()
-    return tween
+    if not instance or not instance.Parent then return nil end
+    local ok, tween = pcall(function()
+        return TweenService:Create(instance, TweenInfo.new(
+            duration or 0.25,
+            easingStyle or Enum.EasingStyle.Quart,
+            easingDirection or Enum.EasingDirection.Out
+        ), properties)
+    end)
+    if ok and tween then
+        tween:Play()
+        return tween
+    end
+    return nil
 end
 
 local function Round(number, precision)
@@ -449,13 +491,12 @@ local function Round(number, precision)
 end
 
 local function GetIcon(name, iconType)
-    if not name then return {Image = LegacyIcons.Info} end
+    if not name then return { Image = LegacyIcons.Info } end
 
-    
     local iconData = IconModule.Icon2(name, iconType)
     if iconData then
         if type(iconData) == "string" then
-            return {Image = iconData}
+            return { Image = iconData }
         else
             return {
                 Image = iconData[1],
@@ -465,17 +506,15 @@ local function GetIcon(name, iconType)
         end
     end
 
-    
-    if LegacyIcons[name] then 
-        return {Image = LegacyIcons[name]} 
+    if LegacyIcons[name] then
+        return { Image = LegacyIcons[name] }
     end
 
-    
     if type(name) == "string" and (name:sub(1, 13) == "rbxassetid://" or name:sub(1, 4) == "http") then
-        return {Image = name}
+        return { Image = name }
     end
 
-    return {Image = LegacyIcons.Info}
+    return { Image = LegacyIcons.Info }
 end
 
 local function NormalizeOption(opt)
@@ -494,13 +533,22 @@ local function ApplyTheme(themeName)
     if not Config.Themes[themeName] then return end
     CurrentTheme = Config.Themes[themeName]
     for _, callback in ipairs(ThemeListeners) do
-        callback(CurrentTheme)
+        if callback then
+            pcall(callback, CurrentTheme)
+        end
     end
 end
 
 local function ListenTheme(callback)
     table.insert(ThemeListeners, callback)
-    callback(CurrentTheme)
+    pcall(callback, CurrentTheme)
+    return #ThemeListeners
+end
+
+local function UnlistenTheme(index)
+    if ThemeListeners[index] then
+        ThemeListeners[index] = nil
+    end
 end
 
 local function CloseAllDropdowns()
@@ -521,11 +569,41 @@ local function CloseAllDropdowns()
 end
 
 local function RegisterDropdown(menu, arrow, btnRef)
-    local data = {Menu = menu, Arrow = arrow, Button = btnRef, IsOpen = false, HeartbeatConn = nil}
+    local data = { Menu = menu, Arrow = arrow, Button = btnRef, IsOpen = false, HeartbeatConn = nil }
     table.insert(OpenDropdowns, data)
     return data
 end
 
+local ConnectionManager = {}
+ConnectionManager.__index = ConnectionManager
+
+function ConnectionManager.new()
+    local self = setmetatable({}, ConnectionManager)
+    self._connections = {}
+    return self
+end
+
+function ConnectionManager:Add(conn)
+    if typeof(conn) == "RBXScriptConnection" then
+        table.insert(self._connections, conn)
+    end
+    return conn
+end
+
+function ConnectionManager:Connect(signal, callback)
+    local conn = signal:Connect(callback)
+    self:Add(conn)
+    return conn
+end
+
+function ConnectionManager:DisconnectAll()
+    for _, conn in ipairs(self._connections) do
+        if conn and conn.Connected then
+            pcall(function() conn:Disconnect() end)
+        end
+    end
+    self._connections = {}
+end
 
 local ConfigManager = {}
 ConfigManager.__index = ConfigManager
@@ -543,29 +621,27 @@ function ConfigManager.new(windowName)
 end
 
 function ConfigManager:Load()
-    if typeof(readfile) == "function" then
-        local ok, content = pcall(readfile, self.Path)
-        if ok and content and content ~= "" then
-            local ok2, data = pcall(function()
-                return HttpService:JSONDecode(content)
-            end)
-            if ok2 and type(data) == "table" then
-                self.Data = data
-                return true
-            end
+    if typeof(readfile) ~= "function" then return false end
+    local ok, content = pcall(readfile, self.Path)
+    if ok and content and content ~= "" then
+        local ok2, data = pcall(function()
+            return HttpService:JSONDecode(content)
+        end)
+        if ok2 and type(data) == "table" then
+            self.Data = data
+            return true
         end
     end
     return false
 end
 
 function ConfigManager:Save()
-    if typeof(writefile) == "function" then
-        local ok, content = pcall(function()
-            return HttpService:JSONEncode(self.Data)
-        end)
-        if ok then
-            pcall(writefile, self.Path, content)
-        end
+    if typeof(writefile) ~= "function" then return end
+    local ok, content = pcall(function()
+        return HttpService:JSONEncode(self.Data)
+    end)
+    if ok and content then
+        pcall(writefile, self.Path, content)
     end
 end
 
@@ -586,7 +662,11 @@ function ConfigManager:EnableAutoSave(interval)
 end
 
 function ConfigManager:DisableAutoSave()
-    self:StopAutoSave()
+    self.AutoSave = false
+    if self.Thread then
+        pcall(function() task.cancel(self.Thread) end)
+        self.Thread = nil
+    end
 end
 
 function ConfigManager:IsAutoSaving()
@@ -597,19 +677,15 @@ function ConfigManager:SaveNow()
     self:Save()
 end
 
+function ConfigManager:LoadConfig()
+    return self:Load()
+end
+
 function ConfigManager:SetAutoSaveInterval(interval)
     self.AutoSaveInterval = interval or 3
     if self.AutoSave then
-        self:StopAutoSave()
+        self:DisableAutoSave()
         self:StartAutoSave()
-    end
-end
-
-function ConfigManager:StopAutoSave()
-    self.AutoSave = false
-    if self.Thread then
-        pcall(function() task.cancel(self.Thread) end)
-        self.Thread = nil
     end
 end
 
@@ -636,19 +712,22 @@ function ConfigManager:BindElement(key, elementType, getValueFunc, setValueFunc)
     end
 end
 
-
 local NotifyScreen = nil
 local NotifyLayout = nil
 local ActiveNotifications = {}
 
 local function InitNotify()
     if NotifyScreen then return end
-    NotifyScreen = Create("ScreenGui", {
-        Name = "QuantumNotify",
-        Parent = game.CoreGui,
-        ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-        ResetOnSpawn = false,
-    })
+    local ok, screen = pcall(function()
+        return Create("ScreenGui", {
+            Name = "QuantumNotify",
+            Parent = game.CoreGui,
+            ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+            ResetOnSpawn = false,
+        })
+    end)
+    if not ok or not screen then return end
+    NotifyScreen = screen
     NotifyLayout = Create("Frame", {
         Parent = NotifyScreen,
         Size = UDim2.new(0, 280, 1, -20),
@@ -674,6 +753,7 @@ function Quantum:Notify(data)
     local iconId = GetIcon(icon)
 
     InitNotify()
+    if not NotifyLayout then return end
 
     local notifFrame = Create("Frame", {
         Parent = NotifyLayout,
@@ -684,7 +764,8 @@ function Quantum:Notify(data)
         LayoutOrder = #ActiveNotifications,
         ZIndex = 201,
     })
-    Create("UICorner", {CornerRadius = UDim.new(0, 8), Parent = notifFrame})
+    Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = notifFrame })
+
     local IconImg = Create("ImageLabel", {
         Parent = notifFrame,
         Size = UDim2.new(0, 22, 0, 22),
@@ -726,14 +807,20 @@ function Quantum:Notify(data)
 
     table.insert(ActiveNotifications, notifFrame)
 
-    task.wait()
-    local contentHeight = math.max(38, 18 + ContentLbl.AbsoluteSize.Y + 6)
-    notifFrame.Size = UDim2.new(0, 240, 0, contentHeight)
+    task.defer(function()
+        if not notifFrame or not notifFrame.Parent then return end
+        local contentHeight = math.max(38, 18 + ContentLbl.AbsoluteSize.Y + 6)
+        notifFrame.Size = UDim2.new(0, 240, 0, contentHeight)
+    end)
 
     task.delay(duration, function()
-        notifFrame.Size = UDim2.new(0, 0, 0, contentHeight)
+        if notifFrame and notifFrame.Parent then
+            notifFrame.Size = UDim2.new(0, 0, 0, notifFrame.Size.Y.Offset)
+        end
         task.wait(0.1)
-        notifFrame:Destroy()
+        if notifFrame and notifFrame.Parent then
+            notifFrame:Destroy()
+        end
         for i, n in ipairs(ActiveNotifications) do
             if n == notifFrame then
                 table.remove(ActiveNotifications, i)
@@ -745,33 +832,35 @@ end
 
 local FloatingIconScreen = nil
 local FloatingIconBtn = nil
-local FloatingConnections = {}
+local FloatingConnectionsMgr = nil
 local MainWindowScreen = nil
 local MainFrame = nil
 local IsMinimized = false
 local IsClosed = false
 
 local function CreateFloatingIcon(customIcon)
-    for _, conn in ipairs(FloatingConnections) do
-        if conn then conn:Disconnect() end
+    if FloatingConnectionsMgr then
+        FloatingConnectionsMgr:DisconnectAll()
     end
-    FloatingConnections = {}
-
     if FloatingIconScreen then
-        FloatingIconScreen:Destroy()
+        pcall(function() FloatingIconScreen:Destroy() end)
     end
 
     local iconToUse = customIcon and GetIcon(customIcon) or GetIcon("Custom")
 
-    FloatingIconScreen = Create("ScreenGui", {
-        Name = "QuantumFloatingIcon",
-        Parent = game.CoreGui,
-        ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-        ResetOnSpawn = false,
-        Enabled = true
-    })
+    local ok, screen = pcall(function()
+        return Create("ScreenGui", {
+            Name = "QuantumFloatingIcon",
+            Parent = game.CoreGui,
+            ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+            ResetOnSpawn = false,
+            Enabled = true
+        })
+    end)
+    if not ok or not screen then return nil end
+    FloatingIconScreen = screen
+    FloatingConnectionsMgr = ConnectionManager.new()
 
-    
     local Backdrop = Create("Frame", {
         Name = "Backdrop",
         Parent = FloatingIconScreen,
@@ -785,17 +874,8 @@ local function CreateFloatingIcon(customIcon)
         ZIndex = 1000
     })
 
-    Create("UICorner", {
-        CornerRadius = UDim.new(0, 12),
-        Parent = Backdrop
-    })
-
-    Create("UIStroke", {
-        Color = Color3.fromRGB(10, 10, 10),
-        Thickness = 1,
-        Transparency = 0.3,
-        Parent = Backdrop
-    })
+    Create("UICorner", { CornerRadius = UDim.new(0, 12), Parent = Backdrop })
+    Create("UIStroke", { Color = Color3.fromRGB(10, 10, 10), Thickness = 1, Transparency = 0.3, Parent = Backdrop })
 
     local isCustomImage = customIcon ~= nil
     local Icon = Create("ImageLabel", {
@@ -818,7 +898,7 @@ local function CreateFloatingIcon(customIcon)
     local hasMoved = false
     local dragThreshold = 5
 
-    local conn1 = Backdrop.InputBegan:Connect(function(input)
+    FloatingConnectionsMgr:Connect(Backdrop.InputBegan, function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             mouseDownOnIcon = true
             isDragging = true
@@ -828,7 +908,7 @@ local function CreateFloatingIcon(customIcon)
         end
     end)
 
-    local conn2 = UserInputService.InputChanged:Connect(function(input)
+    FloatingConnectionsMgr:Connect(UserInputService.InputChanged, function(input)
         if isDragging and mouseDownOnIcon and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - dragStart
             if math.abs(delta.X) > dragThreshold or math.abs(delta.Y) > dragThreshold then
@@ -843,7 +923,7 @@ local function CreateFloatingIcon(customIcon)
         end
     end)
 
-    local conn3 = UserInputService.InputEnded:Connect(function(input)
+    FloatingConnectionsMgr:Connect(UserInputService.InputEnded, function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             if mouseDownOnIcon and not hasMoved then
                 CloseAllDropdowns()
@@ -874,15 +954,13 @@ local function CreateFloatingIcon(customIcon)
         end
     end)
 
-    table.insert(FloatingConnections, conn1)
-    table.insert(FloatingConnections, conn2)
-    table.insert(FloatingConnections, conn3)
-
     ListenTheme(function(theme)
         if Backdrop and Backdrop.Parent then
             Backdrop.BackgroundColor3 = theme.Sidebar
-            Backdrop.UIStroke.Color = theme.Border
-            if not isCustomImage then
+            if Backdrop:FindFirstChild("UIStroke") then
+                Backdrop.UIStroke.Color = theme.Border
+            end
+            if not isCustomImage and Icon and Icon.Parent then
                 Icon.ImageColor3 = theme.Text
             end
         end
@@ -901,18 +979,27 @@ function Quantum:CreateWindow(data)
     local toggleKey = data.ToggleKey
 
     if MainWindowScreen then
-        MainWindowScreen:Destroy()
+        pcall(function() MainWindowScreen:Destroy() end)
     end
 
     CreateFloatingIcon(floatingIcon)
 
-    MainWindowScreen = Create("ScreenGui", {
-        Name = "QuantumUI",
-        Parent = game.CoreGui,
-        ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-        ResetOnSpawn = false,
-        Enabled = true
-    })
+    local WindowConnections = ConnectionManager.new()
+
+    local ok, screen = pcall(function()
+        return Create("ScreenGui", {
+            Name = "QuantumUI",
+            Parent = game.CoreGui,
+            ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+            ResetOnSpawn = false,
+            Enabled = true
+        })
+    end)
+    if not ok or not screen then
+        warn("[Quantum] Failed to create ScreenGui")
+        return nil
+    end
+    MainWindowScreen = screen
 
     MainFrame = Create("Frame", {
         Name = "Main",
@@ -927,10 +1014,7 @@ function Quantum:CreateWindow(data)
         ZIndex = 10
     })
 
-    Create("UICorner", {
-        CornerRadius = UDim.new(0, Config.CornerRadius),
-        Parent = MainFrame
-    })
+    Create("UICorner", { CornerRadius = UDim.new(0, Config.CornerRadius), Parent = MainFrame })
 
     local Shadow = Create("ImageLabel", {
         Name = "Shadow",
@@ -954,11 +1038,7 @@ function Quantum:CreateWindow(data)
         Active = true,
         ZIndex = 20
     })
-
-    Create("UICorner", {
-        CornerRadius = UDim.new(0, Config.CornerRadius),
-        Parent = Topbar
-    })
+    Create("UICorner", { CornerRadius = UDim.new(0, Config.CornerRadius), Parent = Topbar })
 
     local TopbarFix = Create("Frame", {
         Name = "Fix",
@@ -1035,8 +1115,8 @@ function Quantum:CreateWindow(data)
         BorderSizePixel = 0,
         ZIndex = 22
     })
-    Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = ProfileFrame})
-    Create("UIStroke", {Color = CurrentTheme.Border, Thickness = 1, Parent = ProfileFrame})
+    Create("UICorner", { CornerRadius = UDim.new(0, 5), Parent = ProfileFrame })
+    Create("UIStroke", { Color = CurrentTheme.Border, Thickness = 1, Parent = ProfileFrame })
 
     local ProfileImg = Create("ImageLabel", {
         Parent = ProfileFrame,
@@ -1046,7 +1126,7 @@ function Quantum:CreateWindow(data)
         Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=48&h=48",
         ZIndex = 23
     })
-    Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = ProfileImg})
+    Create("UICorner", { CornerRadius = UDim.new(0, 5), Parent = ProfileImg })
 
     local ProfileName = Create("TextLabel", {
         Name = "ProfileName",
@@ -1088,7 +1168,7 @@ function Quantum:CreateWindow(data)
         Visible = false,
         ZIndex = 100
     })
-    Create("UICorner", {CornerRadius = UDim.new(0, Config.CornerRadius), Parent = ConfirmOverlay})
+    Create("UICorner", { CornerRadius = UDim.new(0, Config.CornerRadius), Parent = ConfirmOverlay })
 
     local ConfirmBox = Create("Frame", {
         Name = "ConfirmBox",
@@ -1099,7 +1179,7 @@ function Quantum:CreateWindow(data)
         BorderSizePixel = 0,
         ZIndex = 101
     })
-    Create("UICorner", {CornerRadius = UDim.new(0, 6), Parent = ConfirmBox})
+    Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = ConfirmBox })
 
     Create("TextLabel", {
         Parent = ConfirmBox,
@@ -1137,7 +1217,7 @@ function Quantum:CreateWindow(data)
         Font = Enum.Font.GothamBold,
         ZIndex = 102
     })
-    Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = ConfirmYes})
+    Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = ConfirmYes })
 
     local ConfirmNo = Create("TextButton", {
         Parent = ConfirmBox,
@@ -1150,7 +1230,7 @@ function Quantum:CreateWindow(data)
         Font = Enum.Font.GothamBold,
         ZIndex = 102
     })
-    Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = ConfirmNo})
+    Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = ConfirmNo })
 
     local Controls = Create("Frame", {
         Name = "Controls",
@@ -1173,7 +1253,7 @@ function Quantum:CreateWindow(data)
             ImageColor3 = CurrentTheme.SubText,
             ZIndex = 22
         })
-        Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = btn})
+        Create("UICorner", { CornerRadius = UDim.new(0, 5), Parent = btn })
         btn.MouseEnter:Connect(function()
             btn.BackgroundColor3 = CurrentTheme.ElementHover
         end)
@@ -1226,7 +1306,7 @@ function Quantum:CreateWindow(data)
         ClipsDescendants = true,
         ZIndex = 15
     })
-    Create("UICorner", {CornerRadius = UDim.new(0, Config.CornerRadius), Parent = Sidebar})
+    Create("UICorner", { CornerRadius = UDim.new(0, Config.CornerRadius), Parent = Sidebar })
 
     Create("Frame", {
         Name = "Fix",
@@ -1238,7 +1318,6 @@ function Quantum:CreateWindow(data)
         ZIndex = 15
     })
 
-    
     local SearchFrame = Create("Frame", {
         Parent = Sidebar,
         Size = UDim2.new(1, -10, 0, 32),
@@ -1247,7 +1326,7 @@ function Quantum:CreateWindow(data)
         BorderSizePixel = 0,
         ZIndex = 16
     })
-    Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = SearchFrame})
+    Create("UICorner", { CornerRadius = UDim.new(0, 5), Parent = SearchFrame })
 
     local SearchIcon = Create("ImageLabel", {
         Parent = SearchFrame,
@@ -1304,7 +1383,7 @@ function Quantum:CreateWindow(data)
         ClipsDescendants = true,
         ZIndex = 14
     })
-    Create("UICorner", {CornerRadius = UDim.new(0, Config.CornerRadius), Parent = Content})
+    Create("UICorner", { CornerRadius = UDim.new(0, Config.CornerRadius), Parent = Content })
 
     Create("Frame", {
         Name = "Fix",
@@ -1334,7 +1413,7 @@ function Quantum:CreateWindow(data)
     local resizeStart = nil
     local startSize = nil
 
-    ResizeHandle.InputBegan:Connect(function(input)
+    WindowConnections:Connect(ResizeHandle.InputBegan, function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             resizing = true
             resizeStart = input.Position
@@ -1342,7 +1421,7 @@ function Quantum:CreateWindow(data)
         end
     end)
 
-    UserInputService.InputChanged:Connect(function(input)
+    WindowConnections:Connect(UserInputService.InputChanged, function(input)
         if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - resizeStart
             local newWidth = math.max(Config.MinWindowSize.X, startSize.X.Offset + delta.X)
@@ -1351,7 +1430,7 @@ function Quantum:CreateWindow(data)
         end
     end)
 
-    UserInputService.InputEnded:Connect(function(input)
+    WindowConnections:Connect(UserInputService.InputEnded, function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             resizing = false
         end
@@ -1361,7 +1440,7 @@ function Quantum:CreateWindow(data)
     local dragStart = nil
     local startPos = nil
 
-    Topbar.InputBegan:Connect(function(input)
+    WindowConnections:Connect(Topbar.InputBegan, function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
@@ -1370,13 +1449,16 @@ function Quantum:CreateWindow(data)
             changedConn = input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.Cancel then
                     dragging = false
-                    changedConn:Disconnect()
+                    if changedConn then changedConn:Disconnect() end
                 end
             end)
+            if changedConn then
+                WindowConnections:Add(changedConn)
+            end
         end
     end)
 
-    UserInputService.InputChanged:Connect(function(input)
+    WindowConnections:Connect(UserInputService.InputChanged, function(input)
         if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - dragStart
             MainFrame.Position = UDim2.new(
@@ -1386,14 +1468,14 @@ function Quantum:CreateWindow(data)
         end
     end)
 
-    UserInputService.InputEnded:Connect(function(input)
+    WindowConnections:Connect(UserInputService.InputEnded, function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = false
         end
     end)
 
     if toggleKey then
-        UserInputService.InputBegan:Connect(function(input, gpe)
+        WindowConnections:Connect(UserInputService.InputBegan, function(input, gpe)
             if not gpe and input.KeyCode == toggleKey then
                 if MainFrame then
                     if MainFrame.Visible then
@@ -1406,7 +1488,8 @@ function Quantum:CreateWindow(data)
         end)
     end
 
-    ListenTheme(function(theme)
+    local themeIndex = ListenTheme(function(theme)
+        if not MainFrame or not MainFrame.Parent then return end
         MainFrame.BackgroundColor3 = theme.Background
         Shadow.ImageColor3 = theme.Shadow
         Topbar.BackgroundColor3 = theme.Sidebar
@@ -1422,7 +1505,9 @@ function Quantum:CreateWindow(data)
         ConfirmNo.TextColor3 = theme.Text
         ResizeHandle.ImageColor3 = theme.SubText
         ProfileFrame.BackgroundColor3 = theme.Element
-        ProfileFrame.UIStroke.Color = theme.Border
+        if ProfileFrame:FindFirstChild("UIStroke") then
+            ProfileFrame.UIStroke.Color = theme.Border
+        end
         ProfileName.TextColor3 = theme.Text
         ProfileUser.TextColor3 = theme.SubText
         SearchFrame.BackgroundColor3 = theme.Element
@@ -1438,7 +1523,6 @@ function Quantum:CreateWindow(data)
     WindowAPI.Config:Load()
     WindowAPI.Config:StartAutoSave()
 
-    
     WindowAPI.EnableAutoSave = function(_, interval)
         WindowAPI.Config:EnableAutoSave(interval)
     end
@@ -1461,6 +1545,24 @@ function Quantum:CreateWindow(data)
         WindowAPI.Config:BindElement(key, elementType, getValueFunc, setValueFunc)
     end
 
+    WindowAPI.Destroy = function(_)
+        WindowConnections:DisconnectAll()
+        UnlistenTheme(themeIndex)
+        if MainWindowScreen then
+            pcall(function() MainWindowScreen:Destroy() end)
+            MainWindowScreen = nil
+        end
+        if FloatingConnectionsMgr then
+            FloatingConnectionsMgr:DisconnectAll()
+        end
+        if FloatingIconScreen then
+            pcall(function() FloatingIconScreen:Destroy() end)
+            FloatingIconScreen = nil
+        end
+        MainFrame = nil
+        FloatingIconBtn = nil
+    end
+
     local Tabs = {}
     local ActiveTab = nil
     local TabButtons = {}
@@ -1479,7 +1581,7 @@ function Quantum:CreateWindow(data)
             LayoutOrder = #Tabs + 1,
             ZIndex = 17
         })
-        Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = TabBtn})
+        Create("UICorner", { CornerRadius = UDim.new(0, 5), Parent = TabBtn })
 
         local TabBtnIcon = Create("ImageLabel", {
             Parent = TabBtn,
@@ -1513,7 +1615,7 @@ function Quantum:CreateWindow(data)
             Visible = false,
             ZIndex = 18
         })
-        Create("UICorner", {CornerRadius = UDim.new(0, 2), Parent = TabIndicator})
+        Create("UICorner", { CornerRadius = UDim.new(0, 2), Parent = TabIndicator })
 
         local TabContent = Create("ScrollingFrame", {
             Parent = Content,
@@ -1570,11 +1672,12 @@ function Quantum:CreateWindow(data)
             TabBtn.BackgroundColor3 = CurrentTheme.Element
         end)
 
-        table.insert(Tabs, {Activate = Activate, Name = tabName, Button = TabBtn})
-        table.insert(TabButtons, {Btn = TabBtn, Name = tabName:lower()})
+        table.insert(Tabs, { Activate = Activate, Name = tabName, Button = TabBtn })
+        table.insert(TabButtons, { Btn = TabBtn, Name = tabName:lower() })
         if #Tabs == 1 then Activate() end
 
         ListenTheme(function(theme)
+            if not TabBtn or not TabBtn.Parent then return end
             if ActiveTab and ActiveTab.Button == TabBtn then
                 TabBtn.BackgroundColor3 = theme.ElementHover
                 TabBtnIcon.ImageColor3 = theme.Accent
@@ -1612,7 +1715,7 @@ function Quantum:CreateWindow(data)
                 LayoutOrder = #TabContent:GetChildren(),
                 ZIndex = 16
             })
-            Create("UICorner", {CornerRadius = UDim.new(0, Config.ElementCorner), Parent = SectionFrame})
+            Create("UICorner", { CornerRadius = UDim.new(0, Config.ElementCorner), Parent = SectionFrame })
 
             local SectionHeader = Create("TextButton", {
                 Parent = SectionFrame,
@@ -1622,7 +1725,7 @@ function Quantum:CreateWindow(data)
                 AutoButtonColor = false,
                 ZIndex = 17
             })
-            Create("UICorner", {CornerRadius = UDim.new(0, Config.ElementCorner), Parent = SectionHeader})
+            Create("UICorner", { CornerRadius = UDim.new(0, Config.ElementCorner), Parent = SectionHeader })
 
             Create("ImageLabel", {
                 Parent = SectionHeader,
@@ -1674,11 +1777,11 @@ function Quantum:CreateWindow(data)
                 SortOrder = Enum.SortOrder.LayoutOrder
             })
 
-            local isCollapsed = collapsed
             local targetHeight = 36
             local sectionDropdowns = {}
 
             local function UpdateSize()
+                if not SectionItems or not SectionItems.Parent then return end
                 local itemsHeight = SectionItems.UIListLayout.AbsoluteContentSize.Y
                 targetHeight = 40 + itemsHeight + 6
                 if isCollapsed then
@@ -1704,7 +1807,9 @@ function Quantum:CreateWindow(data)
                     SectionItems.Size = UDim2.new(1, -12, 0, itemsHeight + 6)
                     Arrow.Rotation = 180
                 end
-                TabContent.CanvasSize = UDim2.new(0, 0, 0, TabContent.UIListLayout.AbsoluteContentSize.Y + 16)
+                if TabContent and TabContent.Parent then
+                    TabContent.CanvasSize = UDim2.new(0, 0, 0, TabContent.UIListLayout.AbsoluteContentSize.Y + 16)
+                end
             end
 
             SectionHeader.MouseButton1Click:Connect(function()
@@ -1714,21 +1819,20 @@ function Quantum:CreateWindow(data)
 
             if not collapsed then
                 Arrow.Rotation = 180
-                task.wait(0.05)
-                UpdateSize()
+                task.defer(UpdateSize)
             end
 
             ListenTheme(function(theme)
+                if not SectionFrame or not SectionFrame.Parent then return end
                 SectionFrame.BackgroundColor3 = theme.Element
                 SectionHeader.BackgroundColor3 = theme.Element
                 Arrow.ImageColor3 = theme.SubText
             end)
 
             SectionItems.ChildAdded:Connect(function()
-                task.wait(0.1)
-                if not isCollapsed then
-                    UpdateSize()
-                end
+                task.defer(function()
+                    if not isCollapsed then UpdateSize() end
+                end)
             end)
 
             local SectionAPI = {}
@@ -1756,7 +1860,7 @@ function Quantum:CreateWindow(data)
                     ClipsDescendants = true,
                     ZIndex = 18
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = ToggleFrame})
+                Create("UICorner", { CornerRadius = UDim.new(0, 5), Parent = ToggleFrame })
 
                 Create("ImageLabel", {
                     Parent = ToggleFrame,
@@ -1806,7 +1910,7 @@ function Quantum:CreateWindow(data)
                     BorderSizePixel = 0,
                     ZIndex = 19
                 })
-                Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = ToggleBtn})
+                Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = ToggleBtn })
 
                 local ToggleCircle = Create("Frame", {
                     Parent = ToggleBtn,
@@ -1816,7 +1920,7 @@ function Quantum:CreateWindow(data)
                     BorderSizePixel = 0,
                     ZIndex = 20
                 })
-                Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = ToggleCircle})
+                Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = ToggleCircle })
 
                 local ToggleClick = Create("TextButton", {
                     Parent = ToggleFrame,
@@ -1841,10 +1945,11 @@ function Quantum:CreateWindow(data)
                         ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOff
                         ToggleCircle.Position = UDim2.new(0, 2, 0.5, -5)
                     end
-                    callback(state)
+                    pcall(callback, state)
                 end)
 
                 ListenTheme(function(theme)
+                    if not ToggleFrame or not ToggleFrame.Parent then return end
                     ToggleFrame.BackgroundColor3 = theme.Background
                     ToggleCircle.BackgroundColor3 = theme.Text
                     if state then
@@ -1864,7 +1969,7 @@ function Quantum:CreateWindow(data)
                             ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOff
                             ToggleCircle.Position = UDim2.new(0, 2, 0.5, -5)
                         end
-                        callback(state)
+                        pcall(callback, state)
                     end,
                     Get = function() return state end
                 }
@@ -1894,7 +1999,7 @@ function Quantum:CreateWindow(data)
                     ClipsDescendants = true,
                     ZIndex = 18
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = SliderFrame})
+                Create("UICorner", { CornerRadius = UDim.new(0, 5), Parent = SliderFrame })
 
                 Create("ImageLabel", {
                     Parent = SliderFrame,
@@ -1957,7 +2062,7 @@ function Quantum:CreateWindow(data)
                     BorderSizePixel = 0,
                     ZIndex = 19
                 })
-                Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = Track})
+                Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Track })
 
                 local Fill = Create("Frame", {
                     Parent = Track,
@@ -1966,7 +2071,7 @@ function Quantum:CreateWindow(data)
                     BorderSizePixel = 0,
                     ZIndex = 20
                 })
-                Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = Fill})
+                Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Fill })
 
                 local Knob = Create("Frame", {
                     Parent = Track,
@@ -1976,18 +2081,19 @@ function Quantum:CreateWindow(data)
                     BorderSizePixel = 0,
                     ZIndex = 21
                 })
-                Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = Knob})
+                Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Knob })
 
                 local draggingSlider = false
 
                 local function UpdateSlider(input)
+                    if not Track or not Track.Parent then return end
                     local pos = math.clamp((input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1)
                     local value = math.clamp(Round(min + (pos * (max - min)), math.log10(1/increment)), min, max)
                     value = math.floor(value / increment + 0.5) * increment
                     Fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
                     Knob.Position = UDim2.new((value - min) / (max - min), -6, 0.5, -6)
                     ValueLabel.Text = tostring(value)
-                    callback(value)
+                    pcall(callback, value)
                 end
 
                 Knob.InputBegan:Connect(function(input)
@@ -2003,19 +2109,20 @@ function Quantum:CreateWindow(data)
                     end
                 end)
 
-                UserInputService.InputChanged:Connect(function(input)
+                WindowConnections:Connect(UserInputService.InputChanged, function(input)
                     if draggingSlider and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
                         UpdateSlider(input)
                     end
                 end)
 
-                UserInputService.InputEnded:Connect(function(input)
+                WindowConnections:Connect(UserInputService.InputEnded, function(input)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                         draggingSlider = false
                     end
                 end)
 
                 ListenTheme(function(theme)
+                    if not SliderFrame or not SliderFrame.Parent then return end
                     SliderFrame.BackgroundColor3 = theme.Background
                     Track.BackgroundColor3 = theme.Element
                     Fill.BackgroundColor3 = theme.Accent
@@ -2030,7 +2137,7 @@ function Quantum:CreateWindow(data)
                         Fill.Size = UDim2.new((val - min) / (max - min), 0, 1, 0)
                         Knob.Position = UDim2.new((val - min) / (max - min), -6, 0.5, -6)
                         ValueLabel.Text = tostring(val)
-                        callback(val)
+                        pcall(callback, val)
                     end,
                     Get = function() return tonumber(ValueLabel.Text) or default end
                 }
@@ -2057,7 +2164,7 @@ function Quantum:CreateWindow(data)
                     ClipsDescendants = true,
                     ZIndex = 18
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = Btn})
+                Create("UICorner", { CornerRadius = UDim.new(0, 5), Parent = Btn })
 
                 Create("ImageLabel", {
                     Parent = Btn,
@@ -2111,14 +2218,15 @@ function Quantum:CreateWindow(data)
                     Btn.BackgroundColor3 = CurrentTheme.Accent
                 end)
                 Btn.MouseButton1Click:Connect(function()
-                    callback()
+                    pcall(callback)
                 end)
 
                 ListenTheme(function(theme)
+                    if not Btn or not Btn.Parent then return end
                     Btn.BackgroundColor3 = theme.Accent
                 end)
 
-                return {Click = callback}
+                return { Click = callback }
             end
 
             function SectionAPI:CreateDropdown(dropdownData)
@@ -2142,7 +2250,7 @@ function Quantum:CreateWindow(data)
                     ClipsDescendants = true,
                     ZIndex = 18
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = DropdownFrame})
+                Create("UICorner", { CornerRadius = UDim.new(0, 5), Parent = DropdownFrame })
 
                 Create("ImageLabel", {
                     Parent = DropdownFrame,
@@ -2196,7 +2304,7 @@ function Quantum:CreateWindow(data)
                     TextTruncate = Enum.TextTruncate.AtEnd,
                     ZIndex = 19
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = DropdownBtn})
+                Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = DropdownBtn })
 
                 local Arrow = Create("ImageLabel", {
                     Parent = DropdownBtn,
@@ -2227,8 +2335,8 @@ function Quantum:CreateWindow(data)
                     Visible = false,
                     ZIndex = 500
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = MenuFrame})
-                Create("UIStroke", {Color = CurrentTheme.Border, Thickness = 1, Parent = MenuFrame})
+                Create("UICorner", { CornerRadius = UDim.new(0, 5), Parent = MenuFrame })
+                Create("UIStroke", { Color = CurrentTheme.Border, Thickness = 1, Parent = MenuFrame })
 
                 local ddData = RegisterDropdown(MenuFrame, Arrow, DropdownBtn)
                 table.insert(sectionDropdowns, ddData)
@@ -2247,7 +2355,7 @@ function Quantum:CreateWindow(data)
                     ClearTextOnFocus = false,
                     ZIndex = 31
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = SearchBox})
+                Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = SearchBox })
 
                 Create("ImageLabel", {
                     Parent = SearchBox,
@@ -2299,7 +2407,7 @@ function Quantum:CreateWindow(data)
                                 Font = Enum.Font.Gotham,
                                 ZIndex = 32
                             })
-                            Create("UICorner", {CornerRadius = UDim.new(0, 3), Parent = optBtn})
+                            Create("UICorner", { CornerRadius = UDim.new(0, 3), Parent = optBtn })
 
                             if optIcon then
                                 Create("ImageLabel", {
@@ -2332,7 +2440,7 @@ function Quantum:CreateWindow(data)
                                 local selText, _ = NormalizeOption(selected)
                                 DropdownBtn.Text = selText
                                 DropdownBtn.TextColor3 = CurrentTheme.Text
-                                callback(selected)
+                                pcall(callback, selected)
                                 ddData.IsOpen = false
                                 MenuFrame.Visible = false
                                 MenuFrame.Size = UDim2.new(0, MenuFrame.Size.X.Offset, 0, 0)
@@ -2394,7 +2502,7 @@ function Quantum:CreateWindow(data)
                         Arrow.Rotation = 180
                         SearchBox.Text = ""
                         BuildOptions("")
-                        
+
                         ddData.HeartbeatConn = RunService.Heartbeat:Connect(function()
                             if ddData.IsOpen and DropdownBtn and DropdownBtn.Parent then
                                 UpdateMenuPosition()
@@ -2408,7 +2516,6 @@ function Quantum:CreateWindow(data)
                     end
                 end)
 
-                
                 TabContent:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
                     if ddData.IsOpen then
                         ddData.IsOpen = false
@@ -2429,11 +2536,11 @@ function Quantum:CreateWindow(data)
                             local menuPos = MenuFrame.AbsolutePosition
                             local menuSize = MenuFrame.AbsoluteSize
                             if mousePos.X < menuPos.X or mousePos.X > menuPos.X + menuSize.X or
-                               mousePos.Y < menuPos.Y or mousePos.Y > menuPos.Y + menuSize.Y then
+                                mousePos.Y < menuPos.Y or mousePos.Y > menuPos.Y + menuSize.Y then
                                 local btnPos = DropdownBtn.AbsolutePosition
                                 local btnSize = DropdownBtn.AbsoluteSize
                                 if mousePos.X < btnPos.X or mousePos.X > btnPos.X + btnSize.X or
-                                   mousePos.Y < btnPos.Y or mousePos.Y > btnPos.Y + btnSize.Y then
+                                    mousePos.Y < btnPos.Y or mousePos.Y > btnPos.Y + btnSize.Y then
                                     ddData.IsOpen = false
                                     MenuFrame.Visible = false
                                     MenuFrame.Size = UDim2.new(0, MenuFrame.Size.X.Offset, 0, 0)
@@ -2450,6 +2557,7 @@ function Quantum:CreateWindow(data)
                 table.insert(DropdownConnections, clickConn)
 
                 ListenTheme(function(theme)
+                    if not DropdownFrame or not DropdownFrame.Parent then return end
                     DropdownFrame.BackgroundColor3 = theme.Background
                     DropdownBtn.BackgroundColor3 = theme.Element
                     local selText, _ = NormalizeOption(selected)
@@ -2486,7 +2594,7 @@ function Quantum:CreateWindow(data)
                     local selText, _ = NormalizeOption(selected)
                     DropdownBtn.Text = selText
                     DropdownBtn.TextColor3 = CurrentTheme.Text
-                    callback(selected)
+                    pcall(callback, selected)
                 end
                 function DropdownAPI:Get()
                     return selected
@@ -2515,7 +2623,7 @@ function Quantum:CreateWindow(data)
                     ClipsDescendants = true,
                     ZIndex = 18
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = DropdownFrame})
+                Create("UICorner", { CornerRadius = UDim.new(0, 5), Parent = DropdownFrame })
 
                 Create("ImageLabel", {
                     Parent = DropdownFrame,
@@ -2569,7 +2677,7 @@ function Quantum:CreateWindow(data)
                     TextTruncate = Enum.TextTruncate.AtEnd,
                     ZIndex = 19
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = DropdownBtn})
+                Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = DropdownBtn })
 
                 local Arrow = Create("ImageLabel", {
                     Parent = DropdownBtn,
@@ -2613,8 +2721,8 @@ function Quantum:CreateWindow(data)
                     Visible = false,
                     ZIndex = 500
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = MenuFrame})
-                Create("UIStroke", {Color = CurrentTheme.Border, Thickness = 1, Parent = MenuFrame})
+                Create("UICorner", { CornerRadius = UDim.new(0, 5), Parent = MenuFrame })
+                Create("UIStroke", { Color = CurrentTheme.Border, Thickness = 1, Parent = MenuFrame })
 
                 local ddData = RegisterDropdown(MenuFrame, Arrow, DropdownBtn)
                 table.insert(sectionDropdowns, ddData)
@@ -2633,7 +2741,7 @@ function Quantum:CreateWindow(data)
                     ClearTextOnFocus = false,
                     ZIndex = 31
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = SearchBox})
+                Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = SearchBox })
 
                 Create("ImageLabel", {
                     Parent = SearchBox,
@@ -2683,97 +2791,96 @@ function Quantum:CreateWindow(data)
                     for _, opt in ipairs(options) do
                         local optText, optIcon = NormalizeOption(opt)
                         if not filterText or filterText == "" or string.find(string.lower(optText), string.lower(filterText), 1, true) then
+                            local row = Create("Frame", {
+                                Parent = OptionsScroll,
+                                Size = UDim2.new(1, 0, 0, 26),
+                                BackgroundColor3 = CurrentTheme.Element,
+                                ZIndex = 32,
+                            })
+                            Create("UICorner", { CornerRadius = UDim.new(0, 3), Parent = row })
 
-                        local row = Create("Frame", {
-                            Parent = OptionsScroll,
-                            Size = UDim2.new(1, 0, 0, 26),
-                            BackgroundColor3 = CurrentTheme.Element,
-                            ZIndex = 32,
-                        })
-                        Create("UICorner", {CornerRadius = UDim.new(0, 3), Parent = row})
-
-                        local checkBox = Create("Frame", {
-                            Parent = row,
-                            Size = UDim2.new(0, 14, 0, 14),
-                            Position = UDim2.new(0, 6, 0.5, -7),
-                            BackgroundColor3 = CurrentTheme.Background,
-                            BorderSizePixel = 0,
-                            ZIndex = 33,
-                        })
-                        Create("UICorner", {CornerRadius = UDim.new(0, 2), Parent = checkBox})
-
-                        local checkMark = Create("ImageLabel", {
-                            Parent = checkBox,
-                            Size = UDim2.new(0, 14, 0, 14),
-                            Position = UDim2.new(0.5, -6, 0.5, -6),
-                            BackgroundTransparency = 1,
-                            Image = GetIcon("Check"),
-                            ImageColor3 = CurrentTheme.Accent,
-                            ZIndex = 34,
-                            Visible = IsSelected(opt),
-                        })
-
-                        local textX = 26
-                        if optIcon then
-                            Create("ImageLabel", {
+                            local checkBox = Create("Frame", {
                                 Parent = row,
                                 Size = UDim2.new(0, 14, 0, 14),
-                                Position = UDim2.new(0, 22, 0.5, -6),
-                                BackgroundTransparency = 1,
-                                Image = GetIcon(optIcon),
-                                ImageColor3 = CurrentTheme.SubText,
+                                Position = UDim2.new(0, 6, 0.5, -7),
+                                BackgroundColor3 = CurrentTheme.Background,
+                                BorderSizePixel = 0,
                                 ZIndex = 33,
                             })
-                            textX = 44
-                        end
+                            Create("UICorner", { CornerRadius = UDim.new(0, 2), Parent = checkBox })
 
-                        local txt = Create("TextLabel", {
-                            Parent = row,
-                            Size = UDim2.new(1, -textX - 4, 1, 0),
-                            Position = UDim2.new(0, textX, 0, 0),
-                            BackgroundTransparency = 1,
-                            Text = optText,
-                            TextColor3 = CurrentTheme.Text,
-                            TextSize = 11,
-                            Font = Enum.Font.Gotham,
-                            TextXAlignment = Enum.TextXAlignment.Left,
-                            ZIndex = 33,
-                        })
+                            local checkMark = Create("ImageLabel", {
+                                Parent = checkBox,
+                                Size = UDim2.new(0, 14, 0, 14),
+                                Position = UDim2.new(0.5, -6, 0.5, -6),
+                                BackgroundTransparency = 1,
+                                Image = GetIcon("Check"),
+                                ImageColor3 = CurrentTheme.Accent,
+                                ZIndex = 34,
+                                Visible = IsSelected(opt),
+                            })
 
-                        local clickBtn = Create("TextButton", {
-                            Parent = row,
-                            Size = UDim2.new(1, 0, 1, 0),
-                            BackgroundTransparency = 1,
-                            Text = "",
-                            ZIndex = 35,
-                        })
-
-                        clickBtn.MouseButton1Click:Connect(function()
-                            local selIdx = nil
-                            for i, s in ipairs(selected) do
-                                local sText, _ = NormalizeOption(s)
-                                if sText == optText then selIdx = i; break end
+                            local textX = 26
+                            if optIcon then
+                                Create("ImageLabel", {
+                                    Parent = row,
+                                    Size = UDim2.new(0, 14, 0, 14),
+                                    Position = UDim2.new(0, 22, 0.5, -6),
+                                    BackgroundTransparency = 1,
+                                    Image = GetIcon(optIcon),
+                                    ImageColor3 = CurrentTheme.SubText,
+                                    ZIndex = 33,
+                                })
+                                textX = 44
                             end
-                            if selIdx then
-                                table.remove(selected, selIdx)
-                                checkMark.Visible = false
-                            else
-                                table.insert(selected, opt)
-                                checkMark.Visible = true
-                            end
-                            UpdateButtonText()
-                            callback(selected)
-                        end)
 
-                        row.MouseEnter:Connect(function()
-                            row.BackgroundColor3 = CurrentTheme.ElementHover
-                        end)
-                        row.MouseLeave:Connect(function()
-                            row.BackgroundColor3 = CurrentTheme.Element
-                        end)
+                            local txt = Create("TextLabel", {
+                                Parent = row,
+                                Size = UDim2.new(1, -textX - 4, 1, 0),
+                                Position = UDim2.new(0, textX, 0, 0),
+                                BackgroundTransparency = 1,
+                                Text = optText,
+                                TextColor3 = CurrentTheme.Text,
+                                TextSize = 11,
+                                Font = Enum.Font.Gotham,
+                                TextXAlignment = Enum.TextXAlignment.Left,
+                                ZIndex = 33,
+                            })
 
-                        table.insert(optionItems, row)
-                        count = count + 1
+                            local clickBtn = Create("TextButton", {
+                                Parent = row,
+                                Size = UDim2.new(1, 0, 1, 0),
+                                BackgroundTransparency = 1,
+                                Text = "",
+                                ZIndex = 35,
+                            })
+
+                            clickBtn.MouseButton1Click:Connect(function()
+                                local selIdx = nil
+                                for i, s in ipairs(selected) do
+                                    local sText, _ = NormalizeOption(s)
+                                    if sText == optText then selIdx = i; break end
+                                end
+                                if selIdx then
+                                    table.remove(selected, selIdx)
+                                    checkMark.Visible = false
+                                else
+                                    table.insert(selected, opt)
+                                    checkMark.Visible = true
+                                end
+                                UpdateButtonText()
+                                pcall(callback, selected)
+                            end)
+
+                            row.MouseEnter:Connect(function()
+                                row.BackgroundColor3 = CurrentTheme.ElementHover
+                            end)
+                            row.MouseLeave:Connect(function()
+                                row.BackgroundColor3 = CurrentTheme.Element
+                            end)
+
+                            table.insert(optionItems, row)
+                            count = count + 1
                         end
                     end
 
@@ -2816,7 +2923,7 @@ function Quantum:CreateWindow(data)
                         Arrow.Rotation = 180
                         SearchBox.Text = ""
                         BuildOptions()
-                        
+
                         ddData.HeartbeatConn = RunService.Heartbeat:Connect(function()
                             if ddData.IsOpen and DropdownBtn and DropdownBtn.Parent then
                                 UpdateMenuPosition()
@@ -2830,7 +2937,6 @@ function Quantum:CreateWindow(data)
                     end
                 end)
 
-                
                 TabContent:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
                     if ddData.IsOpen then
                         ddData.IsOpen = false
@@ -2851,11 +2957,11 @@ function Quantum:CreateWindow(data)
                             local menuPos = MenuFrame.AbsolutePosition
                             local menuSize = MenuFrame.AbsoluteSize
                             if mousePos.X < menuPos.X or mousePos.X > menuPos.X + menuSize.X or
-                               mousePos.Y < menuPos.Y or mousePos.Y > menuPos.Y + menuSize.Y then
+                                mousePos.Y < menuPos.Y or mousePos.Y > menuPos.Y + menuSize.Y then
                                 local btnPos = DropdownBtn.AbsolutePosition
                                 local btnSize = DropdownBtn.AbsoluteSize
                                 if mousePos.X < btnPos.X or mousePos.X > btnPos.X + btnSize.X or
-                                   mousePos.Y < btnPos.Y or mousePos.Y > btnPos.Y + btnSize.Y then
+                                    mousePos.Y < btnPos.Y or mousePos.Y > btnPos.Y + btnSize.Y then
                                     ddData.IsOpen = false
                                     MenuFrame.Visible = false
                                     MenuFrame.Size = UDim2.new(0, MenuFrame.Size.X.Offset, 0, 0)
@@ -2872,6 +2978,7 @@ function Quantum:CreateWindow(data)
                 table.insert(DropdownConnections, clickConn)
 
                 ListenTheme(function(theme)
+                    if not DropdownFrame or not DropdownFrame.Parent then return end
                     DropdownFrame.BackgroundColor3 = theme.Background
                     DropdownBtn.BackgroundColor3 = theme.Element
                     UpdateButtonText()
@@ -2904,7 +3011,7 @@ function Quantum:CreateWindow(data)
                         for _, v in ipairs(values) do table.insert(selected, v) end
                     end
                     UpdateButtonText()
-                    callback(selected)
+                    pcall(callback, selected)
                 end
                 function MultiDropdownAPI:Get()
                     return selected
@@ -2933,7 +3040,7 @@ function Quantum:CreateWindow(data)
                     ClipsDescendants = true,
                     ZIndex = 18
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = InputFrame})
+                Create("UICorner", { CornerRadius = UDim.new(0, 5), Parent = InputFrame })
 
                 Create("ImageLabel", {
                     Parent = InputFrame,
@@ -2990,13 +3097,14 @@ function Quantum:CreateWindow(data)
                     TextTruncate = Enum.TextTruncate.AtEnd,
                     ZIndex = 19
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = InputBox})
+                Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = InputBox })
 
                 InputBox.FocusLost:Connect(function(enterPressed)
-                    callback(InputBox.Text, enterPressed)
+                    pcall(callback, InputBox.Text, enterPressed)
                 end)
 
                 ListenTheme(function(theme)
+                    if not InputFrame or not InputFrame.Parent then return end
                     InputFrame.BackgroundColor3 = theme.Background
                     InputBox.BackgroundColor3 = theme.Element
                     InputBox.TextColor3 = theme.Text
@@ -3030,7 +3138,7 @@ function Quantum:CreateWindow(data)
                     ClipsDescendants = true,
                     ZIndex = 18
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = BindFrame})
+                Create("UICorner", { CornerRadius = UDim.new(0, 5), Parent = BindFrame })
 
                 Create("ImageLabel", {
                     Parent = BindFrame,
@@ -3083,7 +3191,7 @@ function Quantum:CreateWindow(data)
                     Font = Enum.Font.GothamBold,
                     ZIndex = 19
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = BindBtn})
+                Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = BindBtn })
 
                 local listening = false
                 BindBtn.MouseButton1Click:Connect(function()
@@ -3095,25 +3203,26 @@ function Quantum:CreateWindow(data)
                             default = input.KeyCode
                             BindBtn.Text = input.KeyCode.Name
                             listening = false
-                            conn:Disconnect()
-                            callback(input.KeyCode)
+                            if conn then conn:Disconnect() end
+                            pcall(callback, input.KeyCode)
                         end
                     end)
                 end)
 
-                UserInputService.InputBegan:Connect(function(input)
+                WindowConnections:Connect(UserInputService.InputBegan, function(input)
                     if input.KeyCode == default and not listening then
-                        callback(default)
+                        pcall(callback, default)
                     end
                 end)
 
                 ListenTheme(function(theme)
+                    if not BindFrame or not BindFrame.Parent then return end
                     BindFrame.BackgroundColor3 = theme.Background
                     BindBtn.BackgroundColor3 = theme.Element
                     BindBtn.TextColor3 = theme.Text
                 end)
 
-                return {Set = function(key) default = key; BindBtn.Text = key.Name end, Get = function() return default end}
+                return { Set = function(key) default = key; BindBtn.Text = key.Name end, Get = function() return default end }
             end
 
             function SectionAPI:CreateLabel(labelData)
@@ -3130,7 +3239,7 @@ function Quantum:CreateWindow(data)
                     ClipsDescendants = false,
                     ZIndex = 18
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = LabelFrame})
+                Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = LabelFrame })
 
                 Create("ImageLabel", {
                     Parent = LabelFrame,
@@ -3157,11 +3266,12 @@ function Quantum:CreateWindow(data)
                 })
 
                 ListenTheme(function(theme)
+                    if not LabelFrame or not LabelFrame.Parent then return end
                     LabelFrame.BackgroundColor3 = theme.Background
                     Label.TextColor3 = theme.Text
                 end)
 
-                return {Set = function(text) Label.Text = text end, Get = function() return Label.Text end}
+                return { Set = function(text) Label.Text = text end, Get = function() return Label.Text end }
             end
 
             function SectionAPI:CreateParagraph(paraData)
@@ -3180,7 +3290,7 @@ function Quantum:CreateWindow(data)
                     ClipsDescendants = false,
                     ZIndex = 18
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = ParaFrame})
+                Create("UICorner", { CornerRadius = UDim.new(0, 5), Parent = ParaFrame })
 
                 Create("ImageLabel", {
                     Parent = ParaFrame,
@@ -3245,7 +3355,6 @@ function Quantum:CreateWindow(data)
                     end
                 end)
 
-                
                 task.spawn(function()
                     for i = 1, 5 do
                         task.wait(0.1)
@@ -3255,6 +3364,7 @@ function Quantum:CreateWindow(data)
                 end)
 
                 ListenTheme(function(theme)
+                    if not ParaFrame or not ParaFrame.Parent then return end
                     ParaFrame.BackgroundColor3 = theme.Background
                     TitleLabel.TextColor3 = theme.Text
                     ContentLabel.TextColor3 = theme.SubText
@@ -3288,7 +3398,7 @@ function Quantum:CreateWindow(data)
                     LayoutOrder = #SectionItems:GetChildren(),
                     ZIndex = 18
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = PickerFrame})
+                Create("UICorner", { CornerRadius = UDim.new(0, 5), Parent = PickerFrame })
 
                 Create("ImageLabel", {
                     Parent = PickerFrame,
@@ -3338,8 +3448,8 @@ function Quantum:CreateWindow(data)
                     Text = "",
                     ZIndex = 19
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = ColorPreview})
-                Create("UIStroke", {Color = CurrentTheme.Border, Thickness = 1, Parent = ColorPreview})
+                Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = ColorPreview })
+                Create("UIStroke", { Color = CurrentTheme.Border, Thickness = 1, Parent = ColorPreview })
 
                 local ColorMenu = Create("Frame", {
                     Parent = ColorPreview,
@@ -3351,8 +3461,8 @@ function Quantum:CreateWindow(data)
                     Visible = false,
                     ZIndex = 30
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = ColorMenu})
-                Create("UIStroke", {Color = CurrentTheme.Border, Thickness = 1, Parent = ColorMenu})
+                Create("UICorner", { CornerRadius = UDim.new(0, 5), Parent = ColorMenu })
+                Create("UIStroke", { Color = CurrentTheme.Border, Thickness = 1, Parent = ColorMenu })
 
                 local RInput = Create("TextBox", {
                     Parent = ColorMenu,
@@ -3365,7 +3475,7 @@ function Quantum:CreateWindow(data)
                     Font = Enum.Font.Gotham,
                     ZIndex = 31
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 3), Parent = RInput})
+                Create("UICorner", { CornerRadius = UDim.new(0, 3), Parent = RInput })
 
                 local GInput = Create("TextBox", {
                     Parent = ColorMenu,
@@ -3378,7 +3488,7 @@ function Quantum:CreateWindow(data)
                     Font = Enum.Font.Gotham,
                     ZIndex = 31
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 3), Parent = GInput})
+                Create("UICorner", { CornerRadius = UDim.new(0, 3), Parent = GInput })
 
                 local BInput = Create("TextBox", {
                     Parent = ColorMenu,
@@ -3391,7 +3501,7 @@ function Quantum:CreateWindow(data)
                     Font = Enum.Font.Gotham,
                     ZIndex = 31
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 3), Parent = BInput})
+                Create("UICorner", { CornerRadius = UDim.new(0, 3), Parent = BInput })
 
                 local ApplyBtn = Create("TextButton", {
                     Parent = ColorMenu,
@@ -3404,7 +3514,7 @@ function Quantum:CreateWindow(data)
                     Font = Enum.Font.GothamBold,
                     ZIndex = 31
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 3), Parent = ApplyBtn})
+                Create("UICorner", { CornerRadius = UDim.new(0, 3), Parent = ApplyBtn })
 
                 local colorOpen = false
                 ColorPreview.MouseButton1Click:Connect(function()
@@ -3424,13 +3534,14 @@ function Quantum:CreateWindow(data)
                     local b = math.clamp(tonumber(BInput.Text) or 255, 0, 255)
                     local newColor = Color3.fromRGB(r, g, b)
                     ColorPreview.BackgroundColor3 = newColor
-                    callback(newColor)
+                    pcall(callback, newColor)
                     colorOpen = false
                     ColorMenu.Visible = false
                     ColorMenu.Size = UDim2.new(0, 105, 0, 0)
                 end)
 
                 ListenTheme(function(theme)
+                    if not PickerFrame or not PickerFrame.Parent then return end
                     PickerFrame.BackgroundColor3 = theme.Background
                     ColorMenu.BackgroundColor3 = theme.Background
                     RInput.BackgroundColor3 = theme.Element
@@ -3439,7 +3550,7 @@ function Quantum:CreateWindow(data)
                     ApplyBtn.BackgroundColor3 = theme.Accent
                 end)
 
-                return {Set = function(c) ColorPreview.BackgroundColor3 = c; callback(c) end, Get = function() return ColorPreview.BackgroundColor3 end}
+                return { Set = function(c) ColorPreview.BackgroundColor3 = c; pcall(callback, c) end, Get = function() return ColorPreview.BackgroundColor3 end }
             end
 
             function SectionAPI:CreateDivider()
@@ -3454,6 +3565,7 @@ function Quantum:CreateWindow(data)
                 })
 
                 ListenTheme(function(theme)
+                    if not Divider or not Divider.Parent then return end
                     Divider.BackgroundColor3 = theme.Border
                 end)
 
@@ -3475,7 +3587,7 @@ function Quantum:CreateWindow(data)
                     ClipsDescendants = false,
                     ZIndex = 18
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = StatusFrame})
+                Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = StatusFrame })
 
                 local Dot = Create("Frame", {
                     Parent = StatusFrame,
@@ -3485,7 +3597,7 @@ function Quantum:CreateWindow(data)
                     BorderSizePixel = 0,
                     ZIndex = 19
                 })
-                Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = Dot})
+                Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Dot })
 
                 local IconImg = Create("ImageLabel", {
                     Parent = StatusFrame,
@@ -3511,6 +3623,7 @@ function Quantum:CreateWindow(data)
                 })
 
                 ListenTheme(function(theme)
+                    if not StatusFrame or not StatusFrame.Parent then return end
                     StatusFrame.BackgroundColor3 = theme.Background
                     StatusLabel.TextColor3 = theme.Text
                 end)
@@ -3538,7 +3651,6 @@ function Quantum:CreateWindow(data)
             return SectionAPI
         end
 
-        
         function TabAPI:Section(data)
             local sec = self:CreateSection(data)
             self._CurrentSection = sec
@@ -3546,69 +3658,68 @@ function Quantum:CreateWindow(data)
         end
 
         function TabAPI:Paragraph(data)
-            if not self._CurrentSection then self:Section({Name = "Default", Opened = true}) end
+            if not self._CurrentSection then self:Section({ Name = "Default", Opened = true }) end
             return self._CurrentSection:CreateParagraph(data)
         end
 
         function TabAPI:Button(data)
-            if not self._CurrentSection then self:Section({Name = "Default", Opened = true}) end
+            if not self._CurrentSection then self:Section({ Name = "Default", Opened = true }) end
             return self._CurrentSection:CreateButton(data)
         end
 
         function TabAPI:Toggle(data)
-            if not self._CurrentSection then self:Section({Name = "Default", Opened = true}) end
+            if not self._CurrentSection then self:Section({ Name = "Default", Opened = true }) end
             return self._CurrentSection:CreateToggle(data)
         end
 
         function TabAPI:Slider(data)
-            if not self._CurrentSection then self:Section({Name = "Default", Opened = true}) end
+            if not self._CurrentSection then self:Section({ Name = "Default", Opened = true }) end
             return self._CurrentSection:CreateSlider(data)
         end
 
         function TabAPI:Dropdown(data)
-            if not self._CurrentSection then self:Section({Name = "Default", Opened = true}) end
+            if not self._CurrentSection then self:Section({ Name = "Default", Opened = true }) end
             return self._CurrentSection:CreateDropdown(data)
         end
 
         function TabAPI:MultiDropdown(data)
-            if not self._CurrentSection then self:Section({Name = "Default", Opened = true}) end
+            if not self._CurrentSection then self:Section({ Name = "Default", Opened = true }) end
             return self._CurrentSection:CreateMultiDropdown(data)
         end
 
         function TabAPI:Input(data)
-            if not self._CurrentSection then self:Section({Name = "Default", Opened = true}) end
+            if not self._CurrentSection then self:Section({ Name = "Default", Opened = true }) end
             return self._CurrentSection:CreateInput(data)
         end
 
         function TabAPI:Keybind(data)
-            if not self._CurrentSection then self:Section({Name = "Default", Opened = true}) end
+            if not self._CurrentSection then self:Section({ Name = "Default", Opened = true }) end
             return self._CurrentSection:CreateKeybind(data)
         end
 
         function TabAPI:Label(data)
-            if not self._CurrentSection then self:Section({Name = "Default", Opened = true}) end
+            if not self._CurrentSection then self:Section({ Name = "Default", Opened = true }) end
             return self._CurrentSection:CreateLabel(data)
         end
 
         function TabAPI:ColorPicker(data)
-            if not self._CurrentSection then self:Section({Name = "Default", Opened = true}) end
+            if not self._CurrentSection then self:Section({ Name = "Default", Opened = true }) end
             return self._CurrentSection:CreateColorPicker(data)
         end
 
         function TabAPI:Divider()
-            if not self._CurrentSection then self:Section({Name = "Default", Opened = true}) end
+            if not self._CurrentSection then self:Section({ Name = "Default", Opened = true }) end
             return self._CurrentSection:CreateDivider()
         end
 
         function TabAPI:Status(data)
-            if not self._CurrentSection then self:Section({Name = "Default", Opened = true}) end
+            if not self._CurrentSection then self:Section({ Name = "Default", Opened = true }) end
             return self._CurrentSection:CreateStatus(data)
         end
 
         return TabAPI
     end
 
-    
     SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
         local text = SearchBox.Text:lower()
         for _, tab in ipairs(TabButtons) do
