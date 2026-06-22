@@ -405,14 +405,12 @@ local packUrls = {
     gravity = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/gravity/dist/Icons.lua",
 }
 
-pcall(function()
-    for packName, url in pairs(packUrls) do
-        local pack = FetchIconPack(url)
-        if pack then
-            IconModule.Icons[packName] = pack
-        end
+for packName, url in pairs(packUrls) do
+    local pack = FetchIconPack(url)
+    if pack then
+        IconModule.Icons[packName] = pack
     end
-end)
+end
 
 
 
@@ -636,6 +634,65 @@ function ConfigManager:BindElement(key, elementType, getValueFunc, setValueFunc)
     if saved ~= nil and setValueFunc then
         pcall(function() setValueFunc(saved) end)
     end
+end
+
+function ConfigManager:SaveNamedConfig(name)
+    if typeof(writefile) ~= "function" then return false end
+    local path = self.WindowName .. "_" .. name .. "_Quantum.json"
+    local ok, content = pcall(function()
+        return HttpService:JSONEncode(self.Data)
+    end)
+    if ok and content then
+        return pcall(writefile, path, content)
+    end
+    return false
+end
+
+function ConfigManager:LoadNamedConfig(name)
+    if typeof(readfile) ~= "function" then return false end
+    local path = self.WindowName .. "_" .. name .. "_Quantum.json"
+    local ok, content = pcall(readfile, path)
+    if ok and content and content ~= "" then
+        local ok2, data = pcall(function()
+            return HttpService:JSONDecode(content)
+        end)
+        if ok2 and type(data) == "table" then
+            self.Data = data
+            for key, elem in pairs(self.Elements) do
+                if elem.Set and self.Data[key] ~= nil then
+                    pcall(function() elem.Set(self.Data[key]) end)
+                end
+            end
+            return true
+        end
+    end
+    return false
+end
+
+function ConfigManager:DeleteNamedConfig(name)
+    if typeof(delfile) == "function" then
+        local path = self.WindowName .. "_" .. name .. "_Quantum.json"
+        return pcall(delfile, path)
+    end
+    return false
+end
+
+function ConfigManager:GetAllConfigNames()
+    local names = {}
+    if typeof(listfiles) == "function" then
+        local ok, files = pcall(listfiles)
+        if ok and files then
+            for _, file in ipairs(files) do
+                local prefix = self.WindowName .. "_"
+                local suffix = "_Quantum.json"
+                if file:sub(1, #prefix) == prefix and file:sub(-#suffix) == suffix then
+                    local name = file:sub(#prefix + 1, -#suffix - 1)
+                    table.insert(names, name)
+                end
+            end
+        end
+    end
+    return names
 end
 
 
@@ -1462,6 +1519,18 @@ function Quantum:CreateWindow(data)
     WindowAPI.BindConfigElement = function(_, key, elementType, getValueFunc, setValueFunc)
         WindowAPI.Config:BindElement(key, elementType, getValueFunc, setValueFunc)
     end
+    WindowAPI.SaveNamedConfig = function(_, name)
+        return WindowAPI.Config:SaveNamedConfig(name)
+    end
+    WindowAPI.LoadNamedConfig = function(_, name)
+        return WindowAPI.Config:LoadNamedConfig(name)
+    end
+    WindowAPI.DeleteNamedConfig = function(_, name)
+        return WindowAPI.Config:DeleteNamedConfig(name)
+    end
+    WindowAPI.GetConfigNames = function(_)
+        return WindowAPI.Config:GetAllConfigNames()
+    end
 
     local Tabs = {}
     local ActiveTab = nil
@@ -1802,8 +1871,8 @@ function Quantum:CreateWindow(data)
 
                 local ToggleBtn = Create("Frame", {
                     Parent = ToggleFrame,
-                    Size = UDim2.new(0, 36, 0, 20),
-                    Position = UDim2.new(1, -52, 0.5, -12),
+                    Size = UDim2.new(0, 48, 0, 26),
+                    Position = UDim2.new(1, -64, 0.5, -13),
                     BackgroundColor3 = CurrentTheme.ToggleOff,
                     BorderSizePixel = 0,
                     ZIndex = 19
@@ -1812,8 +1881,8 @@ function Quantum:CreateWindow(data)
 
                 local ToggleCircle = Create("Frame", {
                     Parent = ToggleBtn,
-                    Size = UDim2.new(0, 10, 0, 10),
-                    Position = UDim2.new(0, 2, 0.5, -5),
+                    Size = UDim2.new(0, 20, 0, 20),
+                    Position = UDim2.new(0, 3, 0.5, -10),
                     BackgroundColor3 = CurrentTheme.Text,
                     BorderSizePixel = 0,
                     ZIndex = 20
@@ -1831,17 +1900,17 @@ function Quantum:CreateWindow(data)
                 local state = default
                 if default then
                     ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOn
-                    ToggleCircle.Position = UDim2.new(0, 22, 0.5, -5)
+                    ToggleCircle.Position = UDim2.new(0, 25, 0.5, -10)
                 end
 
                 ToggleClick.MouseButton1Click:Connect(function()
                     state = not state
                     if state then
                         ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOn
-                        ToggleCircle.Position = UDim2.new(0, 22, 0.5, -5)
+                        ToggleCircle.Position = UDim2.new(0, 25, 0.5, -10)
                     else
                         ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOff
-                        ToggleCircle.Position = UDim2.new(0, 2, 0.5, -5)
+                        ToggleCircle.Position = UDim2.new(0, 3, 0.5, -10)
                     end
                     callback(state)
                 end)
@@ -1861,10 +1930,10 @@ function Quantum:CreateWindow(data)
                         state = val
                         if state then
                             ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOn
-                            ToggleCircle.Position = UDim2.new(0, 22, 0.5, -5)
+                            ToggleCircle.Position = UDim2.new(0, 25, 0.5, -10)
                         else
                             ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOff
-                            ToggleCircle.Position = UDim2.new(0, 2, 0.5, -5)
+                            ToggleCircle.Position = UDim2.new(0, 3, 0.5, -10)
                         end
                         callback(state)
                     end,
@@ -3537,6 +3606,221 @@ function Quantum:CreateWindow(data)
                 return StatusAPI
             end
 
+            function SectionAPI:CreateQuestList(questData)
+                questData = questData or {}
+                local questTitle = questData.Title or "Quests"
+                local questIcon = questData.Icon or "Target"
+                local quests = questData.Quests or {}
+                local callback = questData.Callback or function() end
+
+                local QuestFrame = Create("Frame", {
+                    Parent = SectionItems,
+                    Size = UDim2.new(1, 0, 0, 44),
+                    BackgroundColor3 = CurrentTheme.Background,
+                    BorderSizePixel = 0,
+                    LayoutOrder = #SectionItems:GetChildren(),
+                    ClipsDescendants = true,
+                    ZIndex = 18
+                })
+                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = QuestFrame})
+
+                Create("ImageLabel", {
+                    Parent = QuestFrame,
+                    Size = UDim2.new(0, 16, 0, 16),
+                    Position = UDim2.new(0, 7, 0, 8),
+                    BackgroundTransparency = 1,
+                    Image = GetIcon(questIcon),
+                    ImageColor3 = CurrentTheme.Accent,
+                    ZIndex = 19
+                })
+
+                Create("TextLabel", {
+                    Parent = QuestFrame,
+                    Size = UDim2.new(1, -30, 0, 18),
+                    Position = UDim2.new(0, 24, 0, 4),
+                    BackgroundTransparency = 1,
+                    Text = questTitle,
+                    TextColor3 = CurrentTheme.Text,
+                    TextSize = 12,
+                    Font = Enum.Font.GothamBold,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ZIndex = 19
+                })
+
+                local QuestList = Create("Frame", {
+                    Parent = QuestFrame,
+                    Size = UDim2.new(1, -12, 0, 0),
+                    Position = UDim2.new(0, 6, 0, 28),
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+                    ZIndex = 17
+                })
+                Create("UIListLayout", {
+                    Parent = QuestList,
+                    Padding = UDim.new(0, 4),
+                    SortOrder = Enum.SortOrder.LayoutOrder
+                })
+
+                local questItems = {}
+                local questHeight = 0
+
+                local function BuildQuests()
+                    for _, item in ipairs(questItems) do
+                        if item and item.Frame then item.Frame:Destroy() end
+                    end
+                    questItems = {}
+                    questHeight = 0
+
+                    for _, quest in ipairs(quests) do
+                        local qName = quest.Name or "Quest"
+                        local qIcon = quest.Icon or "Check"
+                        local qCompleted = quest.Completed or false
+
+                        local qFrame = Create("Frame", {
+                            Parent = QuestList,
+                            Size = UDim2.new(1, 0, 0, 28),
+                            BackgroundColor3 = CurrentTheme.Element,
+                            BorderSizePixel = 0,
+                            LayoutOrder = #questItems,
+                            ZIndex = 20
+                        })
+                        Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = qFrame})
+
+                        local checkBox = Create("Frame", {
+                            Parent = qFrame,
+                            Size = UDim2.new(0, 18, 0, 18),
+                            Position = UDim2.new(0, 6, 0.5, -9),
+                            BackgroundColor3 = CurrentTheme.Background,
+                            BorderSizePixel = 0,
+                            ZIndex = 21
+                        })
+                        Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = checkBox})
+
+                        local checkMark = Create("ImageLabel", {
+                            Parent = checkBox,
+                            Size = UDim2.new(0, 14, 0, 14),
+                            Position = UDim2.new(0.5, -7, 0.5, -7),
+                            BackgroundTransparency = 1,
+                            Image = GetIcon("Check"),
+                            ImageColor3 = CurrentTheme.Success,
+                            ZIndex = 22,
+                            Visible = qCompleted
+                        })
+
+                        Create("ImageLabel", {
+                            Parent = qFrame,
+                            Size = UDim2.new(0, 16, 0, 16),
+                            Position = UDim2.new(0, 28, 0.5, -8),
+                            BackgroundTransparency = 1,
+                            Image = GetIcon(qIcon),
+                            ImageColor3 = qCompleted and CurrentTheme.Success or CurrentTheme.SubText,
+                            ZIndex = 21
+                        })
+
+                        local qLabel = Create("TextLabel", {
+                            Parent = qFrame,
+                            Size = UDim2.new(1, -52, 0, 18),
+                            Position = UDim2.new(0, 48, 0, 0),
+                            BackgroundTransparency = 1,
+                            Text = qName,
+                            TextColor3 = qCompleted and CurrentTheme.Success or CurrentTheme.Text,
+                            TextSize = 11,
+                            Font = Enum.Font.Gotham,
+                            TextXAlignment = Enum.TextXAlignment.Left,
+                            ZIndex = 21
+                        })
+
+                        local qBtn = Create("TextButton", {
+                            Parent = qFrame,
+                            Size = UDim2.new(1, 0, 1, 0),
+                            BackgroundTransparency = 1,
+                            Text = "",
+                            ZIndex = 25
+                        })
+
+                        qBtn.MouseButton1Click:Connect(function()
+                            qCompleted = not qCompleted
+                            checkMark.Visible = qCompleted
+                            qLabel.TextColor3 = qCompleted and CurrentTheme.Success or CurrentTheme.Text
+                            qFrame:FindFirstChildOfClass("ImageLabel").ImageColor3 = qCompleted and CurrentTheme.Success or CurrentTheme.SubText
+                            callback(qName, qCompleted)
+                        end)
+
+                        table.insert(questItems, {
+                            Frame = qFrame,
+                            Name = qName,
+                            SetCompleted = function(state)
+                                qCompleted = state
+                                checkMark.Visible = qCompleted
+                                qLabel.TextColor3 = qCompleted and CurrentTheme.Success or CurrentTheme.Text
+                            end,
+                            IsCompleted = function() return qCompleted end
+                        })
+                        questHeight = questHeight + 32
+                    end
+
+                    QuestFrame.Size = UDim2.new(1, 0, 0, 36 + questHeight)
+                    QuestList.Size = UDim2.new(1, 0, 0, questHeight)
+                    if self._UpdateSize then self._UpdateSize() end
+                end
+
+                BuildQuests()
+
+                ListenTheme(function(theme)
+                    QuestFrame.BackgroundColor3 = theme.Background
+                    for _, item in ipairs(questItems) do
+                        if item.Frame then
+                            item.Frame.BackgroundColor3 = theme.Element
+                        end
+                    end
+                end)
+
+                local QuestAPI = {}
+                function QuestAPI:SetQuests(newQuests)
+                    quests = newQuests or {}
+                    BuildQuests()
+                end
+                function QuestAPI:Complete(name)
+                    for _, item in ipairs(questItems) do
+                        if item.Name == name then
+                            item.SetCompleted(true)
+                            break
+                        end
+                    end
+                end
+                function QuestAPI:Uncomplete(name)
+                    for _, item in ipairs(questItems) do
+                        if item.Name == name then
+                            item.SetCompleted(false)
+                            break
+                        end
+                    end
+                end
+                function QuestAPI:IsComplete(name)
+                    for _, item in ipairs(questItems) do
+                        if item.Name == name then
+                            return item.IsCompleted()
+                        end
+                    end
+                    return false
+                end
+                function QuestAPI:GetCompleted()
+                    local completed = {}
+                    for _, item in ipairs(questItems) do
+                        if item.IsCompleted() then
+                            table.insert(completed, item.Name)
+                        end
+                    end
+                    return completed
+                end
+                function QuestAPI:Reset()
+                    for _, item in ipairs(questItems) do
+                        item.SetCompleted(false)
+                    end
+                end
+                return QuestAPI
+            end
+
             return SectionAPI
         end
 
@@ -3605,6 +3889,11 @@ function Quantum:CreateWindow(data)
         function TabAPI:Status(data)
             if not self._CurrentSection then self:Section({Name = "Default", Opened = true}) end
             return self._CurrentSection:CreateStatus(data)
+        end
+
+        function TabAPI:QuestList(data)
+            if not self._CurrentSection then self:Section({Name = "Default", Opened = true}) end
+            return self._CurrentSection:CreateQuestList(data)
         end
 
         return TabAPI
