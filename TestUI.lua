@@ -1205,33 +1205,35 @@ function Quantum:CreateWindow(data)
         local btn = Create("ImageButton", {
             Name = name,
             Parent = Controls,
-            Size = UDim2.new(0, 24, 0, 24),
+            Size = UDim2.new(0, 28, 0, 28),
             Position = pos,
-            BackgroundColor3 = CurrentTheme.Element,
+            BackgroundColor3 = Color3.fromRGB(45, 45, 50),
             AutoButtonColor = false,
             Image = GetIcon(icon),
-            ImageColor3 = CurrentTheme.SubText,
+            ImageColor3 = Color3.fromRGB(80, 220, 120),
             ZIndex = 22
         })
-        Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = btn})
+        Create("UICorner", {CornerRadius = UDim.new(0, 6), Parent = btn})
         btn.MouseEnter:Connect(function()
-            btn.BackgroundColor3 = CurrentTheme.ElementHover
+            btn.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+            btn.ImageColor3 = Color3.fromRGB(100, 240, 140)
         end)
         btn.MouseLeave:Connect(function()
-            btn.BackgroundColor3 = CurrentTheme.Element
+            btn.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+            btn.ImageColor3 = Color3.fromRGB(80, 220, 120)
         end)
         btn.MouseButton1Click:Connect(callback)
         return btn
     end
 
-    MakeControl("Minimize", "Minus", UDim2.new(0, 0, 0.5, -11), function()
+    MakeControl("Minimize", "Minus", UDim2.new(0, 0, 0.5, -14), function()
         CloseAllDropdowns()
         IsMinimized = true
         MainFrame.Visible = false
     end)
 
     local IsMaximized = false
-    MakeControl("Resize", "Maximize2", UDim2.new(0, 25, 0.5, -11), function()
+    MakeControl("Resize", "Maximize2", UDim2.new(0, 32, 0.5, -14), function()
         IsMaximized = not IsMaximized
         if IsMaximized then
             MainFrame.Size = UDim2.new(0, 440, 0, 280)
@@ -1240,7 +1242,7 @@ function Quantum:CreateWindow(data)
         end
     end)
 
-    MakeControl("Close", "X", UDim2.new(0, 50, 0.5, -11), function()
+    MakeControl("Close", "X", UDim2.new(0, 64, 0.5, -14), function()
         CloseAllDropdowns()
         ConfirmOverlay.Visible = true
     end)
