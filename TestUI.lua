@@ -1034,19 +1034,14 @@ function Quantum:CreateWindow(data)
         Position = UDim2.new(0, 34, 0, 6),
         BackgroundTransparency = 1,
         Text = windowName,
-        TextColor3 = Color3.fromRGB(25, 25, 25),
+        TextColor3 = Color3.fromRGB(80, 220, 120),
         TextSize = 12,
         Font = Enum.Font.GothamBold,
         TextXAlignment = Enum.TextXAlignment.Left,
-        TextStrokeTransparency = 0.6,
-        TextStrokeColor3 = Color3.fromRGB(45, 45, 45),
+        TextStrokeTransparency = 1,
         ZIndex = 21
     })
 
-    local TitleGlowTween = TweenService:Create(Title, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
-        TextStrokeTransparency = 0.3
-    })
-    TitleGlowTween:Play()
 
     local Version = Create("TextLabel", {
         Name = "Version",
@@ -1065,8 +1060,8 @@ function Quantum:CreateWindow(data)
     local ProfileSection = Create("Frame", {
         Name = "ProfileSection",
         Parent = Topbar,
-        Size = UDim2.new(0, 120, 0, 32),
-        Position = UDim2.new(1, -190, 0.5, -12),
+        Size = UDim2.new(0, 140, 0, 32),
+        Position = UDim2.new(1, -240, 0.5, -12),
         BackgroundTransparency = 1,
         ZIndex = 21
     })
@@ -1096,7 +1091,7 @@ function Quantum:CreateWindow(data)
     local ProfileName = Create("TextLabel", {
         Name = "ProfileName",
         Parent = ProfileSection,
-        Size = UDim2.new(0, 80, 0, 14),
+        Size = UDim2.new(0, 110, 0, 14),
         Position = UDim2.new(0, 30, 0, 0),
         BackgroundTransparency = 1,
         Text = "Quantum User",
@@ -1111,7 +1106,7 @@ function Quantum:CreateWindow(data)
     local ProfileUser = Create("TextLabel", {
         Name = "ProfileUser",
         Parent = ProfileSection,
-        Size = UDim2.new(0, 80, 0, 12),
+        Size = UDim2.new(0, 110, 0, 12),
         Position = UDim2.new(0, 30, 0, 14),
         BackgroundTransparency = 1,
         Text = "@Quantum User",
