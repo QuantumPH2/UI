@@ -979,7 +979,7 @@ function Quantum:CreateWindow(data)
         Size = UDim2.new(0, 460, 0, 280),
         Position = UDim2.new(0.5, -230, 0.5, -140),
         AnchorPoint = Vector2.new(0, 0),
-        BackgroundColor3 = CurrentTheme.Background,
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
         BorderSizePixel = 0,
         ClipsDescendants = true,
         Active = true,
@@ -989,6 +989,17 @@ function Quantum:CreateWindow(data)
     Create("UICorner", {
         CornerRadius = UDim.new(0, Config.CornerRadius),
         Parent = MainFrame
+    })
+
+    -- Green to black gradient overlay (top-left green, bottom-right black)
+    local MainGradient = Create("UIGradient", {
+        Parent = MainFrame,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 220, 120)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(20, 60, 30)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
+        }),
+        Rotation = 135
     })
 
     local Shadow = Create("ImageLabel", {
@@ -1009,6 +1020,7 @@ function Quantum:CreateWindow(data)
         Parent = MainFrame,
         Size = UDim2.new(1, 0, 0, Config.TopbarHeight),
         BackgroundColor3 = CurrentTheme.Sidebar,
+        BackgroundTransparency = 0.35,
         BorderSizePixel = 0,
         Active = true,
         ZIndex = 20
@@ -1025,6 +1037,7 @@ function Quantum:CreateWindow(data)
         Size = UDim2.new(1, 0, 0.5, 0),
         Position = UDim2.new(0, 0, 0.5, 0),
         BackgroundColor3 = CurrentTheme.Sidebar,
+        BackgroundTransparency = 1,
         BorderSizePixel = 0,
         ZIndex = 20
     })
@@ -1281,6 +1294,7 @@ function Quantum:CreateWindow(data)
         Size = UDim2.new(0, Config.SidebarWidth, 1, -Config.TopbarHeight),
         Position = UDim2.new(0, 0, 0, Config.TopbarHeight),
         BackgroundColor3 = CurrentTheme.Sidebar,
+        BackgroundTransparency = 0.35,
         BorderSizePixel = 0,
         ClipsDescendants = true,
         ZIndex = 15
@@ -1293,6 +1307,7 @@ function Quantum:CreateWindow(data)
         Size = UDim2.new(1, 0, 0, 10),
         Position = UDim2.new(0, 0, 0, -10),
         BackgroundColor3 = CurrentTheme.Sidebar,
+        BackgroundTransparency = 1,
         BorderSizePixel = 0,
         ZIndex = 15
     })
@@ -1359,6 +1374,7 @@ function Quantum:CreateWindow(data)
         Size = UDim2.new(1, -Config.SidebarWidth + 4, 1, -Config.TopbarHeight),
         Position = UDim2.new(0, Config.SidebarWidth - 4, 0, Config.TopbarHeight),
         BackgroundColor3 = CurrentTheme.Background,
+        BackgroundTransparency = 0.35,
         BorderSizePixel = 0,
         ClipsDescendants = true,
         ZIndex = 14
@@ -1371,6 +1387,7 @@ function Quantum:CreateWindow(data)
         Size = UDim2.new(0, 14, 0, 14),
         Position = UDim2.new(0, -10, 0, 0),
         BackgroundColor3 = CurrentTheme.Background,
+        BackgroundTransparency = 1,
         BorderSizePixel = 0,
         ZIndex = 14
     })
@@ -1466,10 +1483,10 @@ function Quantum:CreateWindow(data)
     end
 
     ListenTheme(function(theme)
-        MainFrame.BackgroundColor3 = theme.Background
+        -- MainFrame uses gradient, skip BackgroundColor3
         Shadow.ImageColor3 = theme.Shadow
+        -- Topbar/Sidebar/Content use transparency to show gradient
         Topbar.BackgroundColor3 = theme.Sidebar
-        TopbarFix.BackgroundColor3 = theme.Sidebar
         Sidebar.BackgroundColor3 = theme.Sidebar
         Content.BackgroundColor3 = theme.Background
         Title.TextStrokeColor3 = Color3.fromRGB(40, 180, 80)
@@ -1678,6 +1695,7 @@ function Quantum:CreateWindow(data)
                 Parent = TabContent,
                 Size = UDim2.new(1, 0, 0, 44),
                 BackgroundColor3 = CurrentTheme.Element,
+                BackgroundTransparency = 0.25,
                 BorderSizePixel = 0,
                 ClipsDescendants = true,
                 LayoutOrder = #TabContent:GetChildren(),
@@ -1689,6 +1707,7 @@ function Quantum:CreateWindow(data)
                 Parent = SectionFrame,
                 Size = UDim2.new(1, 0, 0, 44),
                 BackgroundColor3 = CurrentTheme.Element,
+                BackgroundTransparency = 0.25,
                 Text = "",
                 AutoButtonColor = false,
                 ZIndex = 17
@@ -1822,6 +1841,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
                     BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundTransparency = 0.3,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = true,
@@ -1960,6 +1980,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
                     BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundTransparency = 0.3,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = true,
@@ -2208,6 +2229,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
                     BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundTransparency = 0.3,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = true,
@@ -2581,6 +2603,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
                     BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundTransparency = 0.3,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = true,
@@ -2999,6 +3022,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
                     BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundTransparency = 0.3,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = true,
@@ -3096,6 +3120,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
                     BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundTransparency = 0.3,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = true,
@@ -3196,6 +3221,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, 26),
                     BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundTransparency = 0.3,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = false,
@@ -3246,6 +3272,7 @@ function Quantum:CreateWindow(data)
                     Size = UDim2.new(1, 0, 0, 0),
                     AutomaticSize = Enum.AutomaticSize.Y,
                     BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundTransparency = 0.3,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = false,
@@ -3355,6 +3382,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
                     BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundTransparency = 0.3,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ZIndex = 18
@@ -3541,6 +3569,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, 26),
                     BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundTransparency = 0.3,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = false,
@@ -3617,6 +3646,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, 44),
                     BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundTransparency = 0.3,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = true,
