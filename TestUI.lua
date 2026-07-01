@@ -111,7 +111,7 @@ local Config = {
 }
 
 local LegacyIcons = {
-    Custom = "rbxassetid://93056905781484",
+    Custom = "rbxassetid://109818941157555",
     Home = "rbxassetid://7733960981",
     Settings = "rbxassetid://7734053495",
     User = "rbxassetid://7743875962",
@@ -845,26 +845,7 @@ local function CreateFloatingIcon(customIcon)
     })
     Create("UICorner", {CornerRadius = UDim.new(0, 14), Parent = Backdrop})
 
-    -- Thin green gradient border surrounding the icon
-    local GlowBorder = Create("Frame", {
-        Name = "GlowBorder",
-        Parent = Backdrop,
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(1, 6, 1, 6),
-        BackgroundColor3 = Color3.fromRGB(100, 255, 140),
-        BackgroundTransparency = 0.85,
-        BorderSizePixel = 0,
-        ZIndex = 999
-    })
-    Create("UICorner", {CornerRadius = UDim.new(0, 17), Parent = GlowBorder})
-    Create("UIGradient", {
-        Parent = GlowBorder,
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 255, 140)),
-            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 0, 0)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 255, 140))
-        }),
+),
         Rotation = 45
     })
 
@@ -874,7 +855,7 @@ local function CreateFloatingIcon(customIcon)
         Parent = Backdrop,
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(0, 48, 0, 48),
+        Size = UDim2.new(0, 54, 0, 54),
         BackgroundTransparency = 1,
         Image = iconToUse,
         ImageColor3 = isCustomImage and Color3.fromRGB(255, 255, 255) or CurrentTheme.Text,
@@ -990,7 +971,7 @@ function Quantum:CreateWindow(data)
         Size = UDim2.new(0, 460, 0, 280),
         Position = UDim2.new(0.5, -230, 0.5, -140),
         AnchorPoint = Vector2.new(0, 0),
-        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        BackgroundColor3 = CurrentTheme.Background,
         BorderSizePixel = 0,
         ClipsDescendants = true,
         Active = true,
@@ -1002,14 +983,7 @@ function Quantum:CreateWindow(data)
         Parent = MainFrame
     })
 
-    -- Green to black gradient overlay (top-left green, bottom-right black)
-    local MainGradient = Create("UIGradient", {
-        Parent = MainFrame,
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 255, 140)),
-            ColorSequenceKeypoint.new(0.4, Color3.fromRGB(30, 80, 40)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
-        }),
+),
         Rotation = 45
     })
 
@@ -1031,7 +1005,7 @@ function Quantum:CreateWindow(data)
         Parent = MainFrame,
         Size = UDim2.new(1, 0, 0, Config.TopbarHeight),
         BackgroundColor3 = CurrentTheme.Sidebar,
-        BackgroundTransparency = 0.55,
+        BackgroundTransparency = 0,
         BorderSizePixel = 0,
         Active = true,
         ZIndex = 20
@@ -1232,7 +1206,7 @@ function Quantum:CreateWindow(data)
         Name = "Controls",
         Parent = Topbar,
         Size = UDim2.new(0, 90, 0, Config.TopbarHeight),
-        Position = UDim2.new(1, -99, 0, 0),
+        Position = UDim2.new(1, -85, 0, 0),
         BackgroundTransparency = 1,
         ZIndex = 21
     })
@@ -1297,7 +1271,7 @@ function Quantum:CreateWindow(data)
         Size = UDim2.new(0, Config.SidebarWidth, 1, -Config.TopbarHeight),
         Position = UDim2.new(0, 0, 0, Config.TopbarHeight),
         BackgroundColor3 = CurrentTheme.Sidebar,
-        BackgroundTransparency = 0.55,
+        BackgroundTransparency = 0,
         BorderSizePixel = 0,
         ClipsDescendants = true,
         ZIndex = 15
@@ -1377,7 +1351,7 @@ function Quantum:CreateWindow(data)
         Size = UDim2.new(1, -Config.SidebarWidth + 4, 1, -Config.TopbarHeight),
         Position = UDim2.new(0, Config.SidebarWidth - 4, 0, Config.TopbarHeight),
         BackgroundColor3 = CurrentTheme.Background,
-        BackgroundTransparency = 0.55,
+        BackgroundTransparency = 0,
         BorderSizePixel = 0,
         ClipsDescendants = true,
         ZIndex = 14
@@ -1564,7 +1538,7 @@ function Quantum:CreateWindow(data)
         local TabBtn = Create("TextButton", {
             Parent = TabList,
             Size = UDim2.new(1, -6, 0, 36),
-            BackgroundColor3 = CurrentTheme.Element,
+            BackgroundColor3 = CurrentTheme.Sidebar,
             Text = "",
             AutoButtonColor = false,
             LayoutOrder = #Tabs + 1,
@@ -1658,7 +1632,7 @@ function Quantum:CreateWindow(data)
         end)
         TabBtn.MouseLeave:Connect(function()
             if ActiveTab and ActiveTab.Button == TabBtn then return end
-            TabBtn.BackgroundColor3 = CurrentTheme.Element
+            TabBtn.BackgroundColor3 = CurrentTheme.Sidebar
         end)
 
         table.insert(Tabs, {Activate = Activate, Name = tabName, Button = TabBtn})
@@ -1671,7 +1645,7 @@ function Quantum:CreateWindow(data)
                 TabBtnIcon.ImageColor3 = theme.Accent
                 TabBtnText.TextColor3 = theme.Text
             else
-                TabBtn.BackgroundColor3 = theme.Element
+                TabBtn.BackgroundColor3 = theme.Sidebar
                 TabBtnIcon.ImageColor3 = theme.SubText
                 TabBtnText.TextColor3 = theme.SubText
             end
