@@ -845,9 +845,6 @@ local function CreateFloatingIcon(customIcon)
     })
     Create("UICorner", {CornerRadius = UDim.new(0, 14), Parent = Backdrop})
 
-),
-        Rotation = 45
-    })
 
     local isCustomImage = customIcon ~= nil
     local Icon = Create("ImageLabel", {
@@ -935,7 +932,6 @@ local function CreateFloatingIcon(customIcon)
             if not isCustomImage then
                 Icon.ImageColor3 = theme.Text
             end
-            GlowBorder.BackgroundColor3 = theme.Accent
         end
     end)
 
@@ -983,9 +979,6 @@ function Quantum:CreateWindow(data)
         Parent = MainFrame
     })
 
-),
-        Rotation = 45
-    })
 
     local Shadow = Create("ImageLabel", {
         Name = "Shadow",
