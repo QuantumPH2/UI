@@ -111,7 +111,7 @@ local Config = {
 }
 
 local LegacyIcons = {
-    Custom = "rbxassetid://109647740279101",
+    Custom = "rbxassetid://93056905781484",
     Home = "rbxassetid://7733960981",
     Settings = "rbxassetid://7734053495",
     User = "rbxassetid://7743875962",
@@ -266,6 +266,11 @@ local LegacyIcons = {
     ["trendingUp"] = "rbxassetid://7734058803",
 }
 
+
+
+
+
+
 local IconModule = {
     IconsType = "lucide",
     New = nil,
@@ -390,6 +395,7 @@ function IconModule.Icon2(Icon, Type, DefaultFormat)
     return IconModule.Icon(Icon, Type, true)
 end
 
+
 local packUrls = {
     lucide = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/lucide/dist/Icons.lua",
     solar = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/solar/dist/Icons.lua",
@@ -405,6 +411,8 @@ for packName, url in pairs(packUrls) do
         IconModule.Icons[packName] = pack
     end
 end
+
+
 
 local function Create(className, properties)
     local instance = Instance.new(className)
@@ -443,6 +451,7 @@ end
 local function GetIcon(name, iconType)
     if not name then return {Image = LegacyIcons.Info} end
 
+    
     local iconData = IconModule.Icon2(name, iconType)
     if iconData then
         if type(iconData) == "string" then
@@ -456,10 +465,12 @@ local function GetIcon(name, iconType)
         end
     end
 
+    
     if LegacyIcons[name] then 
         return {Image = LegacyIcons[name]} 
     end
 
+    
     if type(name) == "string" and (name:sub(1, 13) == "rbxassetid://" or name:sub(1, 4) == "http") then
         return {Image = name}
     end
@@ -514,6 +525,7 @@ local function RegisterDropdown(menu, arrow, btnRef)
     table.insert(OpenDropdowns, data)
     return data
 end
+
 
 local ConfigManager = {}
 ConfigManager.__index = ConfigManager
@@ -683,6 +695,7 @@ function ConfigManager:GetAllConfigNames()
     return names
 end
 
+
 local NotifyScreen = nil
 local NotifyLayout = nil
 local ActiveNotifications = {}
@@ -817,29 +830,18 @@ local function CreateFloatingIcon(customIcon)
         Enabled = true
     })
 
+    
     local Backdrop = Create("Frame", {
         Name = "Backdrop",
         Parent = FloatingIconScreen,
-        Size = UDim2.new(0, 40, 0, 40),
-        Position = UDim2.new(0, 14, 0.5, -20),
+        Size = UDim2.new(0, 48, 0, 48),
+        Position = UDim2.new(0, 14, 0.5, -24),
         BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-        BackgroundTransparency = 0,
+        BackgroundTransparency = 1,
         BorderSizePixel = 0,
         Active = true,
         ClipsDescendants = true,
         ZIndex = 1000
-    })
-
-    Create("UICorner", {
-        CornerRadius = UDim.new(0, 12),
-        Parent = Backdrop
-    })
-
-    Create("UIStroke", {
-        Color = Color3.fromRGB(10, 10, 10),
-        Thickness = 1,
-        Transparency = 0.3,
-        Parent = Backdrop
     })
 
     local isCustomImage = customIcon ~= nil
@@ -848,7 +850,7 @@ local function CreateFloatingIcon(customIcon)
         Parent = Backdrop,
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(0, 28, 0, 28),
+        Size = UDim2.new(0, 40, 0, 40),
         BackgroundTransparency = 1,
         Image = iconToUse,
         ImageColor3 = isCustomImage and Color3.fromRGB(255, 255, 255) or CurrentTheme.Text,
@@ -925,8 +927,6 @@ local function CreateFloatingIcon(customIcon)
 
     ListenTheme(function(theme)
         if Backdrop and Backdrop.Parent then
-            Backdrop.BackgroundColor3 = theme.Sidebar
-            Backdrop.UIStroke.Color = theme.Border
             if not isCustomImage then
                 Icon.ImageColor3 = theme.Text
             end
@@ -1038,10 +1038,15 @@ function Quantum:CreateWindow(data)
         TextSize = 12,
         Font = Enum.Font.GothamBold,
         TextXAlignment = Enum.TextXAlignment.Left,
-        TextStrokeTransparency = 1,
+        TextStrokeTransparency = 0.6,
+        TextStrokeColor3 = Color3.fromRGB(40, 180, 80),
         ZIndex = 21
     })
 
+    local TitleGlowTween = TweenService:Create(Title, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
+        TextStrokeTransparency = 0.25
+    })
+    TitleGlowTween:Play()
 
     local Version = Create("TextLabel", {
         Name = "Version",
@@ -1060,8 +1065,8 @@ function Quantum:CreateWindow(data)
     local ProfileSection = Create("Frame", {
         Name = "ProfileSection",
         Parent = Topbar,
-        Size = UDim2.new(0, 140, 0, 32),
-        Position = UDim2.new(1, -240, 0.5, -12),
+        Size = UDim2.new(0, 120, 0, 32),
+        Position = UDim2.new(1, -190, 0.5, -12),
         BackgroundTransparency = 1,
         ZIndex = 21
     })
@@ -1091,11 +1096,11 @@ function Quantum:CreateWindow(data)
     local ProfileName = Create("TextLabel", {
         Name = "ProfileName",
         Parent = ProfileSection,
-        Size = UDim2.new(0, 110, 0, 14),
+        Size = UDim2.new(0, 80, 0, 14),
         Position = UDim2.new(0, 30, 0, 0),
         BackgroundTransparency = 1,
-        Text = "Quantum User",
-        TextColor3 = Color3.fromRGB(80, 220, 120),
+        Text = LocalPlayer.DisplayName or LocalPlayer.Name,
+        TextColor3 = CurrentTheme.Text,
         TextSize = 11,
         Font = Enum.Font.GothamBold,
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -1106,11 +1111,11 @@ function Quantum:CreateWindow(data)
     local ProfileUser = Create("TextLabel", {
         Name = "ProfileUser",
         Parent = ProfileSection,
-        Size = UDim2.new(0, 110, 0, 12),
+        Size = UDim2.new(0, 80, 0, 12),
         Position = UDim2.new(0, 30, 0, 14),
         BackgroundTransparency = 1,
-        Text = "@Quantum User",
-        TextColor3 = Color3.fromRGB(60, 200, 100),
+        Text = "@" .. LocalPlayer.Name,
+        TextColor3 = CurrentTheme.SubText,
         TextSize = 11,
         Font = Enum.Font.Gotham,
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -1205,35 +1210,33 @@ function Quantum:CreateWindow(data)
         local btn = Create("ImageButton", {
             Name = name,
             Parent = Controls,
-            Size = UDim2.new(0, 28, 0, 28),
+            Size = UDim2.new(0, 24, 0, 24),
             Position = pos,
-            BackgroundColor3 = Color3.fromRGB(45, 45, 50),
+            BackgroundColor3 = CurrentTheme.Element,
             AutoButtonColor = false,
             Image = GetIcon(icon),
-            ImageColor3 = Color3.fromRGB(80, 220, 120),
+            ImageColor3 = CurrentTheme.SubText,
             ZIndex = 22
         })
-        Create("UICorner", {CornerRadius = UDim.new(0, 6), Parent = btn})
+        Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = btn})
         btn.MouseEnter:Connect(function()
-            btn.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
-            btn.ImageColor3 = Color3.fromRGB(100, 240, 140)
+            btn.BackgroundColor3 = CurrentTheme.ElementHover
         end)
         btn.MouseLeave:Connect(function()
-            btn.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
-            btn.ImageColor3 = Color3.fromRGB(80, 220, 120)
+            btn.BackgroundColor3 = CurrentTheme.Element
         end)
         btn.MouseButton1Click:Connect(callback)
         return btn
     end
 
-    MakeControl("Minimize", "Minus", UDim2.new(0, 0, 0.5, -14), function()
+    MakeControl("Minimize", "Minus", UDim2.new(0, 0, 0.5, -11), function()
         CloseAllDropdowns()
         IsMinimized = true
         MainFrame.Visible = false
     end)
 
     local IsMaximized = false
-    MakeControl("Resize", "Maximize2", UDim2.new(0, 32, 0.5, -14), function()
+    MakeControl("Resize", "Maximize2", UDim2.new(0, 25, 0.5, -11), function()
         IsMaximized = not IsMaximized
         if IsMaximized then
             MainFrame.Size = UDim2.new(0, 440, 0, 280)
@@ -1242,7 +1245,7 @@ function Quantum:CreateWindow(data)
         end
     end)
 
-    MakeControl("Close", "X", UDim2.new(0, 64, 0.5, -14), function()
+    MakeControl("Close", "X", UDim2.new(0, 50, 0.5, -11), function()
         CloseAllDropdowns()
         ConfirmOverlay.Visible = true
     end)
@@ -1280,6 +1283,7 @@ function Quantum:CreateWindow(data)
         ZIndex = 15
     })
 
+    
     local SearchFrame = Create("Frame", {
         Parent = Sidebar,
         Size = UDim2.new(1, -10, 0, 32),
@@ -1464,8 +1468,8 @@ function Quantum:CreateWindow(data)
         ResizeHandle.ImageColor3 = theme.SubText
         ProfileFrame.BackgroundColor3 = theme.Element
         ProfileFrame.UIStroke.Color = theme.Border
-        ProfileName.TextColor3 = Color3.fromRGB(80, 220, 120)
-        ProfileUser.TextColor3 = Color3.fromRGB(60, 200, 100)
+        ProfileName.TextColor3 = theme.Text
+        ProfileUser.TextColor3 = theme.SubText
         SearchFrame.BackgroundColor3 = theme.Element
         SearchIcon.ImageColor3 = theme.SubText
         SearchBox.TextColor3 = theme.Text
@@ -1479,6 +1483,7 @@ function Quantum:CreateWindow(data)
     WindowAPI.Config:Load()
     WindowAPI.Config:StartAutoSave()
 
+    
     WindowAPI.EnableAutoSave = function(_, interval)
         WindowAPI.Config:EnableAutoSave(interval)
     end
@@ -2446,7 +2451,7 @@ function Quantum:CreateWindow(data)
                         Arrow.Rotation = 180
                         SearchBox.Text = ""
                         BuildOptions("")
-
+                        
                         ddData.HeartbeatConn = RunService.Heartbeat:Connect(function()
                             if ddData.IsOpen and DropdownBtn and DropdownBtn.Parent then
                                 UpdateMenuPosition()
@@ -2460,6 +2465,7 @@ function Quantum:CreateWindow(data)
                     end
                 end)
 
+                
                 TabContent:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
                     if ddData.IsOpen then
                         ddData.IsOpen = false
@@ -2867,7 +2873,7 @@ function Quantum:CreateWindow(data)
                         Arrow.Rotation = 180
                         SearchBox.Text = ""
                         BuildOptions()
-
+                        
                         ddData.HeartbeatConn = RunService.Heartbeat:Connect(function()
                             if ddData.IsOpen and DropdownBtn and DropdownBtn.Parent then
                                 UpdateMenuPosition()
@@ -2881,6 +2887,7 @@ function Quantum:CreateWindow(data)
                     end
                 end)
 
+                
                 TabContent:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
                     if ddData.IsOpen then
                         ddData.IsOpen = false
@@ -3295,6 +3302,7 @@ function Quantum:CreateWindow(data)
                     end
                 end)
 
+                
                 task.spawn(function()
                     for i = 1, 5 do
                         task.wait(0.1)
@@ -3802,6 +3810,7 @@ function Quantum:CreateWindow(data)
             return SectionAPI
         end
 
+        
         function TabAPI:Section(data)
             local sec = self:CreateSection(data)
             self._CurrentSection = sec
@@ -3876,6 +3885,7 @@ function Quantum:CreateWindow(data)
         return TabAPI
     end
 
+    
     SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
         local text = SearchBox.Text:lower()
         for _, tab in ipairs(TabButtons) do
