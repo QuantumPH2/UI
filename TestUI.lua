@@ -834,8 +834,8 @@ local function CreateFloatingIcon(customIcon)
     local Backdrop = Create("Frame", {
         Name = "Backdrop",
         Parent = FloatingIconScreen,
-        Size = UDim2.new(0, 48, 0, 48),
-        Position = UDim2.new(0, 14, 0.5, -24),
+        Size = UDim2.new(0, 56, 0, 56),
+        Position = UDim2.new(0, 14, 0.5, -28),
         BackgroundColor3 = Color3.fromRGB(0, 0, 0),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
@@ -850,12 +850,26 @@ local function CreateFloatingIcon(customIcon)
         Parent = Backdrop,
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(0, 40, 0, 40),
+        Size = UDim2.new(0, 48, 0, 48),
         BackgroundTransparency = 1,
         Image = iconToUse,
         ImageColor3 = isCustomImage and Color3.fromRGB(255, 255, 255) or CurrentTheme.Text,
         ScaleType = Enum.ScaleType.Fit,
         ZIndex = 1001
+    })
+
+    -- Very subtle green gradient overlay
+    local Gradient = Create("UIGradient", {
+        Parent = Icon,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 220, 120)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 180, 80))
+        }),
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.75),
+            NumberSequenceKeypoint.new(1, 0.75)
+        }),
+        Rotation = 45
     })
 
     local mouseDownOnIcon = false
