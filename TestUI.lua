@@ -111,7 +111,7 @@ local Config = {
 }
 
 local LegacyIcons = {
-    Custom = "rbxassetid://109818941157555",
+    Custom = "rbxassetid://93056905781484",
     Home = "rbxassetid://7733960981",
     Settings = "rbxassetid://7734053495",
     User = "rbxassetid://7743875962",
@@ -845,14 +845,13 @@ local function CreateFloatingIcon(customIcon)
     })
     Create("UICorner", {CornerRadius = UDim.new(0, 14), Parent = Backdrop})
 
-
     local isCustomImage = customIcon ~= nil
     local Icon = Create("ImageLabel", {
         Name = "Icon",
         Parent = Backdrop,
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(0, 54, 0, 54),
+        Size = UDim2.new(0, 48, 0, 48),
         BackgroundTransparency = 1,
         Image = iconToUse,
         ImageColor3 = isCustomImage and Color3.fromRGB(255, 255, 255) or CurrentTheme.Text,
@@ -979,7 +978,6 @@ function Quantum:CreateWindow(data)
         Parent = MainFrame
     })
 
-
     local Shadow = Create("ImageLabel", {
         Name = "Shadow",
         Parent = MainFrame,
@@ -1023,11 +1021,11 @@ function Quantum:CreateWindow(data)
     local TitleIcon = Create("ImageLabel", {
         Name = "TitleIcon",
         Parent = Topbar,
-        Size = UDim2.new(0, 22, 0, 22),
-        Position = UDim2.new(0, 10, 0, 9),
+        Size = UDim2.new(0, 26, 0, 26),
+        Position = UDim2.new(0, 10, 0, 7),
         BackgroundTransparency = 1,
-        Image = GetIcon("atom"),
-        ImageColor3 = CurrentTheme.Accent,
+        Image = "rbxassetid://109818941157555",
+        ImageColor3 = Color3.fromRGB(255, 255, 255),
         ScaleType = Enum.ScaleType.Fit,
         ZIndex = 21
     })
@@ -1036,7 +1034,7 @@ function Quantum:CreateWindow(data)
         Name = "Title",
         Parent = Topbar,
         Size = UDim2.new(0, 170, 0, 20),
-        Position = UDim2.new(0, 34, 0, 6),
+        Position = UDim2.new(0, 40, 0, 6),
         BackgroundTransparency = 1,
         Text = windowName,
         TextColor3 = Color3.fromRGB(100, 255, 140),
@@ -1050,7 +1048,7 @@ function Quantum:CreateWindow(data)
         Name = "Version",
         Parent = Topbar,
         Size = UDim2.new(0, 160, 0, 12),
-        Position = UDim2.new(0, 32, 0, 24),
+        Position = UDim2.new(0, 38, 0, 24),
         BackgroundTransparency = 1,
         Text = "v" .. customVersion,
         TextColor3 = CurrentTheme.SubText,
@@ -1453,9 +1451,8 @@ function Quantum:CreateWindow(data)
     end
 
     ListenTheme(function(theme)
-        -- MainFrame uses gradient, skip BackgroundColor3
+        MainFrame.BackgroundColor3 = theme.Background
         Shadow.ImageColor3 = theme.Shadow
-        -- Topbar/Sidebar/Content use transparency to show gradient
         Topbar.BackgroundColor3 = theme.Sidebar
         Sidebar.BackgroundColor3 = theme.Sidebar
         Content.BackgroundColor3 = theme.Background
@@ -1531,7 +1528,7 @@ function Quantum:CreateWindow(data)
         local TabBtn = Create("TextButton", {
             Parent = TabList,
             Size = UDim2.new(1, -6, 0, 36),
-            BackgroundColor3 = CurrentTheme.Sidebar,
+            BackgroundColor3 = CurrentTheme.Element,
             Text = "",
             AutoButtonColor = false,
             LayoutOrder = #Tabs + 1,
@@ -1625,7 +1622,7 @@ function Quantum:CreateWindow(data)
         end)
         TabBtn.MouseLeave:Connect(function()
             if ActiveTab and ActiveTab.Button == TabBtn then return end
-            TabBtn.BackgroundColor3 = CurrentTheme.Sidebar
+            TabBtn.BackgroundColor3 = CurrentTheme.Element
         end)
 
         table.insert(Tabs, {Activate = Activate, Name = tabName, Button = TabBtn})
@@ -1638,7 +1635,7 @@ function Quantum:CreateWindow(data)
                 TabBtnIcon.ImageColor3 = theme.Accent
                 TabBtnText.TextColor3 = theme.Text
             else
-                TabBtn.BackgroundColor3 = theme.Sidebar
+                TabBtn.BackgroundColor3 = theme.Element
                 TabBtnIcon.ImageColor3 = theme.SubText
                 TabBtnText.TextColor3 = theme.SubText
             end
@@ -1665,13 +1662,12 @@ function Quantum:CreateWindow(data)
                 Parent = TabContent,
                 Size = UDim2.new(1, 0, 0, 44),
                 BackgroundColor3 = CurrentTheme.Element,
-                BackgroundTransparency = 0.5,
+                BackgroundTransparency = 1,
                 BorderSizePixel = 0,
                 ClipsDescendants = true,
                 LayoutOrder = #TabContent:GetChildren(),
                 ZIndex = 16
             })
-            Create("UICorner", {CornerRadius = UDim.new(0, Config.ElementCorner), Parent = SectionFrame})
 
             local SectionHeader = Create("TextButton", {
                 Parent = SectionFrame,
