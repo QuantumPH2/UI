@@ -20,17 +20,17 @@ local Config = {
         QuantumDark = {
             Background = Color3.fromRGB(0, 0, 0),
             Sidebar = Color3.fromRGB(5, 5, 5),
-            Accent = Color3.fromRGB(80, 220, 120),
+            Accent = Color3.fromRGB(100, 255, 140),
             Text = Color3.fromRGB(240, 240, 245),
             SubText = Color3.fromRGB(120, 120, 130),
-            Element = Color3.fromRGB(12, 12, 12),
-            ElementHover = Color3.fromRGB(20, 20, 20),
-            ToggleOn = Color3.fromRGB(80, 220, 120),
+            Element = Color3.fromRGB(25, 25, 25),
+            ElementHover = Color3.fromRGB(45, 45, 45),
+            ToggleOn = Color3.fromRGB(100, 255, 140),
             ToggleOff = Color3.fromRGB(40, 40, 45),
-            Border = Color3.fromRGB(30, 30, 35),
+            Border = Color3.fromRGB(45, 45, 50),
             Shadow = Color3.fromRGB(0, 0, 0),
             Overlay = Color3.fromRGB(0, 0, 0),
-            Success = Color3.fromRGB(80, 220, 120)
+            Success = Color3.fromRGB(100, 255, 140)
         },
         Dark = {
             Background = Color3.fromRGB(18, 18, 22),
@@ -836,12 +836,36 @@ local function CreateFloatingIcon(customIcon)
         Parent = FloatingIconScreen,
         Size = UDim2.new(0, 56, 0, 56),
         Position = UDim2.new(0, 14, 0.5, -28),
-        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-        BackgroundTransparency = 1,
+        BackgroundColor3 = Color3.fromRGB(20, 20, 20),
+        BackgroundTransparency = 0.1,
         BorderSizePixel = 0,
         Active = true,
         ClipsDescendants = true,
         ZIndex = 1000
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, 14), Parent = Backdrop})
+
+    -- Thin green gradient border surrounding the icon
+    local GlowBorder = Create("Frame", {
+        Name = "GlowBorder",
+        Parent = Backdrop,
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        Size = UDim2.new(1, 6, 1, 6),
+        BackgroundColor3 = Color3.fromRGB(100, 255, 140),
+        BackgroundTransparency = 0.85,
+        BorderSizePixel = 0,
+        ZIndex = 999
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, 17), Parent = GlowBorder})
+    Create("UIGradient", {
+        Parent = GlowBorder,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 255, 140)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 0, 0)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 255, 140))
+        }),
+        Rotation = 45
     })
 
     local isCustomImage = customIcon ~= nil
@@ -856,20 +880,6 @@ local function CreateFloatingIcon(customIcon)
         ImageColor3 = isCustomImage and Color3.fromRGB(255, 255, 255) or CurrentTheme.Text,
         ScaleType = Enum.ScaleType.Fit,
         ZIndex = 1001
-    })
-
-    -- Very subtle green gradient overlay
-    local Gradient = Create("UIGradient", {
-        Parent = Icon,
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 220, 120)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 180, 80))
-        }),
-        Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0.75),
-            NumberSequenceKeypoint.new(1, 0.75)
-        }),
-        Rotation = 45
     })
 
     local mouseDownOnIcon = false
@@ -944,6 +954,7 @@ local function CreateFloatingIcon(customIcon)
             if not isCustomImage then
                 Icon.ImageColor3 = theme.Text
             end
+            GlowBorder.BackgroundColor3 = theme.Accent
         end
     end)
 
@@ -995,11 +1006,11 @@ function Quantum:CreateWindow(data)
     local MainGradient = Create("UIGradient", {
         Parent = MainFrame,
         Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 220, 120)),
-            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(20, 60, 30)),
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 255, 140)),
+            ColorSequenceKeypoint.new(0.4, Color3.fromRGB(30, 80, 40)),
             ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
         }),
-        Rotation = 135
+        Rotation = 45
     })
 
     local Shadow = Create("ImageLabel", {
@@ -1020,7 +1031,7 @@ function Quantum:CreateWindow(data)
         Parent = MainFrame,
         Size = UDim2.new(1, 0, 0, Config.TopbarHeight),
         BackgroundColor3 = CurrentTheme.Sidebar,
-        BackgroundTransparency = 0.35,
+        BackgroundTransparency = 0.55,
         BorderSizePixel = 0,
         Active = true,
         ZIndex = 20
@@ -1061,19 +1072,12 @@ function Quantum:CreateWindow(data)
         Position = UDim2.new(0, 34, 0, 6),
         BackgroundTransparency = 1,
         Text = windowName,
-        TextColor3 = Color3.fromRGB(80, 220, 120),
+        TextColor3 = Color3.fromRGB(100, 255, 140),
         TextSize = 12,
         Font = Enum.Font.GothamBold,
         TextXAlignment = Enum.TextXAlignment.Left,
-        TextStrokeTransparency = 0.6,
-        TextStrokeColor3 = Color3.fromRGB(40, 180, 80),
         ZIndex = 21
     })
-
-    local TitleGlowTween = TweenService:Create(Title, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
-        TextStrokeTransparency = 0.25
-    })
-    TitleGlowTween:Play()
 
     local Version = Create("TextLabel", {
         Name = "Version",
@@ -1239,18 +1243,17 @@ function Quantum:CreateWindow(data)
             Parent = Controls,
             Size = UDim2.new(0, 24, 0, 24),
             Position = pos,
-            BackgroundColor3 = CurrentTheme.Element,
+            BackgroundTransparency = 1,
             AutoButtonColor = false,
             Image = GetIcon(icon),
             ImageColor3 = CurrentTheme.SubText,
             ZIndex = 22
         })
-        Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = btn})
         btn.MouseEnter:Connect(function()
-            btn.BackgroundColor3 = CurrentTheme.ElementHover
+            btn.ImageColor3 = CurrentTheme.Text
         end)
         btn.MouseLeave:Connect(function()
-            btn.BackgroundColor3 = CurrentTheme.Element
+            btn.ImageColor3 = CurrentTheme.SubText
         end)
         btn.MouseButton1Click:Connect(callback)
         return btn
@@ -1294,7 +1297,7 @@ function Quantum:CreateWindow(data)
         Size = UDim2.new(0, Config.SidebarWidth, 1, -Config.TopbarHeight),
         Position = UDim2.new(0, 0, 0, Config.TopbarHeight),
         BackgroundColor3 = CurrentTheme.Sidebar,
-        BackgroundTransparency = 0.35,
+        BackgroundTransparency = 0.55,
         BorderSizePixel = 0,
         ClipsDescendants = true,
         ZIndex = 15
@@ -1374,7 +1377,7 @@ function Quantum:CreateWindow(data)
         Size = UDim2.new(1, -Config.SidebarWidth + 4, 1, -Config.TopbarHeight),
         Position = UDim2.new(0, Config.SidebarWidth - 4, 0, Config.TopbarHeight),
         BackgroundColor3 = CurrentTheme.Background,
-        BackgroundTransparency = 0.35,
+        BackgroundTransparency = 0.55,
         BorderSizePixel = 0,
         ClipsDescendants = true,
         ZIndex = 14
@@ -1489,7 +1492,7 @@ function Quantum:CreateWindow(data)
         Topbar.BackgroundColor3 = theme.Sidebar
         Sidebar.BackgroundColor3 = theme.Sidebar
         Content.BackgroundColor3 = theme.Background
-        Title.TextStrokeColor3 = Color3.fromRGB(40, 180, 80)
+        -- Title glow removed for clean look
         TitleIcon.ImageColor3 = theme.Accent
         TabList.ScrollBarImageColor3 = theme.Accent
         ConfirmOverlay.BackgroundColor3 = theme.Overlay
@@ -1695,7 +1698,7 @@ function Quantum:CreateWindow(data)
                 Parent = TabContent,
                 Size = UDim2.new(1, 0, 0, 44),
                 BackgroundColor3 = CurrentTheme.Element,
-                BackgroundTransparency = 0.25,
+                BackgroundTransparency = 0.5,
                 BorderSizePixel = 0,
                 ClipsDescendants = true,
                 LayoutOrder = #TabContent:GetChildren(),
@@ -1707,7 +1710,7 @@ function Quantum:CreateWindow(data)
                 Parent = SectionFrame,
                 Size = UDim2.new(1, 0, 0, 44),
                 BackgroundColor3 = CurrentTheme.Element,
-                BackgroundTransparency = 0.25,
+                BackgroundTransparency = 0.5,
                 Text = "",
                 AutoButtonColor = false,
                 ZIndex = 17
@@ -1841,7 +1844,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
                     BackgroundColor3 = CurrentTheme.Background,
-                    BackgroundTransparency = 0.3,
+                    BackgroundTransparency = 0.5,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = true,
@@ -1980,7 +1983,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
                     BackgroundColor3 = CurrentTheme.Background,
-                    BackgroundTransparency = 0.3,
+                    BackgroundTransparency = 0.5,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = true,
@@ -2229,7 +2232,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
                     BackgroundColor3 = CurrentTheme.Background,
-                    BackgroundTransparency = 0.3,
+                    BackgroundTransparency = 0.5,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = true,
@@ -2603,7 +2606,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
                     BackgroundColor3 = CurrentTheme.Background,
-                    BackgroundTransparency = 0.3,
+                    BackgroundTransparency = 0.5,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = true,
@@ -3022,7 +3025,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
                     BackgroundColor3 = CurrentTheme.Background,
-                    BackgroundTransparency = 0.3,
+                    BackgroundTransparency = 0.5,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = true,
@@ -3120,7 +3123,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
                     BackgroundColor3 = CurrentTheme.Background,
-                    BackgroundTransparency = 0.3,
+                    BackgroundTransparency = 0.5,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = true,
@@ -3221,7 +3224,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, 26),
                     BackgroundColor3 = CurrentTheme.Background,
-                    BackgroundTransparency = 0.3,
+                    BackgroundTransparency = 0.5,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = false,
@@ -3272,7 +3275,7 @@ function Quantum:CreateWindow(data)
                     Size = UDim2.new(1, 0, 0, 0),
                     AutomaticSize = Enum.AutomaticSize.Y,
                     BackgroundColor3 = CurrentTheme.Background,
-                    BackgroundTransparency = 0.3,
+                    BackgroundTransparency = 0.5,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = false,
@@ -3382,7 +3385,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
                     BackgroundColor3 = CurrentTheme.Background,
-                    BackgroundTransparency = 0.3,
+                    BackgroundTransparency = 0.5,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ZIndex = 18
@@ -3569,7 +3572,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, 26),
                     BackgroundColor3 = CurrentTheme.Background,
-                    BackgroundTransparency = 0.3,
+                    BackgroundTransparency = 0.5,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = false,
@@ -3646,7 +3649,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, 44),
                     BackgroundColor3 = CurrentTheme.Background,
-                    BackgroundTransparency = 0.3,
+                    BackgroundTransparency = 0.5,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = true,
