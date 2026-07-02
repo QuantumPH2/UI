@@ -18,25 +18,25 @@ local Config = {
     MinWindowSize = Vector2.new(360, 240),
     Themes = {
         QuantumDark = {
-            Background = Color3.fromRGB(14, 14, 18),
-            Sidebar = Color3.fromRGB(18, 18, 22),
+            Background = Color3.fromRGB(14, 16, 18),
+            Sidebar = Color3.fromRGB(18, 20, 22),
             Accent = Color3.fromRGB(80, 220, 120),
             Text = Color3.fromRGB(240, 240, 245),
             SubText = Color3.fromRGB(120, 120, 130),
-            Element = Color3.fromRGB(28, 28, 34),
-            ElementHover = Color3.fromRGB(38, 38, 44),
+            Element = Color3.fromRGB(24, 27, 30),
+            ElementHover = Color3.fromRGB(32, 36, 39),
             ToggleOn = Color3.fromRGB(80, 220, 120),
-            ToggleOff = Color3.fromRGB(50, 50, 58),
-            Border = Color3.fromRGB(45, 45, 52),
-            Shadow = Color3.fromRGB(10, 10, 14),
-            Overlay = Color3.fromRGB(14, 14, 18),
+            ToggleOff = Color3.fromRGB(42, 46, 50),
+            Border = Color3.fromRGB(43, 48, 52),
+            Shadow = Color3.fromRGB(14, 16, 18),
+            Overlay = Color3.fromRGB(14, 16, 18),
             Success = Color3.fromRGB(80, 220, 120)
         }
     }
 }
 
 local LegacyIcons = {
-    Custom = "rbxassetid://109647740279101",
+    Custom = "rbxassetid://109818941157555",
     Home = "rbxassetid://7733960981",
     Settings = "rbxassetid://7734053495",
     User = "rbxassetid://7743875962",
@@ -416,7 +416,11 @@ local OpenDropdowns = {}
 local DropdownConnections = {}
 
 local function ApplyTheme(themeName)
-    -- Theme switching disabled - only QuantumDark is available
+    themeName = Config.DefaultTheme
+    CurrentTheme = Config.Themes[themeName]
+    for _, callback in ipairs(ThemeListeners) do
+        callback(CurrentTheme)
+    end
 end
 
 local function ListenTheme(callback)
@@ -741,7 +745,7 @@ local function CreateFloatingIcon(customIcon)
         FloatingIconScreen:Destroy()
     end
 
-    local iconToUse = customIcon and GetIcon(customIcon) or GetIcon("Custom")
+    local iconToUse = GetIcon("Custom")
 
     FloatingIconScreen = Create("ScreenGui", {
         Name = "QuantumFloatingIcon",
@@ -755,13 +759,12 @@ local function CreateFloatingIcon(customIcon)
     local Backdrop = Create("Frame", {
         Name = "Backdrop",
         Parent = FloatingIconScreen,
-        Size = UDim2.new(0, 40, 0, 40),
-        Position = UDim2.new(0, 14, 0.5, -20),
-        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-        BackgroundTransparency = 0,
+        Size = UDim2.new(0, 44, 0, 44),
+        Position = UDim2.new(0, 14, 0.5, -22),
+        BackgroundTransparency = 1,
         BorderSizePixel = 0,
         Active = true,
-        ClipsDescendants = true,
+        ClipsDescendants = false,
         ZIndex = 1000
     })
 
@@ -770,23 +773,16 @@ local function CreateFloatingIcon(customIcon)
         Parent = Backdrop
     })
 
-    Create("UIStroke", {
-        Color = Color3.fromRGB(10, 10, 10),
-        Thickness = 1,
-        Transparency = 0.3,
-        Parent = Backdrop
-    })
-
-    local isCustomImage = customIcon ~= nil
+    local isCustomImage = true
     local Icon = Create("ImageLabel", {
         Name = "Icon",
         Parent = Backdrop,
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(0, 28, 0, 28),
+        Size = UDim2.new(0, 34, 0, 34),
         BackgroundTransparency = 1,
         Image = iconToUse,
-        ImageColor3 = isCustomImage and Color3.fromRGB(255, 255, 255) or CurrentTheme.Text,
+        ImageColor3 = Color3.fromRGB(255, 255, 255),
         ScaleType = Enum.ScaleType.Fit,
         ZIndex = 1001
     })
@@ -860,10 +856,8 @@ local function CreateFloatingIcon(customIcon)
 
     ListenTheme(function(theme)
         if Backdrop and Backdrop.Parent then
-            Backdrop.BackgroundColor3 = theme.Sidebar
-            if Backdrop:FindFirstChildOfClass("UIStroke") then
-                Backdrop.UIStroke.Color = theme.Border
-            end
+            Backdrop.BackgroundTransparency = 1
+            Icon.ImageColor3 = Color3.fromRGB(255, 255, 255)
         end
     end)
 
@@ -999,8 +993,8 @@ function Quantum:CreateWindow(data)
     local ProfileSection = Create("Frame", {
         Name = "ProfileSection",
         Parent = Topbar,
-        Size = UDim2.new(0, 120, 0, 32),
-        Position = UDim2.new(1, -190, 0.5, -12),
+        Size = UDim2.new(0, 150, 0, 32),
+        Position = UDim2.new(1, -240, 0.5, -12),
         BackgroundTransparency = 1,
         ZIndex = 21
     })
@@ -1030,7 +1024,7 @@ function Quantum:CreateWindow(data)
     local ProfileName = Create("TextLabel", {
         Name = "ProfileName",
         Parent = ProfileSection,
-        Size = UDim2.new(0, 80, 0, 14),
+        Size = UDim2.new(0, 116, 0, 14),
         Position = UDim2.new(0, 30, 0, 0),
         BackgroundTransparency = 1,
         Text = "Quantum User ",
@@ -1045,7 +1039,7 @@ function Quantum:CreateWindow(data)
     local ProfileUser = Create("TextLabel", {
         Name = "ProfileUser",
         Parent = ProfileSection,
-        Size = UDim2.new(0, 80, 0, 12),
+        Size = UDim2.new(0, 116, 0, 12),
         Position = UDim2.new(0, 30, 0, 14),
         BackgroundTransparency = 1,
         Text = "@QuantumUser ",
@@ -1135,7 +1129,7 @@ function Quantum:CreateWindow(data)
         Name = "Controls",
         Parent = Topbar,
         Size = UDim2.new(0, 90, 0, Config.TopbarHeight),
-        Position = UDim2.new(1, -95, 0, 0),
+        Position = UDim2.new(1, -91, 0, 0),
         BackgroundTransparency = 1,
         ZIndex = 21
     })
@@ -1147,6 +1141,7 @@ function Quantum:CreateWindow(data)
             Size = UDim2.new(0, 24, 0, 24),
             Position = pos,
             BackgroundColor3 = CurrentTheme.Element,
+            BackgroundTransparency = 1,
             AutoButtonColor = false,
             Image = GetIcon(icon),
             ImageColor3 = CurrentTheme.SubText,
@@ -1154,23 +1149,23 @@ function Quantum:CreateWindow(data)
         })
         Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = btn})
         btn.MouseEnter:Connect(function()
-            btn.BackgroundColor3 = CurrentTheme.ElementHover
+            btn.ImageColor3 = CurrentTheme.Accent
         end)
         btn.MouseLeave:Connect(function()
-            btn.BackgroundColor3 = CurrentTheme.Element
+            btn.ImageColor3 = CurrentTheme.SubText
         end)
         btn.MouseButton1Click:Connect(callback)
         return btn
     end
 
-    MakeControl("Minimize", "Minus", UDim2.new(0, 5, 0.5, -11), function()
+    MakeControl("Minimize", "Minus", UDim2.new(0, 0, 0.5, -11), function()
         CloseAllDropdowns()
         IsMinimized = true
         MainFrame.Visible = false
     end)
 
     local IsMaximized = false
-    MakeControl("Resize", "Maximize2", UDim2.new(0, 30, 0.5, -11), function()
+    MakeControl("Resize", "Maximize2", UDim2.new(0, 25, 0.5, -11), function()
         IsMaximized = not IsMaximized
         if IsMaximized then
             MainFrame.Size = UDim2.new(0, 440, 0, 280)
@@ -1179,7 +1174,7 @@ function Quantum:CreateWindow(data)
         end
     end)
 
-    MakeControl("Close", "X", UDim2.new(0, 55, 0.5, -11), function()
+    MakeControl("Close", "X", UDim2.new(0, 50, 0.5, -11), function()
         CloseAllDropdowns()
         ConfirmOverlay.Visible = true
     end)
@@ -1223,6 +1218,7 @@ function Quantum:CreateWindow(data)
         Size = UDim2.new(1, -10, 0, 32),
         Position = UDim2.new(0, 5, 0, 6),
         BackgroundColor3 = CurrentTheme.Element,
+        BackgroundTransparency = 1,
         BorderSizePixel = 0,
         ZIndex = 16
     })
@@ -1404,7 +1400,7 @@ function Quantum:CreateWindow(data)
         ProfileFrame.UIStroke.Color = theme.Border
         ProfileName.TextColor3 = theme.Text
         ProfileUser.TextColor3 = theme.SubText
-        SearchFrame.BackgroundColor3 = theme.Element
+        SearchFrame.BackgroundTransparency = 1
         SearchIcon.ImageColor3 = theme.SubText
         SearchBox.TextColor3 = theme.Text
         SearchBox.PlaceholderColor3 = theme.SubText
@@ -1412,7 +1408,7 @@ function Quantum:CreateWindow(data)
 
     local WindowAPI = {}
     WindowAPI.Notify = function(_, d) Quantum:Notify(d) end
-    WindowAPI.SetTheme = function(_, name) end
+    WindowAPI.SetTheme = function(_, name) ApplyTheme(name) end
     WindowAPI.Config = ConfigManager.new(windowName)
     WindowAPI.Config:Load()
     WindowAPI.Config:StartAutoSave()
@@ -1465,6 +1461,7 @@ function Quantum:CreateWindow(data)
             Parent = TabList,
             Size = UDim2.new(1, -6, 0, 36),
             BackgroundColor3 = CurrentTheme.Element,
+            BackgroundTransparency = 1,
             Text = "",
             AutoButtonColor = false,
             LayoutOrder = #Tabs + 1,
@@ -1531,6 +1528,7 @@ function Quantum:CreateWindow(data)
             if ActiveTab then
                 ActiveTab.Content.Visible = false
                 ActiveTab.Indicator.Visible = false
+                ActiveTab.Button.BackgroundTransparency = 1
                 ActiveTab.Button.BackgroundColor3 = CurrentTheme.Element
                 ActiveTab.Icon.ImageColor3 = CurrentTheme.SubText
                 ActiveTab.Label.TextColor3 = CurrentTheme.SubText
@@ -1546,6 +1544,7 @@ function Quantum:CreateWindow(data)
 
             TabContent.Visible = true
             TabIndicator.Visible = true
+            TabBtn.BackgroundTransparency = 1
             TabBtn.BackgroundColor3 = CurrentTheme.ElementHover
             TabBtnIcon.ImageColor3 = CurrentTheme.Accent
             TabBtnText.TextColor3 = CurrentTheme.Text
@@ -1566,6 +1565,7 @@ function Quantum:CreateWindow(data)
         if #Tabs == 1 then Activate() end
 
         ListenTheme(function(theme)
+            TabBtn.BackgroundTransparency = 1
             if ActiveTab and ActiveTab.Button == TabBtn then
                 TabBtn.BackgroundColor3 = theme.ElementHover
                 TabBtnIcon.ImageColor3 = theme.Accent
@@ -2120,6 +2120,14 @@ function Quantum:CreateWindow(data)
                 local default = dropdownData.Default or ""
                 local callback = dropdownData.Callback or function() end
                 local desc = dropdownData.Desc
+                if string.find(string.lower(dropdownName), "theme", 1, true) then
+                    callback(Config.DefaultTheme)
+                    return {
+                        Refresh = function() end,
+                        Set = function() callback(Config.DefaultTheme) end,
+                        Get = function() return Config.DefaultTheme end
+                    }
+                end
 
                 local hasDesc = desc and desc ~= ""
                 local frameHeight = hasDesc and 42 or 28
@@ -2493,6 +2501,14 @@ function Quantum:CreateWindow(data)
                 local default = dropdownData.Default or {}
                 local callback = dropdownData.Callback or function() end
                 local desc = dropdownData.Desc
+                if string.find(string.lower(dropdownName), "theme", 1, true) then
+                    callback({Config.DefaultTheme})
+                    return {
+                        Refresh = function() end,
+                        Set = function() callback({Config.DefaultTheme}) end,
+                        Get = function() return {Config.DefaultTheme} end
+                    }
+                end
 
                 local hasDesc = desc and desc ~= ""
                 local frameHeight = hasDesc and 42 or 28
@@ -3267,6 +3283,18 @@ function Quantum:CreateWindow(data)
                 local default = pickerData.Default or Color3.fromRGB(255, 255, 255)
                 local callback = pickerData.Callback or function() end
                 local desc = pickerData.Desc
+                do
+                    local current = default
+                    return {
+                        Set = function(c)
+                            current = c
+                            callback(current)
+                        end,
+                        Get = function()
+                            return current
+                        end
+                    }
+                end
 
                 local hasDesc = desc and desc ~= ""
                 local frameHeight = hasDesc and 42 or 28
