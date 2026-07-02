@@ -759,8 +759,8 @@ local function CreateFloatingIcon(customIcon)
     local Backdrop = Create("Frame", {
         Name = "Backdrop",
         Parent = FloatingIconScreen,
-        Size = UDim2.new(0, 44, 0, 44),
-        Position = UDim2.new(0, 14, 0.5, -22),
+        Size = UDim2.new(0, 48, 0, 48),
+        Position = UDim2.new(0, 14, 0.5, -24),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
         Active = true,
@@ -779,7 +779,7 @@ local function CreateFloatingIcon(customIcon)
         Parent = Backdrop,
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(0, 34, 0, 34),
+        Size = UDim2.new(0, 38, 0, 38),
         BackgroundTransparency = 1,
         Image = iconToUse,
         ImageColor3 = Color3.fromRGB(255, 255, 255),
@@ -1598,6 +1598,7 @@ function Quantum:CreateWindow(data)
                 Parent = TabContent,
                 Size = UDim2.new(1, 0, 0, 44),
                 BackgroundColor3 = CurrentTheme.Element,
+                BackgroundTransparency = 1,
                 BorderSizePixel = 0,
                 ClipsDescendants = true,
                 LayoutOrder = #TabContent:GetChildren(),
@@ -1609,6 +1610,7 @@ function Quantum:CreateWindow(data)
                 Parent = SectionFrame,
                 Size = UDim2.new(1, 0, 0, 44),
                 BackgroundColor3 = CurrentTheme.Element,
+                BackgroundTransparency = 1,
                 Text = "",
                 AutoButtonColor = false,
                 ZIndex = 17
@@ -1711,7 +1713,9 @@ function Quantum:CreateWindow(data)
 
             ListenTheme(function(theme)
                 SectionFrame.BackgroundColor3 = theme.Element
+                SectionFrame.BackgroundTransparency = 1
                 SectionHeader.BackgroundColor3 = theme.Element
+                SectionHeader.BackgroundTransparency = 1
                 Arrow.ImageColor3 = theme.SubText
             end)
 
@@ -1742,6 +1746,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
                     BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundTransparency = 1,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = true,
@@ -1837,6 +1842,7 @@ function Quantum:CreateWindow(data)
 
                 ListenTheme(function(theme)
                     ToggleFrame.BackgroundColor3 = theme.Background
+                    ToggleFrame.BackgroundTransparency = 1
                     ToggleCircle.BackgroundColor3 = theme.Text
                     if state then
                         ToggleBtn.BackgroundColor3 = theme.ToggleOn
@@ -1880,6 +1886,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
                     BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundTransparency = 1,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = true,
@@ -2008,6 +2015,7 @@ function Quantum:CreateWindow(data)
 
                 ListenTheme(function(theme)
                     SliderFrame.BackgroundColor3 = theme.Background
+                    SliderFrame.BackgroundTransparency = 1
                     Track.BackgroundColor3 = theme.Element
                     Fill.BackgroundColor3 = theme.Accent
                     Knob.BackgroundColor3 = theme.Text
@@ -2136,6 +2144,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
                     BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundTransparency = 1,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = true,
@@ -2220,7 +2229,7 @@ function Quantum:CreateWindow(data)
                     Parent = MainWindowScreen,
                     Size = UDim2.new(0, 150, 0, 0),
                     Position = UDim2.new(0, 0, 0, 0),
-                    BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundColor3 = CurrentTheme.Element,
                     BorderSizePixel = 0,
                     ClipsDescendants = true,
                     Visible = false,
@@ -2450,11 +2459,12 @@ function Quantum:CreateWindow(data)
 
                 ListenTheme(function(theme)
                     DropdownFrame.BackgroundColor3 = theme.Background
+                    DropdownFrame.BackgroundTransparency = 1
                     DropdownBtn.BackgroundColor3 = theme.Element
                     local selText, _ = NormalizeOption(selected)
                     DropdownBtn.TextColor3 = selText ~= "" and selText ~= "Select option" and theme.Text or theme.SubText
                     Arrow.ImageColor3 = theme.SubText
-                    MenuFrame.BackgroundColor3 = theme.Background
+                    MenuFrame.BackgroundColor3 = theme.Element
                     SearchBox.BackgroundColor3 = theme.Element
                     SearchBox.TextColor3 = theme.Text
                     SearchBox.PlaceholderColor3 = theme.SubText
@@ -2517,6 +2527,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
                     BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundTransparency = 1,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = true,
@@ -2614,7 +2625,7 @@ function Quantum:CreateWindow(data)
                     Parent = MainWindowScreen,
                     Size = UDim2.new(0, 150, 0, 0),
                     Position = UDim2.new(0, 0, 0, 0),
-                    BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundColor3 = CurrentTheme.Element,
                     BorderSizePixel = 0,
                     ClipsDescendants = true,
                     Visible = false,
@@ -2704,6 +2715,7 @@ function Quantum:CreateWindow(data)
                             Size = UDim2.new(0, 14, 0, 14),
                             Position = UDim2.new(0, 6, 0.5, -7),
                             BackgroundColor3 = CurrentTheme.Background,
+                            BackgroundTransparency = 1,
                             BorderSizePixel = 0,
                             ZIndex = 33,
                         })
@@ -2880,10 +2892,11 @@ function Quantum:CreateWindow(data)
 
                 ListenTheme(function(theme)
                     DropdownFrame.BackgroundColor3 = theme.Background
+                    DropdownFrame.BackgroundTransparency = 1
                     DropdownBtn.BackgroundColor3 = theme.Element
                     UpdateButtonText()
                     Arrow.ImageColor3 = theme.SubText
-                    MenuFrame.BackgroundColor3 = theme.Background
+                    MenuFrame.BackgroundColor3 = theme.Element
                     SearchBox.BackgroundColor3 = theme.Element
                     SearchBox.TextColor3 = theme.Text
                     SearchBox.PlaceholderColor3 = theme.SubText
@@ -2935,6 +2948,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
                     BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundTransparency = 1,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = true,
@@ -3005,6 +3019,7 @@ function Quantum:CreateWindow(data)
 
                 ListenTheme(function(theme)
                     InputFrame.BackgroundColor3 = theme.Background
+                    InputFrame.BackgroundTransparency = 1
                     InputBox.BackgroundColor3 = theme.Element
                     InputBox.TextColor3 = theme.Text
                     InputBox.PlaceholderColor3 = theme.SubText
@@ -3032,6 +3047,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
                     BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundTransparency = 1,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = true,
@@ -3116,6 +3132,7 @@ function Quantum:CreateWindow(data)
 
                 ListenTheme(function(theme)
                     BindFrame.BackgroundColor3 = theme.Background
+                    BindFrame.BackgroundTransparency = 1
                     BindBtn.BackgroundColor3 = theme.Element
                     BindBtn.TextColor3 = theme.Text
                 end)
@@ -3132,6 +3149,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, 26),
                     BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundTransparency = 1,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = false,
@@ -3165,6 +3183,7 @@ function Quantum:CreateWindow(data)
 
                 ListenTheme(function(theme)
                     LabelFrame.BackgroundColor3 = theme.Background
+                    LabelFrame.BackgroundTransparency = 1
                     Label.TextColor3 = theme.Text
                 end)
 
@@ -3182,6 +3201,7 @@ function Quantum:CreateWindow(data)
                     Size = UDim2.new(1, 0, 0, 0),
                     AutomaticSize = Enum.AutomaticSize.Y,
                     BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundTransparency = 1,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = false,
@@ -3263,6 +3283,7 @@ function Quantum:CreateWindow(data)
 
                 ListenTheme(function(theme)
                     ParaFrame.BackgroundColor3 = theme.Background
+                    ParaFrame.BackgroundTransparency = 1
                     TitleLabel.TextColor3 = theme.Text
                     ContentLabel.TextColor3 = theme.SubText
                 end)
@@ -3303,6 +3324,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
                     BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundTransparency = 1,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ZIndex = 18
@@ -3364,7 +3386,7 @@ function Quantum:CreateWindow(data)
                     Parent = ColorPreview,
                     Size = UDim2.new(0, 105, 0, 0),
                     Position = UDim2.new(0, -50, 0, 18),
-                    BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundColor3 = CurrentTheme.Element,
                     BorderSizePixel = 0,
                     ClipsDescendants = true,
                     Visible = false,
@@ -3451,7 +3473,8 @@ function Quantum:CreateWindow(data)
 
                 ListenTheme(function(theme)
                     PickerFrame.BackgroundColor3 = theme.Background
-                    ColorMenu.BackgroundColor3 = theme.Background
+                    PickerFrame.BackgroundTransparency = 1
+                    ColorMenu.BackgroundColor3 = theme.Element
                     RInput.BackgroundColor3 = theme.Element
                     GInput.BackgroundColor3 = theme.Element
                     BInput.BackgroundColor3 = theme.Element
@@ -3489,6 +3512,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, 26),
                     BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundTransparency = 1,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = false,
@@ -3531,6 +3555,7 @@ function Quantum:CreateWindow(data)
 
                 ListenTheme(function(theme)
                     StatusFrame.BackgroundColor3 = theme.Background
+                    StatusFrame.BackgroundTransparency = 1
                     StatusLabel.TextColor3 = theme.Text
                 end)
 
@@ -3565,6 +3590,7 @@ function Quantum:CreateWindow(data)
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, 44),
                     BackgroundColor3 = CurrentTheme.Background,
+                    BackgroundTransparency = 1,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = true,
@@ -3639,6 +3665,7 @@ function Quantum:CreateWindow(data)
                             Size = UDim2.new(0, 18, 0, 18),
                             Position = UDim2.new(0, 6, 0.5, -9),
                             BackgroundColor3 = CurrentTheme.Background,
+                            BackgroundTransparency = 1,
                             BorderSizePixel = 0,
                             ZIndex = 21
                         })
@@ -3716,6 +3743,7 @@ function Quantum:CreateWindow(data)
 
                 ListenTheme(function(theme)
                     QuestFrame.BackgroundColor3 = theme.Background
+                    QuestFrame.BackgroundTransparency = 1
                     for _, item in ipairs(questItems) do
                         if item.Frame then
                             item.Frame.BackgroundColor3 = theme.Element
