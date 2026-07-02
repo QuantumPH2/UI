@@ -13,9 +13,9 @@ local Config = {
     DefaultTheme = "QuantumDark",
     CornerRadius = 10,
     ElementCorner = 6,
-    SidebarWidth = 150,
-    TopbarHeight = 40,
-    MinWindowSize = Vector2.new(360, 240),
+    SidebarWidth = 170,
+    TopbarHeight = 46,
+    MinWindowSize = Vector2.new(400, 280),
     Themes = {
         QuantumDark = {
             Background = Color3.fromRGB(0, 0, 0),
@@ -902,7 +902,7 @@ local function CreateFloatingIcon(customIcon)
                     end
                     if MainFrame then
                         MainFrame.Visible = true
-                        MainFrame.Size = UDim2.new(0, 440, 0, 280)
+                        MainFrame.Size = UDim2.new(0, 500, 0, 340)
                         MainFrame.Position = UDim2.new(0.5, -200, 0.5, -130)
                     end
                 elseif IsMinimized then
@@ -963,8 +963,8 @@ function Quantum:CreateWindow(data)
     MainFrame = Create("Frame", {
         Name = "Main",
         Parent = MainWindowScreen,
-        Size = UDim2.new(0, 460, 0, 280),
-        Position = UDim2.new(0.5, -230, 0.5, -140),
+        Size = UDim2.new(0, 520, 0, 340),
+        Position = UDim2.new(0.5, -260, 0.5, -170),
         AnchorPoint = Vector2.new(0, 0),
         BackgroundColor3 = Color3.fromRGB(255, 255, 255),
         BorderSizePixel = 0,
@@ -1007,7 +1007,7 @@ function Quantum:CreateWindow(data)
         Parent = MainFrame,
         Size = UDim2.new(1, 0, 0, Config.TopbarHeight),
         BackgroundColor3 = CurrentTheme.Sidebar,
-        BackgroundTransparency = 0.55,
+        BackgroundTransparency = 0.15,
         BorderSizePixel = 0,
         Active = true,
         ZIndex = 20
@@ -1245,9 +1245,9 @@ function Quantum:CreateWindow(data)
     MakeControl("Resize", "Maximize2", UDim2.new(0, 25, 0.5, -11), function()
         IsMaximized = not IsMaximized
         if IsMaximized then
-            MainFrame.Size = UDim2.new(0, 440, 0, 280)
+            MainFrame.Size = UDim2.new(0, 500, 0, 340)
         else
-            MainFrame.Size = UDim2.new(0, 360, 0, 220)
+            MainFrame.Size = UDim2.new(0, 400, 0, 260)
         end
     end)
 
@@ -1273,7 +1273,7 @@ function Quantum:CreateWindow(data)
         Size = UDim2.new(0, Config.SidebarWidth, 1, -Config.TopbarHeight),
         Position = UDim2.new(0, 0, 0, Config.TopbarHeight),
         BackgroundColor3 = CurrentTheme.Sidebar,
-        BackgroundTransparency = 0.55,
+        BackgroundTransparency = 0.15,
         BorderSizePixel = 0,
         ClipsDescendants = true,
         ZIndex = 15
@@ -1301,6 +1301,28 @@ function Quantum:CreateWindow(data)
         ZIndex = 16
     })
     Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = SearchFrame})
+
+    -- Green gradient border around search tab
+    local SearchBorder = Create("Frame", {
+        Name = "SearchBorder",
+        Parent = Sidebar,
+        Size = UDim2.new(1, -8, 0, 34),
+        Position = UDim2.new(0, 4, 0, 5),
+        BackgroundColor3 = Color3.fromRGB(100, 255, 140),
+        BorderSizePixel = 0,
+        ZIndex = 15
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, 6), Parent = SearchBorder})
+
+    local SearchBorderGradient = Create("UIGradient", {
+        Parent = SearchBorder,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 255, 140)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(60, 200, 100)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 255, 140))
+        }),
+        Rotation = 90
+    })
 
     local SearchIcon = Create("ImageLabel", {
         Parent = SearchFrame,
@@ -1353,7 +1375,7 @@ function Quantum:CreateWindow(data)
         Size = UDim2.new(1, -Config.SidebarWidth + 4, 1, -Config.TopbarHeight),
         Position = UDim2.new(0, Config.SidebarWidth - 4, 0, Config.TopbarHeight),
         BackgroundColor3 = CurrentTheme.Background,
-        BackgroundTransparency = 0.55,
+        BackgroundTransparency = 0.15,
         BorderSizePixel = 0,
         ClipsDescendants = true,
         ZIndex = 14
@@ -1539,7 +1561,7 @@ function Quantum:CreateWindow(data)
 
         local TabBtn = Create("TextButton", {
             Parent = TabList,
-            Size = UDim2.new(1, -6, 0, 36),
+            Size = UDim2.new(1, -6, 0, 40),
             BackgroundColor3 = CurrentTheme.Element,
             BackgroundTransparency = 1,
             Text = "",
