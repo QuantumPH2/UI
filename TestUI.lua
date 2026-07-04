@@ -757,7 +757,7 @@ local function CreateFloatingIcon(customIcon)
     local Backdrop = Create("Frame", {
         Name = "Backdrop",
         Parent = FloatingIconScreen,
-        Size = UDim2.new(0, 48, 0, 48),
+        Size = UDim2.new(0, 56, 0, 56),
         Position = UDim2.new(0, 14, 0.5, -24),
         BackgroundColor3 = Color3.fromRGB(0, 0, 0),
         BackgroundTransparency = 1,
@@ -778,7 +778,7 @@ local function CreateFloatingIcon(customIcon)
         Parent = Backdrop,
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(0, 44, 0, 44),
+        Size = UDim2.new(0, 50, 0, 50),
         BackgroundTransparency = 1,
         Image = iconToUse,
         ImageColor3 = isCustomImage and Color3.fromRGB(255, 255, 255) or CurrentTheme.Text,
@@ -2089,7 +2089,13 @@ function Quantum:CreateWindow(data)
                     Btn.BackgroundColor3 = Color3.fromRGB(80, 200, 120)
                 end)
                 Btn.MouseLeave:Connect(function()
-                    Btn.BackgroundColor3 = CurrentTheme.Accent
+                    Btn.BackgroundColor3 = Color3.fromRGB(60, 180, 100)
+                end)
+                Btn.MouseButton1Down:Connect(function()
+                    Btn.BackgroundColor3 = Color3.fromRGB(120, 255, 160)
+                end)
+                Btn.MouseButton1Up:Connect(function()
+                    Btn.BackgroundColor3 = Color3.fromRGB(80, 200, 120)
                 end)
                 Btn.MouseButton1Click:Connect(function()
                     callback()
@@ -2416,20 +2422,17 @@ function Quantum:CreateWindow(data)
                             local mousePos = UserInputService:GetMouseLocation()
                             local menuPos = MenuFrame.AbsolutePosition
                             local menuSize = MenuFrame.AbsoluteSize
-                            if mousePos.X < menuPos.X or mousePos.X > menuPos.X + menuSize.X or
-                               mousePos.Y < menuPos.Y or mousePos.Y > menuPos.Y + menuSize.Y then
-                                local btnPos = DropdownBtn.AbsolutePosition
-                                local btnSize = DropdownBtn.AbsoluteSize
-                                if mousePos.X < btnPos.X or mousePos.X > btnPos.X + btnSize.X or
-                                   mousePos.Y < btnPos.Y or mousePos.Y > btnPos.Y + btnSize.Y then
-                                    ddData.IsOpen = false
-                                    MenuFrame.Visible = false
-                                    MenuFrame.Size = UDim2.new(0, 160, 0, 0)
-                                    Arrow.Rotation = 0
-                                    if ddData.HeartbeatConn then
-                                        pcall(function() ddData.HeartbeatConn:Disconnect() end)
-                                        ddData.HeartbeatConn = nil
-                                    end
+                            if mousePos.X >= menuPos.X and mousePos.X <= menuPos.X + menuSize.X and
+                               mousePos.Y >= menuPos.Y and mousePos.Y <= menuPos.Y + menuSize.Y then
+                                -- clicked inside dropdown, do nothing
+                            else
+                                ddData.IsOpen = false
+                                MenuFrame.Visible = false
+                                MenuFrame.Size = UDim2.new(0, 160, 0, 0)
+                                Arrow.Rotation = 0
+                                if ddData.HeartbeatConn then
+                                    pcall(function() ddData.HeartbeatConn:Disconnect() end)
+                                    ddData.HeartbeatConn = nil
                                 end
                             end
                         end
@@ -2845,20 +2848,17 @@ function Quantum:CreateWindow(data)
                             local mousePos = UserInputService:GetMouseLocation()
                             local menuPos = MenuFrame.AbsolutePosition
                             local menuSize = MenuFrame.AbsoluteSize
-                            if mousePos.X < menuPos.X or mousePos.X > menuPos.X + menuSize.X or
-                               mousePos.Y < menuPos.Y or mousePos.Y > menuPos.Y + menuSize.Y then
-                                local btnPos = DropdownBtn.AbsolutePosition
-                                local btnSize = DropdownBtn.AbsoluteSize
-                                if mousePos.X < btnPos.X or mousePos.X > btnPos.X + btnSize.X or
-                                   mousePos.Y < btnPos.Y or mousePos.Y > btnPos.Y + btnSize.Y then
-                                    ddData.IsOpen = false
-                                    MenuFrame.Visible = false
-                                    MenuFrame.Size = UDim2.new(0, 160, 0, 0)
-                                    Arrow.Rotation = 0
-                                    if ddData.HeartbeatConn then
-                                        pcall(function() ddData.HeartbeatConn:Disconnect() end)
-                                        ddData.HeartbeatConn = nil
-                                    end
+                            if mousePos.X >= menuPos.X and mousePos.X <= menuPos.X + menuSize.X and
+                               mousePos.Y >= menuPos.Y and mousePos.Y <= menuPos.Y + menuSize.Y then
+                                -- clicked inside dropdown, do nothing
+                            else
+                                ddData.IsOpen = false
+                                MenuFrame.Visible = false
+                                MenuFrame.Size = UDim2.new(0, 160, 0, 0)
+                                Arrow.Rotation = 0
+                                if ddData.HeartbeatConn then
+                                    pcall(function() ddData.HeartbeatConn:Disconnect() end)
+                                    ddData.HeartbeatConn = nil
                                 end
                             end
                         end
