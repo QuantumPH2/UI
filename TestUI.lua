@@ -757,8 +757,8 @@ local function CreateFloatingIcon(customIcon)
     local Backdrop = Create("Frame", {
         Name = "Backdrop",
         Parent = FloatingIconScreen,
-        Size = UDim2.new(0, 56, 0, 56),
-        Position = UDim2.new(0, 14, 0.5, -24),
+        Size = UDim2.new(0, 64, 0, 64),
+        Position = UDim2.new(0, 14, 0.5, -32),
         BackgroundColor3 = Color3.fromRGB(0, 0, 0),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
@@ -778,7 +778,7 @@ local function CreateFloatingIcon(customIcon)
         Parent = Backdrop,
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(0, 50, 0, 50),
+        Size = UDim2.new(0, 58, 0, 58),
         BackgroundTransparency = 1,
         Image = iconToUse,
         ImageColor3 = isCustomImage and Color3.fromRGB(255, 255, 255) or CurrentTheme.Text,
@@ -2431,7 +2431,7 @@ function Quantum:CreateWindow(data)
                 end)
 
                 local clickConn = UserInputService.InputBegan:Connect(function(input, gpe)
-                    if not gpe and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+                    if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
                         if ddData.IsOpen then
                             local mousePos = UserInputService:GetMouseLocation()
                             local menuPos = MenuFrame.AbsolutePosition
@@ -2873,7 +2873,7 @@ function Quantum:CreateWindow(data)
                 end)
 
                 local clickConn = UserInputService.InputBegan:Connect(function(input, gpe)
-                    if not gpe and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+                    if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
                         if ddData.IsOpen then
                             local mousePos = UserInputService:GetMouseLocation()
                             local menuPos = MenuFrame.AbsolutePosition
