@@ -2364,9 +2364,16 @@ function Quantum:CreateWindow(data)
                 local function UpdateMenuPosition()
                     if not DropdownBtn or not DropdownBtn.Parent then return end
                     if not MenuFrame or not MenuFrame.Parent then return end
+                    if not MainFrame or not MainFrame.Parent then return end
                     local btnAbs = DropdownBtn.AbsolutePosition
-                    local btnSize = DropdownBtn.AbsoluteSize
-                    MenuFrame.Position = UDim2.new(0, btnAbs.X + btnSize.X + 4, 0, btnAbs.Y)
+                    local mainAbs = MainFrame.AbsolutePosition
+                    local mainSize = MainFrame.AbsoluteSize
+                    local menuWidth = 160
+                    local padding = 4
+                    local posX = mainAbs.X + mainSize.X - menuWidth - padding
+                    local posY = btnAbs.Y
+                    MenuFrame.Position = UDim2.new(0, posX, 0, posY)
+                    MenuFrame.Size = UDim2.new(0, menuWidth, 0, MenuFrame.Size.Y.Offset)
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(function()
@@ -2787,9 +2794,16 @@ function Quantum:CreateWindow(data)
                 local function UpdateMenuPosition()
                     if not DropdownBtn or not DropdownBtn.Parent then return end
                     if not MenuFrame or not MenuFrame.Parent then return end
+                    if not MainFrame or not MainFrame.Parent then return end
                     local btnAbs = DropdownBtn.AbsolutePosition
-                    local btnSize = DropdownBtn.AbsoluteSize
-                    MenuFrame.Position = UDim2.new(0, btnAbs.X + btnSize.X + 4, 0, btnAbs.Y)
+                    local mainAbs = MainFrame.AbsolutePosition
+                    local mainSize = MainFrame.AbsoluteSize
+                    local menuWidth = 160
+                    local padding = 4
+                    local posX = mainAbs.X + mainSize.X - menuWidth - padding
+                    local posY = btnAbs.Y
+                    MenuFrame.Position = UDim2.new(0, posX, 0, posY)
+                    MenuFrame.Size = UDim2.new(0, menuWidth, 0, MenuFrame.Size.Y.Offset)
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(function()
