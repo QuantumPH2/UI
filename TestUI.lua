@@ -2350,8 +2350,7 @@ function Quantum:CreateWindow(data)
                         end
                     end
 
-                    local listHeight = math.min(count * 28 + 4, 160)
-                    OptionsScroll.Size = UDim2.new(1, -10, 0, listHeight)
+                    OptionsScroll.Size = UDim2.new(1, -10, 1, -36)
                     OptionsScroll.CanvasSize = UDim2.new(0, 0, 0, count * 28 + 4)
                 end
 
@@ -2365,15 +2364,16 @@ function Quantum:CreateWindow(data)
                     if not DropdownBtn or not DropdownBtn.Parent then return end
                     if not MenuFrame or not MenuFrame.Parent then return end
                     if not MainFrame or not MainFrame.Parent then return end
-                    local btnAbs = DropdownBtn.AbsolutePosition
                     local mainAbs = MainFrame.AbsolutePosition
                     local mainSize = MainFrame.AbsoluteSize
                     local menuWidth = 160
-                    local padding = 4
+                    local padding = 6
                     local posX = mainAbs.X + mainSize.X - menuWidth - padding
-                    local posY = btnAbs.Y
+                    local posY = mainAbs.Y + Config.TopbarHeight + padding
+                    local menuHeight = math.max(80, mainSize.Y - Config.TopbarHeight - padding * 2)
                     MenuFrame.Position = UDim2.new(0, posX, 0, posY)
-                    MenuFrame.Size = UDim2.new(0, menuWidth, 0, MenuFrame.Size.Y.Offset)
+                    MenuFrame.Size = UDim2.new(0, menuWidth, 0, menuHeight)
+                    OptionsScroll.Size = UDim2.new(1, -10, 1, -36)
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(function()
@@ -2391,8 +2391,7 @@ function Quantum:CreateWindow(data)
                         ddData.IsOpen = true
                         UpdateMenuPosition()
                         MenuFrame.Visible = true
-                        local menuHeight = math.min(#options * 28 + 36, 220)
-                        MenuFrame.Size = UDim2.new(0, 160, 0, menuHeight)
+                        UpdateMenuPosition()
                         Arrow.Rotation = 180
                         SearchBox.Text = ""
                         BuildOptions("")
@@ -2780,8 +2779,7 @@ function Quantum:CreateWindow(data)
                         end
                     end
 
-                    local listHeight = math.min(count * 28 + 4, 160)
-                    OptionsScroll.Size = UDim2.new(1, -10, 0, listHeight)
+                    OptionsScroll.Size = UDim2.new(1, -10, 1, -36)
                     OptionsScroll.CanvasSize = UDim2.new(0, 0, 0, count * 28 + 4)
                 end
 
@@ -2795,15 +2793,16 @@ function Quantum:CreateWindow(data)
                     if not DropdownBtn or not DropdownBtn.Parent then return end
                     if not MenuFrame or not MenuFrame.Parent then return end
                     if not MainFrame or not MainFrame.Parent then return end
-                    local btnAbs = DropdownBtn.AbsolutePosition
                     local mainAbs = MainFrame.AbsolutePosition
                     local mainSize = MainFrame.AbsoluteSize
                     local menuWidth = 160
-                    local padding = 4
+                    local padding = 6
                     local posX = mainAbs.X + mainSize.X - menuWidth - padding
-                    local posY = btnAbs.Y
+                    local posY = mainAbs.Y + Config.TopbarHeight + padding
+                    local menuHeight = math.max(80, mainSize.Y - Config.TopbarHeight - padding * 2)
                     MenuFrame.Position = UDim2.new(0, posX, 0, posY)
-                    MenuFrame.Size = UDim2.new(0, menuWidth, 0, MenuFrame.Size.Y.Offset)
+                    MenuFrame.Size = UDim2.new(0, menuWidth, 0, menuHeight)
+                    OptionsScroll.Size = UDim2.new(1, -10, 1, -36)
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(function()
@@ -2821,8 +2820,7 @@ function Quantum:CreateWindow(data)
                         ddData.IsOpen = true
                         UpdateMenuPosition()
                         MenuFrame.Visible = true
-                        local menuHeight = math.min(#options * 28 + 36, 220)
-                        MenuFrame.Size = UDim2.new(0, 160, 0, menuHeight)
+                        UpdateMenuPosition()
                         Arrow.Rotation = 180
                         SearchBox.Text = ""
                         BuildOptions()
