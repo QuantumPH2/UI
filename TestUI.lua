@@ -2357,7 +2357,7 @@ function Quantum:CreateWindow(data)
                         end
                     end
 
-                    OptionsScroll.Size = UDim2.new(1, -10, 1, -36)
+                    OptionsScroll.Size = UDim2.new(1, -8, 1, -36)
                     OptionsScroll.CanvasSize = UDim2.new(0, 0, 0, count * 28 + 4)
                 end
 
@@ -2370,16 +2370,17 @@ function Quantum:CreateWindow(data)
                 local function UpdateMenuPosition()
                     if not DropdownBtn or not DropdownBtn.Parent then return end
                     if not MenuFrame or not MenuFrame.Parent then return end
-                    if not MainFrame or not MainFrame.Parent then return end
-                    local mainAbs = MainFrame.AbsolutePosition
-                    local mainSize = MainFrame.AbsoluteSize
+                    local btnAbs = DropdownBtn.AbsolutePosition
+                    local btnSize = DropdownBtn.AbsoluteSize
                     local menuWidth = 160
-                    local padding = 6
-                    local posX = mainAbs.X + mainSize.X - menuWidth - padding
-                    local posY = mainAbs.Y + Config.TopbarHeight + padding
-                    local maxHeight = math.max(80, mainSize.Y - Config.TopbarHeight - padding * 2)
+                    local posX = btnAbs.X + btnSize.X - menuWidth
+                    local posY = btnAbs.Y + btnSize.Y + 2
                     local contentHeight = math.min(#options * 28 + 36, 220)
-                    local menuHeight = math.min(contentHeight, maxHeight)
+                    local menuHeight = math.min(contentHeight, 220)
+                    local screenHeight = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.Y or 1080
+                    if posY + menuHeight > screenHeight - 10 then
+                        posY = btnAbs.Y - menuHeight - 2
+                    end
                     MenuFrame.Position = UDim2.new(0, posX, 0, posY)
                     MenuFrame.Size = UDim2.new(0, menuWidth, 0, menuHeight)
                 end
@@ -2799,7 +2800,7 @@ function Quantum:CreateWindow(data)
                         end
                     end
 
-                    OptionsScroll.Size = UDim2.new(1, -10, 1, -36)
+                    OptionsScroll.Size = UDim2.new(1, -8, 1, -36)
                     OptionsScroll.CanvasSize = UDim2.new(0, 0, 0, count * 28 + 4)
                 end
 
@@ -2812,16 +2813,17 @@ function Quantum:CreateWindow(data)
                 local function UpdateMenuPosition()
                     if not DropdownBtn or not DropdownBtn.Parent then return end
                     if not MenuFrame or not MenuFrame.Parent then return end
-                    if not MainFrame or not MainFrame.Parent then return end
-                    local mainAbs = MainFrame.AbsolutePosition
-                    local mainSize = MainFrame.AbsoluteSize
+                    local btnAbs = DropdownBtn.AbsolutePosition
+                    local btnSize = DropdownBtn.AbsoluteSize
                     local menuWidth = 160
-                    local padding = 6
-                    local posX = mainAbs.X + mainSize.X - menuWidth - padding
-                    local posY = mainAbs.Y + Config.TopbarHeight + padding
-                    local maxHeight = math.max(80, mainSize.Y - Config.TopbarHeight - padding * 2)
+                    local posX = btnAbs.X + btnSize.X - menuWidth
+                    local posY = btnAbs.Y + btnSize.Y + 2
                     local contentHeight = math.min(#options * 28 + 36, 220)
-                    local menuHeight = math.min(contentHeight, maxHeight)
+                    local menuHeight = math.min(contentHeight, 220)
+                    local screenHeight = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.Y or 1080
+                    if posY + menuHeight > screenHeight - 10 then
+                        posY = btnAbs.Y - menuHeight - 2
+                    end
                     MenuFrame.Position = UDim2.new(0, posX, 0, posY)
                     MenuFrame.Size = UDim2.new(0, menuWidth, 0, menuHeight)
                 end
