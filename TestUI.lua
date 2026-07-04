@@ -205,13 +205,23 @@ local IconModule = {
 
 local function FetchIconPack(url)
     local success, content = pcall(function()
-        if game.HttpGet then
+        if typeof(game.HttpGet) == "function" then
             return game:HttpGet(url)
+        elseif typeof(syn) == "table" and typeof(syn.request) == "function" then
+            local response = syn.request({Url = url, Method = "GET"})
+            if response and response.Body then
+                return response.Body
+            end
+        elseif typeof(http_request) == "function" then
+            local response = http_request({Url = url, Method = "GET"})
+            if response and response.Body then
+                return response.Body
+            end
         else
             return HttpService:GetAsync(url)
         end
     end)
-    if success and content and content ~= "" then
+    if success and content and type(content) == "string" and content ~= "" then
         local ok, result = pcall(loadstring, content)
         if ok and type(result) == "function" then
             local ok2, pack = pcall(result)
@@ -332,7 +342,7 @@ local packUrls = {
 
 for packName, url in pairs(packUrls) do
     local pack = FetchIconPack(url)
-    if pack then
+    if pack and type(pack) == "table" then
         IconModule.Icons[packName] = pack
     end
 end
@@ -2353,8 +2363,9 @@ function Quantum:CreateWindow(data)
                     if not DropdownBtn or not DropdownBtn.Parent then return end
                     local btnPos = DropdownBtn.AbsolutePosition
                     local btnSize = DropdownBtn.AbsoluteSize
+                    local menuWidth = math.max(btnSize.X, 160)
                     MenuFrame.Position = UDim2.new(0, btnPos.X + btnSize.X + 5, 0, btnPos.Y)
-                    MenuFrame.Size = UDim2.new(0, math.max(btnSize.X, 160), 0, MenuFrame.Size.Y.Offset)
+                    MenuFrame.Size = UDim2.new(0, menuWidth, 0, MenuFrame.Size.Y.Offset)
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(function()
@@ -2789,8 +2800,9 @@ function Quantum:CreateWindow(data)
                     if not DropdownBtn or not DropdownBtn.Parent then return end
                     local btnPos = DropdownBtn.AbsolutePosition
                     local btnSize = DropdownBtn.AbsoluteSize
+                    local menuWidth = math.max(btnSize.X, 160)
                     MenuFrame.Position = UDim2.new(0, btnPos.X + btnSize.X + 5, 0, btnPos.Y)
-                    MenuFrame.Size = UDim2.new(0, math.max(btnSize.X, 160), 0, MenuFrame.Size.Y.Offset)
+                    MenuFrame.Size = UDim2.new(0, menuWidth, 0, MenuFrame.Size.Y.Offset)
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(function()
