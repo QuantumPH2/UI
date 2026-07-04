@@ -838,6 +838,7 @@ local function CreateFloatingIcon(customIcon)
                         MainFrame.Visible = true
                     end
                 else
+                    CloseAllDropdowns()
                     IsMinimized = true
                     if MainFrame then
                         MainFrame.Visible = false
@@ -2336,7 +2337,7 @@ function Quantum:CreateWindow(data)
                                 callback(selected)
                                 ddData.IsOpen = false
                                 MenuFrame.Visible = false
-                                MenuFrame.Size = UDim2.new(1, 0, 0, 0)
+                                MenuFrame.Size = UDim2.new(0, 160, 0, 0)
                                 Arrow.Rotation = 0
                                 if ddData.HeartbeatConn then
                                     pcall(function() ddData.HeartbeatConn:Disconnect() end)
@@ -2376,17 +2377,18 @@ function Quantum:CreateWindow(data)
                     local padding = 6
                     local posX = mainAbs.X + mainSize.X - menuWidth - padding
                     local posY = mainAbs.Y + Config.TopbarHeight + padding
-                    local menuHeight = math.max(80, mainSize.Y - Config.TopbarHeight - padding * 2)
+                    local maxHeight = math.max(80, mainSize.Y - Config.TopbarHeight - padding * 2)
+                    local contentHeight = math.min(#options * 28 + 36, 220)
+                    local menuHeight = math.min(contentHeight, maxHeight)
                     MenuFrame.Position = UDim2.new(0, posX, 0, posY)
                     MenuFrame.Size = UDim2.new(0, menuWidth, 0, menuHeight)
-                    OptionsScroll.Size = UDim2.new(1, -10, 1, -36)
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(function()
                     if ddData.IsOpen then
                         ddData.IsOpen = false
                         MenuFrame.Visible = false
-                        MenuFrame.Size = UDim2.new(1, 0, 0, 0)
+                        MenuFrame.Size = UDim2.new(0, 160, 0, 0)
                         Arrow.Rotation = 0
                         if ddData.HeartbeatConn then
                             pcall(function() ddData.HeartbeatConn:Disconnect() end)
@@ -2397,8 +2399,6 @@ function Quantum:CreateWindow(data)
                         ddData.IsOpen = true
                         UpdateMenuPosition()
                         MenuFrame.Visible = true
-                        local menuHeight = math.min(#options * 28 + 36, 220)
-                        MenuFrame.Size = UDim2.new(1, 0, 0, menuHeight)
                         Arrow.Rotation = 180
                         SearchBox.Text = ""
                         BuildOptions("")
@@ -2421,7 +2421,7 @@ function Quantum:CreateWindow(data)
                     if ddData.IsOpen then
                         ddData.IsOpen = false
                         MenuFrame.Visible = false
-                        MenuFrame.Size = UDim2.new(1, 0, 0, 0)
+                        MenuFrame.Size = UDim2.new(0, 160, 0, 0)
                         Arrow.Rotation = 0
                         if ddData.HeartbeatConn then
                             pcall(function() ddData.HeartbeatConn:Disconnect() end)
@@ -2444,7 +2444,7 @@ function Quantum:CreateWindow(data)
                                    mousePos.Y < btnPos.Y or mousePos.Y > btnPos.Y + btnSize.Y then
                                     ddData.IsOpen = false
                                     MenuFrame.Visible = false
-                                    MenuFrame.Size = UDim2.new(1, 0, 0, 0)
+                                    MenuFrame.Size = UDim2.new(0, 160, 0, 0)
                                     Arrow.Rotation = 0
                                     if ddData.HeartbeatConn then
                                         pcall(function() ddData.HeartbeatConn:Disconnect() end)
@@ -2819,17 +2819,18 @@ function Quantum:CreateWindow(data)
                     local padding = 6
                     local posX = mainAbs.X + mainSize.X - menuWidth - padding
                     local posY = mainAbs.Y + Config.TopbarHeight + padding
-                    local menuHeight = math.max(80, mainSize.Y - Config.TopbarHeight - padding * 2)
+                    local maxHeight = math.max(80, mainSize.Y - Config.TopbarHeight - padding * 2)
+                    local contentHeight = math.min(#options * 28 + 36, 220)
+                    local menuHeight = math.min(contentHeight, maxHeight)
                     MenuFrame.Position = UDim2.new(0, posX, 0, posY)
                     MenuFrame.Size = UDim2.new(0, menuWidth, 0, menuHeight)
-                    OptionsScroll.Size = UDim2.new(1, -10, 1, -36)
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(function()
                     if ddData.IsOpen then
                         ddData.IsOpen = false
                         MenuFrame.Visible = false
-                        MenuFrame.Size = UDim2.new(1, 0, 0, 0)
+                        MenuFrame.Size = UDim2.new(0, 160, 0, 0)
                         Arrow.Rotation = 0
                         if ddData.HeartbeatConn then
                             pcall(function() ddData.HeartbeatConn:Disconnect() end)
@@ -2840,8 +2841,6 @@ function Quantum:CreateWindow(data)
                         ddData.IsOpen = true
                         UpdateMenuPosition()
                         MenuFrame.Visible = true
-                        local menuHeight = math.min(#options * 28 + 36, 220)
-                        MenuFrame.Size = UDim2.new(1, 0, 0, menuHeight)
                         Arrow.Rotation = 180
                         SearchBox.Text = ""
                         BuildOptions()
@@ -2864,7 +2863,7 @@ function Quantum:CreateWindow(data)
                     if ddData.IsOpen then
                         ddData.IsOpen = false
                         MenuFrame.Visible = false
-                        MenuFrame.Size = UDim2.new(1, 0, 0, 0)
+                        MenuFrame.Size = UDim2.new(0, 160, 0, 0)
                         Arrow.Rotation = 0
                         if ddData.HeartbeatConn then
                             pcall(function() ddData.HeartbeatConn:Disconnect() end)
@@ -2887,7 +2886,7 @@ function Quantum:CreateWindow(data)
                                    mousePos.Y < btnPos.Y or mousePos.Y > btnPos.Y + btnSize.Y then
                                     ddData.IsOpen = false
                                     MenuFrame.Visible = false
-                                    MenuFrame.Size = UDim2.new(1, 0, 0, 0)
+                                    MenuFrame.Size = UDim2.new(0, 160, 0, 0)
                                     Arrow.Rotation = 0
                                     if ddData.HeartbeatConn then
                                         pcall(function() ddData.HeartbeatConn:Disconnect() end)
