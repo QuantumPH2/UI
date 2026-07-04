@@ -2230,6 +2230,7 @@ function Quantum:CreateWindow(data)
                     ZIndex = 31
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = SearchBox})
+                Create("UIStroke", {Color = Color3.fromRGB(80, 80, 85), Thickness = 1, Parent = SearchBox})
 
                 Create("ImageLabel", {
                     Parent = SearchBox,
@@ -2352,8 +2353,8 @@ function Quantum:CreateWindow(data)
                     if not DropdownBtn or not DropdownBtn.Parent then return end
                     local btnPos = DropdownBtn.AbsolutePosition
                     local btnSize = DropdownBtn.AbsoluteSize
-                    MenuFrame.Position = UDim2.new(0, btnPos.X, 0, btnPos.Y + btnSize.Y + 3)
-                    MenuFrame.Size = UDim2.new(0, btnSize.X, 0, MenuFrame.Size.Y.Offset)
+                    MenuFrame.Position = UDim2.new(0, btnPos.X + btnSize.X + 5, 0, btnPos.Y)
+                    MenuFrame.Size = UDim2.new(0, math.max(btnSize.X, 160), 0, MenuFrame.Size.Y.Offset)
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(function()
@@ -2372,7 +2373,7 @@ function Quantum:CreateWindow(data)
                         UpdateMenuPosition()
                         MenuFrame.Visible = true
                         local menuHeight = math.min(#options * 28 + 36, 220)
-                        MenuFrame.Size = UDim2.new(0, DropdownBtn.AbsoluteSize.X, 0, menuHeight)
+                        MenuFrame.Size = UDim2.new(0, math.max(DropdownBtn.AbsoluteSize.X, 160), 0, menuHeight)
                         Arrow.Rotation = 180
                         SearchBox.Text = ""
                         BuildOptions("")
@@ -2629,6 +2630,7 @@ function Quantum:CreateWindow(data)
                     ZIndex = 31
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = SearchBox})
+                Create("UIStroke", {Color = Color3.fromRGB(80, 80, 85), Thickness = 1, Parent = SearchBox})
 
                 Create("ImageLabel", {
                     Parent = SearchBox,
@@ -2787,8 +2789,8 @@ function Quantum:CreateWindow(data)
                     if not DropdownBtn or not DropdownBtn.Parent then return end
                     local btnPos = DropdownBtn.AbsolutePosition
                     local btnSize = DropdownBtn.AbsoluteSize
-                    MenuFrame.Position = UDim2.new(0, btnPos.X, 0, btnPos.Y + btnSize.Y + 3)
-                    MenuFrame.Size = UDim2.new(0, btnSize.X, 0, MenuFrame.Size.Y.Offset)
+                    MenuFrame.Position = UDim2.new(0, btnPos.X + btnSize.X + 5, 0, btnPos.Y)
+                    MenuFrame.Size = UDim2.new(0, math.max(btnSize.X, 160), 0, MenuFrame.Size.Y.Offset)
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(function()
@@ -2807,7 +2809,7 @@ function Quantum:CreateWindow(data)
                         UpdateMenuPosition()
                         MenuFrame.Visible = true
                         local menuHeight = math.min(#options * 28 + 36, 220)
-                        MenuFrame.Size = UDim2.new(0, DropdownBtn.AbsoluteSize.X, 0, menuHeight)
+                        MenuFrame.Size = UDim2.new(0, math.max(DropdownBtn.AbsoluteSize.X, 160), 0, menuHeight)
                         Arrow.Rotation = 180
                         SearchBox.Text = ""
                         BuildOptions()
