@@ -1067,7 +1067,7 @@ function Quantum:CreateWindow(data)
     local ConfirmBox = Create("Frame", {
         Name = "ConfirmBox",
         Parent = ConfirmOverlay,
-        Size = UDim2.new(0, 240, 0, 120),
+        Size = UDim2.new(0, 220, 0, 100),
         Position = UDim2.new(0.5, -110, 0.5, -50),
         BackgroundColor3 = CurrentTheme.Background,
         BorderSizePixel = 0,
@@ -1102,8 +1102,8 @@ function Quantum:CreateWindow(data)
 
     local ConfirmYes = Create("TextButton", {
         Parent = ConfirmBox,
-        Size = UDim2.new(0, 84, 0, 28),
-        Position = UDim2.new(0.5, 4, 1, -32),
+        Size = UDim2.new(0, 80, 0, 26),
+        Position = UDim2.new(0.5, 2, 1, -30),
         BackgroundColor3 = Color3.fromRGB(220, 60, 60),
         Text = "Close",
         TextColor3 = Color3.fromRGB(255, 255, 255),
@@ -1115,8 +1115,8 @@ function Quantum:CreateWindow(data)
 
     local ConfirmNo = Create("TextButton", {
         Parent = ConfirmBox,
-        Size = UDim2.new(0, 84, 0, 28),
-        Position = UDim2.new(0.5, -80, 1, -32),
+        Size = UDim2.new(0, 80, 0, 26),
+        Position = UDim2.new(0.5, -82, 1, -30),
         BackgroundColor3 = CurrentTheme.Element,
         Text = "Cancel",
         TextColor3 = CurrentTheme.Text,
@@ -1182,7 +1182,13 @@ function Quantum:CreateWindow(data)
     ConfirmYes.MouseButton1Click:Connect(function()
         CloseAllDropdowns()
         IsClosed = true
-        MainWindowScreen.Enabled = false
+        IsMinimized = false
+        if MainFrame then
+            MainFrame.Visible = false
+        end
+        if MainWindowScreen then
+            MainWindowScreen.Enabled = false
+        end
         ConfirmOverlay.Visible = false
     end)
 
@@ -2206,8 +2212,8 @@ function Quantum:CreateWindow(data)
                 end
 
                 local MenuFrame = Create("Frame", {
-                    Parent = SectionItems,
-                    Size = UDim2.new(1, 0, 0, 0),
+                    Parent = MainWindowScreen,
+                    Size = UDim2.new(0, 160, 0, 0),
                     Position = UDim2.new(0, 0, 0, 0),
                     BackgroundColor3 = CurrentTheme.Background,
                     BorderSizePixel = 0,
@@ -2324,7 +2330,7 @@ function Quantum:CreateWindow(data)
                                 callback(selected)
                                 ddData.IsOpen = false
                                 MenuFrame.Visible = false
-                                MenuFrame.Size = UDim2.new(1, 0, 0, 0)
+                                MenuFrame.Size = UDim2.new(0, 160, 0, 0)
                                 Arrow.Rotation = 0
                                 if ddData.HeartbeatConn then
                                     pcall(function() ddData.HeartbeatConn:Disconnect() end)
@@ -2357,16 +2363,17 @@ function Quantum:CreateWindow(data)
 
                 local function UpdateMenuPosition()
                     if not DropdownBtn or not DropdownBtn.Parent then return end
+                    if not MenuFrame or not MenuFrame.Parent then return end
+                    local btnAbs = DropdownBtn.AbsolutePosition
                     local btnSize = DropdownBtn.AbsoluteSize
-                    MenuFrame.Position = UDim2.new(0, 0, 0, DropdownBtn.AbsolutePosition.Y - SectionItems.AbsolutePosition.Y + btnSize.Y + 3)
-                    MenuFrame.Size = UDim2.new(1, 0, 0, MenuFrame.Size.Y.Offset)
+                    MenuFrame.Position = UDim2.new(0, btnAbs.X + btnSize.X + 4, 0, btnAbs.Y)
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(function()
                     if ddData.IsOpen then
                         ddData.IsOpen = false
                         MenuFrame.Visible = false
-                        MenuFrame.Size = UDim2.new(1, 0, 0, 0)
+                        MenuFrame.Size = UDim2.new(0, 160, 0, 0)
                         Arrow.Rotation = 0
                         if ddData.HeartbeatConn then
                             pcall(function() ddData.HeartbeatConn:Disconnect() end)
@@ -2378,7 +2385,7 @@ function Quantum:CreateWindow(data)
                         UpdateMenuPosition()
                         MenuFrame.Visible = true
                         local menuHeight = math.min(#options * 28 + 36, 220)
-                        MenuFrame.Size = UDim2.new(1, 0, 0, menuHeight)
+                        MenuFrame.Size = UDim2.new(0, 160, 0, menuHeight)
                         Arrow.Rotation = 180
                         SearchBox.Text = ""
                         BuildOptions("")
@@ -2397,19 +2404,6 @@ function Quantum:CreateWindow(data)
                 end)
 
                 
-                TabContent:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
-                    if ddData.IsOpen then
-                        ddData.IsOpen = false
-                        MenuFrame.Visible = false
-                        MenuFrame.Size = UDim2.new(1, 0, 0, 0)
-                        Arrow.Rotation = 0
-                        if ddData.HeartbeatConn then
-                            pcall(function() ddData.HeartbeatConn:Disconnect() end)
-                            ddData.HeartbeatConn = nil
-                        end
-                    end
-                end)
-
                 local clickConn = UserInputService.InputBegan:Connect(function(input, gpe)
                     if not gpe and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
                         if ddData.IsOpen then
@@ -2424,7 +2418,7 @@ function Quantum:CreateWindow(data)
                                    mousePos.Y < btnPos.Y or mousePos.Y > btnPos.Y + btnSize.Y then
                                     ddData.IsOpen = false
                                     MenuFrame.Visible = false
-                                    MenuFrame.Size = UDim2.new(1, 0, 0, 0)
+                                    MenuFrame.Size = UDim2.new(0, 160, 0, 0)
                                     Arrow.Rotation = 0
                                     if ddData.HeartbeatConn then
                                         pcall(function() ddData.HeartbeatConn:Disconnect() end)
@@ -2605,8 +2599,8 @@ function Quantum:CreateWindow(data)
                 UpdateButtonText()
 
                 local MenuFrame = Create("Frame", {
-                    Parent = SectionItems,
-                    Size = UDim2.new(1, 0, 0, 0),
+                    Parent = MainWindowScreen,
+                    Size = UDim2.new(0, 160, 0, 0),
                     Position = UDim2.new(0, 0, 0, 0),
                     BackgroundColor3 = CurrentTheme.Background,
                     BorderSizePixel = 0,
@@ -2792,16 +2786,17 @@ function Quantum:CreateWindow(data)
 
                 local function UpdateMenuPosition()
                     if not DropdownBtn or not DropdownBtn.Parent then return end
+                    if not MenuFrame or not MenuFrame.Parent then return end
+                    local btnAbs = DropdownBtn.AbsolutePosition
                     local btnSize = DropdownBtn.AbsoluteSize
-                    MenuFrame.Position = UDim2.new(0, 0, 0, DropdownBtn.AbsolutePosition.Y - SectionItems.AbsolutePosition.Y + btnSize.Y + 3)
-                    MenuFrame.Size = UDim2.new(1, 0, 0, MenuFrame.Size.Y.Offset)
+                    MenuFrame.Position = UDim2.new(0, btnAbs.X + btnSize.X + 4, 0, btnAbs.Y)
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(function()
                     if ddData.IsOpen then
                         ddData.IsOpen = false
                         MenuFrame.Visible = false
-                        MenuFrame.Size = UDim2.new(1, 0, 0, 0)
+                        MenuFrame.Size = UDim2.new(0, 160, 0, 0)
                         Arrow.Rotation = 0
                         if ddData.HeartbeatConn then
                             pcall(function() ddData.HeartbeatConn:Disconnect() end)
@@ -2813,7 +2808,7 @@ function Quantum:CreateWindow(data)
                         UpdateMenuPosition()
                         MenuFrame.Visible = true
                         local menuHeight = math.min(#options * 28 + 36, 220)
-                        MenuFrame.Size = UDim2.new(1, 0, 0, menuHeight)
+                        MenuFrame.Size = UDim2.new(0, 160, 0, menuHeight)
                         Arrow.Rotation = 180
                         SearchBox.Text = ""
                         BuildOptions()
@@ -2832,19 +2827,6 @@ function Quantum:CreateWindow(data)
                 end)
 
                 
-                TabContent:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
-                    if ddData.IsOpen then
-                        ddData.IsOpen = false
-                        MenuFrame.Visible = false
-                        MenuFrame.Size = UDim2.new(1, 0, 0, 0)
-                        Arrow.Rotation = 0
-                        if ddData.HeartbeatConn then
-                            pcall(function() ddData.HeartbeatConn:Disconnect() end)
-                            ddData.HeartbeatConn = nil
-                        end
-                    end
-                end)
-
                 local clickConn = UserInputService.InputBegan:Connect(function(input, gpe)
                     if not gpe and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
                         if ddData.IsOpen then
@@ -2859,7 +2841,7 @@ function Quantum:CreateWindow(data)
                                    mousePos.Y < btnPos.Y or mousePos.Y > btnPos.Y + btnSize.Y then
                                     ddData.IsOpen = false
                                     MenuFrame.Visible = false
-                                    MenuFrame.Size = UDim2.new(1, 0, 0, 0)
+                                    MenuFrame.Size = UDim2.new(0, 160, 0, 0)
                                     Arrow.Rotation = 0
                                     if ddData.HeartbeatConn then
                                         pcall(function() ddData.HeartbeatConn:Disconnect() end)
