@@ -751,8 +751,8 @@ local function CreateFloatingIcon(customIcon)
     local Backdrop = Create("Frame", {
         Name = "Backdrop",
         Parent = FloatingIconScreen,
-        Size = UDim2.new(0, 40, 0, 40),
-        Position = UDim2.new(0, 14, 0.5, -20),
+        Size = UDim2.new(0, 48, 0, 48),
+        Position = UDim2.new(0, 14, 0.5, -24),
         BackgroundColor3 = Color3.fromRGB(0, 0, 0),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
@@ -772,7 +772,7 @@ local function CreateFloatingIcon(customIcon)
         Parent = Backdrop,
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(0, 36, 0, 36),
+        Size = UDim2.new(0, 44, 0, 44),
         BackgroundTransparency = 1,
         Image = iconToUse,
         ImageColor3 = isCustomImage and Color3.fromRGB(255, 255, 255) or CurrentTheme.Text,
@@ -988,8 +988,8 @@ function Quantum:CreateWindow(data)
     local ProfileSection = Create("Frame", {
         Name = "ProfileSection",
         Parent = Topbar,
-        Size = UDim2.new(0, 120, 0, 32),
-        Position = UDim2.new(1, -190, 0.5, -12),
+        Size = UDim2.new(0, 160, 0, 32),
+        Position = UDim2.new(1, -230, 0.5, -12),
         BackgroundTransparency = 1,
         ZIndex = 21
     })
@@ -1019,7 +1019,7 @@ function Quantum:CreateWindow(data)
     local ProfileName = Create("TextLabel", {
         Name = "ProfileName",
         Parent = ProfileSection,
-        Size = UDim2.new(0, 80, 0, 14),
+        Size = UDim2.new(0, 120, 0, 14),
         Position = UDim2.new(0, 30, 0, 0),
         BackgroundTransparency = 1,
         Text = "Quantum User",
@@ -1034,7 +1034,7 @@ function Quantum:CreateWindow(data)
     local ProfileUser = Create("TextLabel", {
         Name = "ProfileUser",
         Parent = ProfileSection,
-        Size = UDim2.new(0, 80, 0, 12),
+        Size = UDim2.new(0, 120, 0, 12),
         Position = UDim2.new(0, 30, 0, 14),
         BackgroundTransparency = 1,
         Text = "@Quantum User",
@@ -1124,7 +1124,7 @@ function Quantum:CreateWindow(data)
         Name = "Controls",
         Parent = Topbar,
         Size = UDim2.new(0, 90, 0, Config.TopbarHeight),
-        Position = UDim2.new(1, -70, 0, 0),
+        Position = UDim2.new(1, -95, 0, 0),
         BackgroundTransparency = 1,
         ZIndex = 21
     })
@@ -1586,7 +1586,7 @@ function Quantum:CreateWindow(data)
             local SectionFrame = Create("Frame", {
                 Parent = TabContent,
                 Size = UDim2.new(1, 0, 0, 44),
-                BackgroundColor3 = CurrentTheme.Element,
+                BackgroundTransparency = 1,
                 BorderSizePixel = 0,
                 ClipsDescendants = true,
                 LayoutOrder = #TabContent:GetChildren(),
@@ -1597,7 +1597,7 @@ function Quantum:CreateWindow(data)
             local SectionHeader = Create("TextButton", {
                 Parent = SectionFrame,
                 Size = UDim2.new(1, 0, 0, 44),
-                BackgroundColor3 = CurrentTheme.Element,
+                BackgroundTransparency = 1,
                 Text = "",
                 AutoButtonColor = false,
                 ZIndex = 17
@@ -1699,8 +1699,6 @@ function Quantum:CreateWindow(data)
             end
 
             ListenTheme(function(theme)
-                SectionFrame.BackgroundColor3 = theme.Element
-                SectionHeader.BackgroundColor3 = theme.Element
                 Arrow.ImageColor3 = theme.SubText
             end)
 
@@ -1933,7 +1931,7 @@ function Quantum:CreateWindow(data)
                     Parent = SliderFrame,
                     Size = UDim2.new(1, -14, 0, 4),
                     Position = UDim2.new(0, 7, 0, hasDesc and 36 or 26),
-                    BackgroundColor3 = CurrentTheme.Element,
+                    BackgroundColor3 = Color3.fromRGB(35, 35, 40),
                     BorderSizePixel = 0,
                     ZIndex = 19
                 })
@@ -1997,7 +1995,7 @@ function Quantum:CreateWindow(data)
 
                 ListenTheme(function(theme)
                     SliderFrame.BackgroundColor3 = theme.Background
-                    Track.BackgroundColor3 = theme.Element
+                    Track.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
                     Fill.BackgroundColor3 = theme.Accent
                     Knob.BackgroundColor3 = theme.Text
                     ValueLabel.TextColor3 = theme.Accent
@@ -2914,6 +2912,12 @@ function Quantum:CreateWindow(data)
                     ZIndex = 18
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = InputFrame})
+                Create("UIStroke", {
+                    Color = Color3.fromRGB(80, 220, 120),
+                    Thickness = 1,
+                    Transparency = 0.7,
+                    Parent = InputFrame
+                })
 
                 Create("ImageLabel", {
                     Parent = InputFrame,
@@ -3161,6 +3165,12 @@ function Quantum:CreateWindow(data)
                     ZIndex = 18
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = ParaFrame})
+                Create("UIStroke", {
+                    Color = Color3.fromRGB(80, 220, 120),
+                    Thickness = 1,
+                    Transparency = 0.7,
+                    Parent = ParaFrame
+                })
 
                 Create("ImageLabel", {
                     Parent = ParaFrame,
