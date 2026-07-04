@@ -2158,7 +2158,7 @@ function Quantum:CreateWindow(data)
                     Parent = DropdownFrame,
                     Size = UDim2.new(0, 150, 0, 26),
                     Position = UDim2.new(1, -158, 0, hasDesc and 8 or 2),
-                    BackgroundColor3 = Color3.fromRGB(25, 25, 30),
+                    BackgroundColor3 = Color3.fromRGB(55, 55, 60),
                     Text = "",
                     TextColor3 = CurrentTheme.SubText,
                     TextSize = 11,
@@ -2168,7 +2168,7 @@ function Quantum:CreateWindow(data)
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = DropdownBtn})
                 Create("UIStroke", {
-                    Color = Color3.fromRGB(50, 50, 55),
+                    Color = Color3.fromRGB(80, 80, 85),
                     Thickness = 1,
                     Transparency = 0.5,
                     Parent = DropdownBtn
@@ -2219,7 +2219,7 @@ function Quantum:CreateWindow(data)
                     Parent = MenuFrame,
                     Size = UDim2.new(1, -8, 0, 28),
                     Position = UDim2.new(0, 4, 0, 4),
-                    BackgroundColor3 = CurrentTheme.Element,
+                    BackgroundColor3 = Color3.fromRGB(55, 55, 60),
                     Text = "",
                     PlaceholderText = "Search...",
                     TextColor3 = CurrentTheme.Text,
@@ -2433,12 +2433,12 @@ function Quantum:CreateWindow(data)
 
                 ListenTheme(function(theme)
                     DropdownFrame.BackgroundColor3 = theme.Background
-                    DropdownBtn.BackgroundColor3 = theme.Element
+                    DropdownBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
                     local selText, _ = NormalizeOption(selected)
                     DropdownBtn.TextColor3 = selText ~= "" and selText ~= "Select option" and theme.Text or theme.SubText
                     Arrow.ImageColor3 = theme.SubText
                     MenuFrame.BackgroundColor3 = theme.Background
-                    SearchBox.BackgroundColor3 = theme.Element
+                    SearchBox.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
                     SearchBox.TextColor3 = theme.Text
                     SearchBox.PlaceholderColor3 = theme.SubText
                     OptionsScroll.ScrollBarImageColor3 = theme.Accent
@@ -2544,7 +2544,7 @@ function Quantum:CreateWindow(data)
                     Parent = DropdownFrame,
                     Size = UDim2.new(0, 150, 0, 26),
                     Position = UDim2.new(1, -158, 0, hasDesc and 8 or 2),
-                    BackgroundColor3 = Color3.fromRGB(25, 25, 30),
+                    BackgroundColor3 = Color3.fromRGB(55, 55, 60),
                     Text = "",
                     TextColor3 = CurrentTheme.SubText,
                     TextSize = 11,
@@ -2554,7 +2554,7 @@ function Quantum:CreateWindow(data)
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = DropdownBtn})
                 Create("UIStroke", {
-                    Color = Color3.fromRGB(50, 50, 55),
+                    Color = Color3.fromRGB(80, 80, 85),
                     Thickness = 1,
                     Transparency = 0.5,
                     Parent = DropdownBtn
@@ -2618,7 +2618,7 @@ function Quantum:CreateWindow(data)
                     Parent = MenuFrame,
                     Size = UDim2.new(1, -8, 0, 28),
                     Position = UDim2.new(0, 4, 0, 4),
-                    BackgroundColor3 = CurrentTheme.Element,
+                    BackgroundColor3 = Color3.fromRGB(55, 55, 60),
                     Text = "",
                     PlaceholderText = "Search...",
                     TextColor3 = CurrentTheme.Text,
@@ -2868,11 +2868,11 @@ function Quantum:CreateWindow(data)
 
                 ListenTheme(function(theme)
                     DropdownFrame.BackgroundColor3 = theme.Background
-                    DropdownBtn.BackgroundColor3 = theme.Element
+                    DropdownBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
                     UpdateButtonText()
                     Arrow.ImageColor3 = theme.SubText
                     MenuFrame.BackgroundColor3 = theme.Background
-                    SearchBox.BackgroundColor3 = theme.Element
+                    SearchBox.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
                     SearchBox.TextColor3 = theme.Text
                     SearchBox.PlaceholderColor3 = theme.SubText
                     OptionsScroll.ScrollBarImageColor3 = theme.Accent
@@ -2974,7 +2974,7 @@ function Quantum:CreateWindow(data)
                     Parent = InputFrame,
                     Size = UDim2.new(0, 92, 0, 24),
                     Position = UDim2.new(1, -99, 0, hasDesc and 8 or 3),
-                    BackgroundColor3 = Color3.fromRGB(25, 25, 30),
+                    BackgroundColor3 = Color3.fromRGB(55, 55, 60),
                     Text = default,
                     PlaceholderText = placeholder,
                     TextColor3 = CurrentTheme.Text,
@@ -2987,7 +2987,7 @@ function Quantum:CreateWindow(data)
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = InputBox})
                 Create("UIStroke", {
-                    Color = Color3.fromRGB(50, 50, 55),
+                    Color = Color3.fromRGB(80, 80, 85),
                     Thickness = 1,
                     Transparency = 0.5,
                     Parent = InputBox
@@ -2999,7 +2999,7 @@ function Quantum:CreateWindow(data)
 
                 ListenTheme(function(theme)
                     InputFrame.BackgroundColor3 = theme.Background
-                    InputBox.BackgroundColor3 = theme.Element
+                    InputBox.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
                     InputBox.TextColor3 = theme.Text
                     InputBox.PlaceholderColor3 = theme.SubText
                 end)
@@ -3180,6 +3180,13 @@ function Quantum:CreateWindow(data)
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = false,
                     ZIndex = 18
+                })
+                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = ParaFrame})
+                Create("UIStroke", {
+                    Color = Color3.fromRGB(80, 220, 120),
+                    Thickness = 1,
+                    Transparency = 0.85,
+                    Parent = ParaFrame
                 })
 
                 Create("ImageLabel", {
