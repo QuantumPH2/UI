@@ -35,107 +35,179 @@ local Config = {
     }
 }
 
-local MinimalFallbackIcons = {
-    Info = "rbxassetid://7733960981",
-    Check = "rbxassetid://7733715400",
-    X = "rbxassetid://7743878857",
+local LegacyIcons = {
+    Custom = "rbxassetid://109818941157555",
+    Home = "rbxassetid://7733960981",
+    Settings = "rbxassetid://7734053495",
+    User = "rbxassetid://7743875962",
+    Eye = "rbxassetid://7733774602",
+    EyeOff = "rbxassetid://7733774495",
+    Shield = "rbxassetid://7734056608",
+    ShieldCheck = "rbxassetid://7734056411",
     Search = "rbxassetid://7734052925",
-    Warning = "rbxassetid://7733911490",
     ChevronDown = "rbxassetid://7733717447",
+    ChevronRight = "rbxassetid://7733717755",
     ChevronUp = "rbxassetid://7733919605",
     ChevronLeft = "rbxassetid://7733717651",
-    ChevronRight = "rbxassetid://7733717755",
+    X = "rbxassetid://7743878857",
+    Minus = "rbxassetid://7734000129",
+    Maximize = "rbxassetid://7733992982",
+    Maximize2 = "rbxassetid://7733992901",
+    Minimize = "rbxassetid://7733997941",
+    Minimize2 = "rbxassetid://7733997870",
+    Moon = "rbxassetid://7743870134",
+    Sun = "rbxassetid://7734068495",
+    Palette = "rbxassetid://7734021595",
+    Sliders = "rbxassetid://7734058803",
+    ToggleLeft = "rbxassetid://7734091286",
+    ToggleRight = "rbxassetid://7743873539",
+    Type = "rbxassetid://7743874740",
+    MousePointer = "rbxassetid://7743870392",
+    Layers = "rbxassetid://7743868936",
+    Command = "rbxassetid://7733924046",
+    Star = "rbxassetid://7734068321",
+    Bell = "rbxassetid://7733911828",
+    Folder = "rbxassetid://7733799185",
+    Terminal = "rbxassetid://7743872929",
+    Activity = "rbxassetid://7733655755",
+    Target = "rbxassetid://7743872758",
+    Anchor = "rbxassetid://7733911490",
+    Compass = "rbxassetid://7733924216",
+    Cpu = "rbxassetid://7733765045",
+    Globe = "rbxassetid://7733954760",
+    Hash = "rbxassetid://7733955906",
+    Key = "rbxassetid://7733965118",
+    Lock = "rbxassetid://7733992528",
+    Unlock = "rbxassetid://7743875263",
+    Move = "rbxassetid://7743870731",
+    Power = "rbxassetid://7734042493",
+    RefreshCw = "rbxassetid://7734051052",
+    Trash = "rbxassetid://7743873871",
+    Trash2 = "rbxassetid://7743873772",
+    Wifi = "rbxassetid://7743878148",
+    Wrench = "rbxassetid://7743878358",
+    Check = "rbxassetid://7733715400",
+    AlertCircle = "rbxassetid://7733911490",
+    Info = "rbxassetid://7733960981",
+    AlertTriangle = "rbxassetid://7733911490",
+    ["bot"] = "rbxassetid://7733924046",
+    ["fish"] = "rbxassetid://7733954760",
+    ["droplets"] = "rbxassetid://7733924216",
+    ["map-pin"] = "rbxassetid://7743872758",
+    ["shopping-cart"] = "rbxassetid://7733799185",
+    ["calendar"] = "rbxassetid://7733911828",
+    ["settings"] = "rbxassetid://7734053495",
+    ["repeat"] = "rbxassetid://7734051052",
+    ["scroll"] = "rbxassetid://7743874740",
+    ["check"] = "rbxassetid://7733715400",
+    ["alert-triangle"] = "rbxassetid://7733911490",
+    ["x"] = "rbxassetid://7743878857",
+    ["refresh-cw"] = "rbxassetid://7734051052",
+    ["user-x"] = "rbxassetid://7743875962",
+    ["bar-chart-2"] = "rbxassetid://7734058803",
+    ["smile"] = "rbxassetid://7743875962",
+    ["sword"] = "rbxassetid://7743872758",
+    ["gem"] = "rbxassetid://7734068321",
+    ["sparkles"] = "rbxassetid://7734068321",
+    ["egg"] = "rbxassetid://7733911828",
+    ["heart"] = "rbxassetid://7734068321",
+    ["cloud"] = "rbxassetid://7733954760",
+    ["flame"] = "rbxassetid://7733911490",
+    ["leaf"] = "rbxassetid://7733924216",
+    ["candy"] = "rbxassetid://7733911828",
+    ["rainbow"] = "rbxassetid://7734068321",
+    ["code"] = "rbxassetid://7743872929",
+    ["wand"] = "rbxassetid://7733965118",
+    ["dna"] = "rbxassetid://7733765045",
+    ["clover"] = "rbxassetid://7733924216",
+    ["coins"] = "rbxassetid://7733954760",
+    ["skull"] = "rbxassetid://7733911490",
+    ["zap"] = "rbxassetid://7733765045",
+    ["telescope"] = "rbxassetid://7733924216",
+    ["cloud-lightning"] = "rbxassetid://7733911490",
+    ["trending-up"] = "rbxassetid://7734058803",
+    ["lock"] = "rbxassetid://7733992528",
+    ["bug"] = "rbxassetid://7733924046",
+    ["waves"] = "rbxassetid://7733954760",
+    ["camera"] = "rbxassetid://7733774602",
+    ["box"] = "rbxassetid://7733799185",
+    ["layers"] = "rbxassetid://7743868936",
+    ["clock"] = "rbxassetid://7733911828",
+    ["rotate-ccw"] = "rbxassetid://7734051052",
+    ["moon"] = "rbxassetid://7743870134",
+    ["sun"] = "rbxassetid://7734068495",
+    ["thumbs-up"] = "rbxassetid://7733715400",
+    ["info"] = "rbxassetid://7733960981",
+    ["user"] = "rbxassetid://7743875962",
+    ["star"] = "rbxassetid://7734068321",
+    ["target"] = "rbxassetid://7743872758",
+    ["anchor"] = "rbxassetid://7733911490",
+    ["shield"] = "rbxassetid://7734056608",
+    ["cpu"] = "rbxassetid://7733765045",
+    ["hash"] = "rbxassetid://7733955906",
+    ["key"] = "rbxassetid://7733965118",
+    ["move"] = "rbxassetid://7743870731",
+    ["trash"] = "rbxassetid://7743873871",
+    ["wifi"] = "rbxassetid://7743878148",
+    ["wrench"] = "rbxassetid://7743878358",
+    ["alert-circle"] = "rbxassetid://7733911490",
+    ["shrub"] = "rbxassetid://7733924216",
+    ["droplet"] = "rbxassetid://7733924216",
+    ["plus"] = "rbxassetid://7734042493",
+    ["eye"] = "rbxassetid://7733774602",
+    ["eye-off"] = "rbxassetid://7733774495",
+    ["shield-check"] = "rbxassetid://7734056411",
+    ["toggle-left"] = "rbxassetid://7734091286",
+    ["toggle-right"] = "rbxassetid://7743873539",
+    ["mouse-pointer"] = "rbxassetid://7743870392",
+    ["globe"] = "rbxassetid://7733954760",
+    ["compass"] = "rbxassetid://7733924216",
+    ["activity"] = "rbxassetid://7733655755",
+    ["command"] = "rbxassetid://7733924046",
+    ["terminal"] = "rbxassetid://7743872929",
+    ["folder"] = "rbxassetid://7733799185",
+    ["bell"] = "rbxassetid://7733911828",
+    ["trash-2"] = "rbxassetid://7743873772",
+    ["unlock"] = "rbxassetid://7743875263",
+    ["minimize-2"] = "rbxassetid://7733997870",
+    ["maximize-2"] = "rbxassetid://7733992901",
+    ["chevron-left"] = "rbxassetid://7733717651",
+    ["chevron-right"] = "rbxassetid://7733717755",
+    ["chevron-up"] = "rbxassetid://7733919605",
+    ["chevron-down"] = "rbxassetid://7733717447",
+    ["search"] = "rbxassetid://7734052925",
+    ["minus"] = "rbxassetid://7734000129",
+    ["power"] = "rbxassetid://7734042493",
+    ["atom"] = "rbxassetid://7733765045",
+    ["refreshCw"] = "rbxassetid://7734051052",
+    ["alertTriangle"] = "rbxassetid://7733911490",
+    ["alertCircle"] = "rbxassetid://7733911490",
+    ["barChart2"] = "rbxassetid://7734058803",
+    ["userX"] = "rbxassetid://7743875962",
+    ["mapPin"] = "rbxassetid://7743872758",
+    ["shoppingCart"] = "rbxassetid://7733799185",
+    ["rotateCcw"] = "rbxassetid://7734051052",
+    ["cloudLightning"] = "rbxassetid://7733911490",
+    ["trendingUp"] = "rbxassetid://7734058803",
 }
 
+
+
+
+
+
 local IconModule = {
-    IconsType = "solar",
+    IconsType = "lucide",
     New = nil,
     IconThemeTag = nil,
     Icons = {},
-    LoadedPacks = {},
-    CacheFolder = "QuantumIconCache",
 }
 
-local PackUrls = {
-    solar = "https://raw.githubusercontent.com/Footagesus/Icons/main/solar/dist/Icons.lua",
-}
-
-local function GetCachePath(packName)
-    return IconModule.CacheFolder .. "_" .. packName .. ".json"
-end
-
-local function SavePackCache(packName, data)
-    if typeof(writefile) ~= "function" then return end
-    local ok, json = pcall(function()
-        return HttpService:JSONEncode(data)
-    end)
-    if ok and json then
-        pcall(writefile, GetCachePath(packName), json)
-    end
-end
-
-local function LoadPackCache(packName)
-    if typeof(readfile) ~= "function" then return nil end
-    local ok, content = pcall(readfile, GetCachePath(packName))
-    if ok and content and content ~= "" then
-        local ok2, data = pcall(function()
-            return HttpService:JSONDecode(content)
-        end)
-        if ok2 and type(data) == "table" then
-            return data
-        end
-    end
+local function FetchIconPack(url)
+    -- Delta executor blocks external HTTP requests
+    -- Using built-in LegacyIcons only
     return nil
 end
-
-local function FetchIconPack(url, packName)
-    if not url or url == "" then return nil end
-
-    local cached = LoadPackCache(packName)
-    if cached then
-        IconModule.LoadedPacks[packName] = true
-        return cached
-    end
-
-    local success, result = pcall(function()
-        if game and game.HttpGet then
-            local content = game:HttpGet(url, true)
-            if content and content ~= "" then
-                local packFunc = loadstring(content)
-                if packFunc then
-                    local pack = packFunc()
-                    if type(pack) == "table" then
-                        return pack
-                    end
-                end
-            end
-        end
-        return nil
-    end)
-
-    if success and result and type(result) == "table" then
-        SavePackCache(packName, result)
-        IconModule.LoadedPacks[packName] = true
-        return result
-    end
-
-    return nil
-end
-
-local function AutoLoadPacks()
-    for packName, url in pairs(PackUrls) do
-        if not IconModule.LoadedPacks[packName] then
-            task.spawn(function()
-                local pack = FetchIconPack(url, packName)
-                if pack and type(pack) == "table" then
-                    IconModule.Icons[packName] = pack
-                end
-            end)
-        end
-    end
-end
-
-task.spawn(AutoLoadPacks)
 
 local function parseIconString(iconString)
     if type(iconString) == "string" then
@@ -234,25 +306,26 @@ function IconModule.Icon2(Icon, Type, DefaultFormat)
     return IconModule.Icon(Icon, Type, true)
 end
 
-for packName, url in pairs(PackUrls) do
-    task.spawn(function()
-        local attempts = 0
-        local maxAttempts = 3
-        local pack = nil
-        while attempts < maxAttempts and not pack do
-            pack = FetchIconPack(url, packName)
-            if not pack then
-                attempts = attempts + 1
-                task.wait(1.5)
-            end
-        end
-        if pack then
-            IconModule.Icons[packName] = pack
-        else
-            warn("[Quantum] Failed to load icon pack: " .. packName .. " (" .. url .. ")")
-        end
-    end)
-end
+
+local packUrls = {
+    lucide = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/lucide/dist/Icons.lua",
+    solar = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/solar/dist/Icons.lua",
+    craft = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/craft/dist/Icons.lua",
+    geist = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/geist/dist/Icons.lua",
+    sfsymbols = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/sfsymbols/dist/Icons.lua",
+    gravity = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/gravity/dist/Icons.lua",
+}
+
+-- Icon packs disabled for Delta executor compatibility
+-- Using built-in LegacyIcons only
+-- for packName, url in pairs(packUrls) do
+--     local pack = FetchIconPack(url)
+--     if pack then
+--         IconModule.Icons[packName] = pack
+--     end
+-- end
+
+
 
 local function Create(className, properties)
     local instance = Instance.new(className)
@@ -289,8 +362,9 @@ local function Round(number, precision)
 end
 
 local function GetIcon(name, iconType)
-    if not name then return {Image = MinimalFallbackIcons.Info} end
+    if not name then return {Image = LegacyIcons.Info} end
 
+    
     local iconData = IconModule.Icon2(name, iconType)
     if iconData then
         if type(iconData) == "string" then
@@ -304,15 +378,17 @@ local function GetIcon(name, iconType)
         end
     end
 
-    if MinimalFallbackIcons[name] then 
-        return {Image = MinimalFallbackIcons[name]} 
+    
+    if LegacyIcons[name] then 
+        return {Image = LegacyIcons[name]} 
     end
 
+    
     if type(name) == "string" and (name:sub(1, 13) == "rbxassetid://" or name:sub(1, 4) == "http") then
         return {Image = name}
     end
 
-    return {Image = MinimalFallbackIcons.Info}
+    return {Image = LegacyIcons.Info}
 end
 
 local function NormalizeOption(opt)
@@ -649,7 +725,7 @@ local function CreateFloatingIcon(customIcon)
         FloatingIconScreen:Destroy()
     end
 
-    local iconToUse = customIcon and GetIcon(customIcon) or GetIcon("Info")
+    local iconToUse = customIcon and GetIcon(customIcon) or GetIcon("Custom")
 
     FloatingIconScreen = Create("ScreenGui", {
         Name = "QuantumFloatingIcon",
@@ -659,6 +735,7 @@ local function CreateFloatingIcon(customIcon)
         Enabled = true
     })
 
+    
     local Backdrop = Create("Frame", {
         Name = "Backdrop",
         Parent = FloatingIconScreen,
@@ -933,7 +1010,7 @@ function Quantum:CreateWindow(data)
         Size = UDim2.new(0, 120, 0, 14),
         Position = UDim2.new(0, 30, 0, 0),
         BackgroundTransparency = 1,
-        Text = "Quantum User",
+        Text = "Quantum User",
         TextColor3 = CurrentTheme.Text,
         TextSize = 11,
         Font = Enum.Font.GothamBold,
@@ -948,7 +1025,7 @@ function Quantum:CreateWindow(data)
         Size = UDim2.new(0, 120, 0, 12),
         Position = UDim2.new(0, 30, 0, 14),
         BackgroundTransparency = 1,
-        Text = "@QuantumUser",
+        Text = "@Quantum User",
         TextColor3 = CurrentTheme.SubText,
         TextSize = 11,
         Font = Enum.Font.Gotham,
@@ -1117,6 +1194,7 @@ function Quantum:CreateWindow(data)
         ZIndex = 15
     })
 
+    
     local SearchFrame = Create("Frame", {
         Parent = Sidebar,
         Size = UDim2.new(1, -10, 0, 32),
@@ -1311,10 +1389,12 @@ function Quantum:CreateWindow(data)
 
     local WindowAPI = {}
     WindowAPI.Notify = function(_, d) Quantum:Notify(d) end
+    -- Theme switching removed, only QuantumDark available
     WindowAPI.Config = ConfigManager.new(windowName)
     WindowAPI.Config:Load()
     WindowAPI.Config:StartAutoSave()
 
+    
     WindowAPI.EnableAutoSave = function(_, interval)
         WindowAPI.Config:EnableAutoSave(interval)
     end
@@ -1347,25 +1427,6 @@ function Quantum:CreateWindow(data)
     end
     WindowAPI.GetConfigNames = function(_)
         return WindowAPI.Config:GetAllConfigNames()
-    end
-
-    WindowAPI.SetIconPack = function(_, packName)
-        if PackUrls[packName] then
-            IconModule.SetIconsType(packName)
-            return true
-        end
-        return false
-    end
-    WindowAPI.GetAvailableIconPacks = function(_)
-        local packs = {}
-        for name, _ in pairs(PackUrls) do
-            table.insert(packs, name)
-        end
-        return packs
-    end
-    WindowAPI.ReloadIconPacks = function(_)
-        task.spawn(AutoLoadPacks)
-        return true
     end
 
     local Tabs = {}
@@ -2303,7 +2364,7 @@ function Quantum:CreateWindow(data)
                         Arrow.Rotation = 180
                         SearchBox.Text = ""
                         BuildOptions("")
-
+                        
                         ddData.HeartbeatConn = RunService.Heartbeat:Connect(function()
                             if ddData.IsOpen and DropdownBtn and DropdownBtn.Parent then
                                 UpdateMenuPosition()
@@ -2317,6 +2378,7 @@ function Quantum:CreateWindow(data)
                     end
                 end)
 
+                
                 TabContent:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
                     if ddData.IsOpen then
                         ddData.IsOpen = false
@@ -2630,7 +2692,7 @@ function Quantum:CreateWindow(data)
                             Position = UDim2.new(0.5, -6, 0.5, -6),
                             BackgroundTransparency = 1,
                             Image = GetIcon("Check"),
-                            ImageColor3 = CurrentTheme.Success,
+                            ImageColor3 = CurrentTheme.Accent,
                             ZIndex = 34,
                             Visible = IsSelected(opt),
                         })
@@ -2737,7 +2799,7 @@ function Quantum:CreateWindow(data)
                         Arrow.Rotation = 180
                         SearchBox.Text = ""
                         BuildOptions()
-
+                        
                         ddData.HeartbeatConn = RunService.Heartbeat:Connect(function()
                             if ddData.IsOpen and DropdownBtn and DropdownBtn.Parent then
                                 UpdateMenuPosition()
@@ -2751,6 +2813,7 @@ function Quantum:CreateWindow(data)
                     end
                 end)
 
+                
                 TabContent:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
                     if ddData.IsOpen then
                         ddData.IsOpen = false
@@ -3177,6 +3240,7 @@ function Quantum:CreateWindow(data)
                     end
                 end)
 
+                
                 task.spawn(function()
                     for i = 1, 5 do
                         task.wait(0.1)
@@ -3684,6 +3748,7 @@ function Quantum:CreateWindow(data)
             return SectionAPI
         end
 
+        
         function TabAPI:Section(data)
             local sec = self:CreateSection(data)
             self._CurrentSection = sec
@@ -3758,6 +3823,7 @@ function Quantum:CreateWindow(data)
         return TabAPI
     end
 
+    
     SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
         local text = SearchBox.Text:lower()
         for _, tab in ipairs(TabButtons) do
