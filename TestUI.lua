@@ -850,7 +850,6 @@ local function CreateFloatingIcon(customIcon)
     ListenTheme(function(theme)
         if Backdrop and Backdrop.Parent then
             Backdrop.BackgroundColor3 = theme.Sidebar
-            Backdrop.UIStroke.Color = theme.Border
             if not isCustomImage then
                 Icon.ImageColor3 = theme.Text
             end
