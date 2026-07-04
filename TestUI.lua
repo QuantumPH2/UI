@@ -204,28 +204,8 @@ local IconModule = {
 }
 
 local function FetchIconPack(url)
-    local success, result = pcall(function()
-        if typeof(game.HttpGet) == "function" then
-            return game:HttpGet(url)
-        elseif typeof(syn) == "table" and typeof(syn.request) == "function" then
-            local response = syn.request({Url = url, Method = "GET"})
-            return response and response.Body
-        elseif typeof(http_request) == "function" then
-            local response = http_request({Url = url, Method = "GET"})
-            return response and response.Body
-        else
-            return HttpService:GetAsync(url)
-        end
-    end)
-    if success and result and type(result) == "string" and result ~= "" then
-        local ok, loaded = pcall(loadstring, result)
-        if ok and type(loaded) == "function" then
-            local ok2, pack = pcall(loaded)
-            if ok2 and type(pack) == "table" then
-                return pack
-            end
-        end
-    end
+    -- Delta executor blocks external HTTP requests
+    -- Using built-in LegacyIcons only
     return nil
 end
 
@@ -336,12 +316,14 @@ local packUrls = {
     gravity = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/gravity/dist/Icons.lua",
 }
 
-for packName, url in pairs(packUrls) do
-    local pack = FetchIconPack(url)
-    if pack and type(pack) == "table" then
-        IconModule.Icons[packName] = pack
-    end
-end
+-- Icon packs disabled for Delta executor compatibility
+-- Using built-in LegacyIcons only
+-- for packName, url in pairs(packUrls) do
+--     local pack = FetchIconPack(url)
+--     if pack then
+--         IconModule.Icons[packName] = pack
+--     end
+-- end
 
 
 
