@@ -1267,7 +1267,7 @@ function Quantum:CreateWindow(data)
         Parent = MainFrame,
         Size = UDim2.new(1, -Config.SidebarWidth + 4, 1, -Config.TopbarHeight),
         Position = UDim2.new(0, Config.SidebarWidth - 4, 0, Config.TopbarHeight),
-        BackgroundColor3 = CurrentTheme.Background,
+        BackgroundTransparency = 1,
         BorderSizePixel = 0,
         ClipsDescendants = true,
         ZIndex = 14
@@ -1279,7 +1279,7 @@ function Quantum:CreateWindow(data)
         Parent = Content,
         Size = UDim2.new(0, 14, 0, 14),
         Position = UDim2.new(0, -10, 0, 0),
-        BackgroundColor3 = CurrentTheme.Background,
+        BackgroundTransparency = 1,
         BorderSizePixel = 0,
         ZIndex = 14
     })
@@ -1453,7 +1453,7 @@ function Quantum:CreateWindow(data)
         local TabBtn = Create("TextButton", {
             Parent = TabList,
             Size = UDim2.new(1, -6, 0, 36),
-            BackgroundColor3 = CurrentTheme.Element,
+            BackgroundTransparency = 1,
             Text = "",
             AutoButtonColor = false,
             LayoutOrder = #Tabs + 1,
@@ -1535,7 +1535,6 @@ function Quantum:CreateWindow(data)
 
             TabContent.Visible = true
             TabIndicator.Visible = true
-            TabBtn.BackgroundColor3 = CurrentTheme.ElementHover
             TabBtnIcon.ImageColor3 = CurrentTheme.Accent
             TabBtnText.TextColor3 = CurrentTheme.Text
         end
@@ -1543,11 +1542,9 @@ function Quantum:CreateWindow(data)
         TabBtn.MouseButton1Click:Connect(Activate)
         TabBtn.MouseEnter:Connect(function()
             if ActiveTab and ActiveTab.Button == TabBtn then return end
-            TabBtn.BackgroundColor3 = CurrentTheme.ElementHover
         end)
         TabBtn.MouseLeave:Connect(function()
             if ActiveTab and ActiveTab.Button == TabBtn then return end
-            TabBtn.BackgroundColor3 = CurrentTheme.Element
         end)
 
         table.insert(Tabs, {Activate = Activate, Name = tabName, Button = TabBtn})
@@ -1556,11 +1553,9 @@ function Quantum:CreateWindow(data)
 
         ListenTheme(function(theme)
             if ActiveTab and ActiveTab.Button == TabBtn then
-                TabBtn.BackgroundColor3 = theme.ElementHover
                 TabBtnIcon.ImageColor3 = theme.Accent
                 TabBtnText.TextColor3 = theme.Text
             else
-                TabBtn.BackgroundColor3 = theme.Element
                 TabBtnIcon.ImageColor3 = theme.SubText
                 TabBtnText.TextColor3 = theme.SubText
             end
@@ -1778,8 +1773,8 @@ function Quantum:CreateWindow(data)
 
                 local ToggleBtn = Create("Frame", {
                     Parent = ToggleFrame,
-                    Size = UDim2.new(0, 48, 0, 26),
-                    Position = UDim2.new(1, -64, 0.5, -13),
+                    Size = UDim2.new(0, 40, 0, 22),
+                    Position = UDim2.new(1, -56, 0.5, -11),
                     BackgroundColor3 = CurrentTheme.ToggleOff,
                     BorderSizePixel = 0,
                     ZIndex = 19
@@ -1788,8 +1783,8 @@ function Quantum:CreateWindow(data)
 
                 local ToggleCircle = Create("Frame", {
                     Parent = ToggleBtn,
-                    Size = UDim2.new(0, 20, 0, 20),
-                    Position = UDim2.new(0, 3, 0.5, -10),
+                    Size = UDim2.new(0, 16, 0, 16),
+                    Position = UDim2.new(0, 3, 0.5, -8),
                     BackgroundColor3 = CurrentTheme.Text,
                     BorderSizePixel = 0,
                     ZIndex = 20
@@ -1807,14 +1802,14 @@ function Quantum:CreateWindow(data)
                 local state = default
                 if default then
                     ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOn
-                    ToggleCircle.Position = UDim2.new(0, 25, 0.5, -10)
+                    ToggleCircle.Position = UDim2.new(0, 21, 0.5, -8)
                 end
 
                 ToggleClick.MouseButton1Click:Connect(function()
                     state = not state
                     if state then
                         ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOn
-                        ToggleCircle.Position = UDim2.new(0, 25, 0.5, -10)
+                        ToggleCircle.Position = UDim2.new(0, 21, 0.5, -8)
                     else
                         ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOff
                         ToggleCircle.Position = UDim2.new(0, 3, 0.5, -10)
@@ -1837,7 +1832,7 @@ function Quantum:CreateWindow(data)
                         state = val
                         if state then
                             ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOn
-                            ToggleCircle.Position = UDim2.new(0, 25, 0.5, -10)
+                            ToggleCircle.Position = UDim2.new(0, 21, 0.5, -8)
                         else
                             ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOff
                             ToggleCircle.Position = UDim2.new(0, 3, 0.5, -10)
@@ -2134,7 +2129,7 @@ function Quantum:CreateWindow(data)
 
                 Create("TextLabel", {
                     Parent = DropdownFrame,
-                    Size = UDim2.new(0, 76, 0, 14),
+                    Size = UDim2.new(0.4, 0, 0, 14),
                     Position = UDim2.new(0, 22, 0, hasDesc and 1 or 3),
                     BackgroundTransparency = 1,
                     Text = dropdownName,
@@ -2142,6 +2137,7 @@ function Quantum:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.Gotham,
                     TextXAlignment = Enum.TextXAlignment.Left,
+                    TextTruncate = Enum.TextTruncate.AtEnd,
                     ZIndex = 19
                 })
 
@@ -2175,6 +2171,18 @@ function Quantum:CreateWindow(data)
                     ZIndex = 19
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = DropdownBtn})
+                Create("UIStroke", {
+                    Color = Color3.fromRGB(80, 220, 120),
+                    Thickness = 1,
+                    Transparency = 0.7,
+                    Parent = DropdownBtn
+                })
+                Create("UIStroke", {
+                    Color = Color3.fromRGB(80, 220, 120),
+                    Thickness = 1,
+                    Transparency = 0.7,
+                    Parent = DropdownBtn
+                })
 
                 local Arrow = Create("ImageLabel", {
                     Parent = DropdownBtn,
@@ -2507,7 +2515,7 @@ function Quantum:CreateWindow(data)
 
                 Create("TextLabel", {
                     Parent = DropdownFrame,
-                    Size = UDim2.new(0, 76, 0, 14),
+                    Size = UDim2.new(0.4, 0, 0, 14),
                     Position = UDim2.new(0, 22, 0, hasDesc and 1 or 3),
                     BackgroundTransparency = 1,
                     Text = dropdownName,
@@ -2515,6 +2523,7 @@ function Quantum:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.Gotham,
                     TextXAlignment = Enum.TextXAlignment.Left,
+                    TextTruncate = Enum.TextTruncate.AtEnd,
                     ZIndex = 19
                 })
 
@@ -2548,6 +2557,18 @@ function Quantum:CreateWindow(data)
                     ZIndex = 19
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = DropdownBtn})
+                Create("UIStroke", {
+                    Color = Color3.fromRGB(80, 220, 120),
+                    Thickness = 1,
+                    Transparency = 0.7,
+                    Parent = DropdownBtn
+                })
+                Create("UIStroke", {
+                    Color = Color3.fromRGB(80, 220, 120),
+                    Thickness = 1,
+                    Transparency = 0.7,
+                    Parent = DropdownBtn
+                })
 
                 local Arrow = Create("ImageLabel", {
                     Parent = DropdownBtn,
@@ -2912,12 +2933,6 @@ function Quantum:CreateWindow(data)
                     ZIndex = 18
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = InputFrame})
-                Create("UIStroke", {
-                    Color = Color3.fromRGB(80, 220, 120),
-                    Thickness = 1,
-                    Transparency = 0.7,
-                    Parent = InputFrame
-                })
 
                 Create("ImageLabel", {
                     Parent = InputFrame,
@@ -2975,6 +2990,12 @@ function Quantum:CreateWindow(data)
                     ZIndex = 19
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = InputBox})
+                Create("UIStroke", {
+                    Color = Color3.fromRGB(80, 220, 120),
+                    Thickness = 1,
+                    Transparency = 0.7,
+                    Parent = InputBox
+                })
 
                 InputBox.FocusLost:Connect(function(enterPressed)
                     callback(InputBox.Text, enterPressed)
