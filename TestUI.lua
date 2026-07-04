@@ -2023,7 +2023,7 @@ function Quantum:CreateWindow(data)
                 local Btn = Create("TextButton", {
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
-                    BackgroundColor3 = CurrentTheme.Accent,
+                    BackgroundColor3 = Color3.fromRGB(60, 180, 100),
                     Text = "",
                     AutoButtonColor = false,
                     LayoutOrder = #SectionItems:GetChildren(),
@@ -2074,11 +2074,7 @@ function Quantum:CreateWindow(data)
                 end
 
                 Btn.MouseEnter:Connect(function()
-                    Btn.BackgroundColor3 = Color3.fromRGB(
-                        math.clamp(CurrentTheme.Accent.R * 255 + 20, 0, 255),
-                        math.clamp(CurrentTheme.Accent.G * 255 + 20, 0, 255),
-                        math.clamp(CurrentTheme.Accent.B * 255 + 20, 0, 255)
-                    )
+                    Btn.BackgroundColor3 = Color3.fromRGB(80, 200, 120)
                 end)
                 Btn.MouseLeave:Connect(function()
                     Btn.BackgroundColor3 = CurrentTheme.Accent
@@ -2088,7 +2084,7 @@ function Quantum:CreateWindow(data)
                 end)
 
                 ListenTheme(function(theme)
-                    Btn.BackgroundColor3 = theme.Accent
+                    Btn.BackgroundColor3 = Color3.fromRGB(60, 180, 100)
                 end)
 
                 return {Click = callback}
@@ -2109,7 +2105,7 @@ function Quantum:CreateWindow(data)
                 local DropdownFrame = Create("Frame", {
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
-                    BackgroundTransparency = 1,
+                    BackgroundColor3 = CurrentTheme.Element,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = true,
@@ -2162,7 +2158,7 @@ function Quantum:CreateWindow(data)
                     Parent = DropdownFrame,
                     Size = UDim2.new(0, 150, 0, 26),
                     Position = UDim2.new(1, -158, 0, hasDesc and 8 or 2),
-                    BackgroundColor3 = CurrentTheme.Element,
+                    BackgroundColor3 = Color3.fromRGB(25, 25, 30),
                     Text = "",
                     TextColor3 = CurrentTheme.SubText,
                     TextSize = 11,
@@ -2172,9 +2168,9 @@ function Quantum:CreateWindow(data)
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = DropdownBtn})
                 Create("UIStroke", {
-                    Color = Color3.fromRGB(80, 220, 120),
+                    Color = Color3.fromRGB(50, 50, 55),
                     Thickness = 1,
-                    Transparency = 0.7,
+                    Transparency = 0.5,
                     Parent = DropdownBtn
                 })
                 Create("UIStroke", {
@@ -2495,7 +2491,7 @@ function Quantum:CreateWindow(data)
                 local DropdownFrame = Create("Frame", {
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
-                    BackgroundTransparency = 1,
+                    BackgroundColor3 = CurrentTheme.Element,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
                     ClipsDescendants = true,
@@ -2548,7 +2544,7 @@ function Quantum:CreateWindow(data)
                     Parent = DropdownFrame,
                     Size = UDim2.new(0, 150, 0, 26),
                     Position = UDim2.new(1, -158, 0, hasDesc and 8 or 2),
-                    BackgroundColor3 = CurrentTheme.Element,
+                    BackgroundColor3 = Color3.fromRGB(25, 25, 30),
                     Text = "",
                     TextColor3 = CurrentTheme.SubText,
                     TextSize = 11,
@@ -2558,9 +2554,9 @@ function Quantum:CreateWindow(data)
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = DropdownBtn})
                 Create("UIStroke", {
-                    Color = Color3.fromRGB(80, 220, 120),
+                    Color = Color3.fromRGB(50, 50, 55),
                     Thickness = 1,
-                    Transparency = 0.7,
+                    Transparency = 0.5,
                     Parent = DropdownBtn
                 })
                 Create("UIStroke", {
@@ -2978,7 +2974,7 @@ function Quantum:CreateWindow(data)
                     Parent = InputFrame,
                     Size = UDim2.new(0, 92, 0, 24),
                     Position = UDim2.new(1, -99, 0, hasDesc and 8 or 3),
-                    BackgroundColor3 = CurrentTheme.Element,
+                    BackgroundColor3 = Color3.fromRGB(25, 25, 30),
                     Text = default,
                     PlaceholderText = placeholder,
                     TextColor3 = CurrentTheme.Text,
@@ -2991,9 +2987,9 @@ function Quantum:CreateWindow(data)
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = InputBox})
                 Create("UIStroke", {
-                    Color = Color3.fromRGB(80, 220, 120),
+                    Color = Color3.fromRGB(50, 50, 55),
                     Thickness = 1,
-                    Transparency = 0.7,
+                    Transparency = 0.5,
                     Parent = InputBox
                 })
 
