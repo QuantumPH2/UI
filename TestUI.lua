@@ -3181,13 +3181,6 @@ function Quantum:CreateWindow(data)
                     ClipsDescendants = false,
                     ZIndex = 18
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = ParaFrame})
-                Create("UIStroke", {
-                    Color = Color3.fromRGB(80, 220, 120),
-                    Thickness = 1,
-                    Transparency = 0.7,
-                    Parent = ParaFrame
-                })
 
                 Create("ImageLabel", {
                     Parent = ParaFrame,
