@@ -420,6 +420,24 @@ local CurrentTheme = Config.Themes[Config.DefaultTheme]
 local ThemeListeners = {}
 local OpenDropdowns = {}
 local DropdownConnections = {}
+local CurrentDropdownState = {
+    IsOpen = false,
+    IsMulti = false,
+    Selected = nil,
+    Options = {},
+    Callback = nil,
+    Arrow = nil,
+    Button = nil,
+    Rebuild = nil,
+    OptionButtons = {},
+}
+
+local DropdownPanel = nil
+local DropdownOverlay = nil
+local DropdownPanelTitle = nil
+local DropdownPanelSearch = nil
+local DropdownPanelScroll = nil
+
 
 local function ListenTheme(callback)
     table.insert(ThemeListeners, callback)
@@ -427,6 +445,32 @@ local function ListenTheme(callback)
 end
 
 local function CloseAllDropdowns()
+    if CurrentDropdownState and CurrentDropdownState.IsOpen then
+        CurrentDropdownState.IsOpen = false
+        if DropdownPanel then
+            DropdownPanel.Visible = false
+        end
+        if DropdownOverlay then
+            DropdownOverlay.Visible = false
+            DropdownOverlay.BackgroundTransparency = 1
+        end
+        if CurrentDropdownState.Arrow then
+            CurrentDropdownState.Arrow.Rotation = 0
+        end
+        if CurrentDropdownState.OptionButtons then
+            for _, btn in ipairs(CurrentDropdownState.OptionButtons) do
+                if btn then btn:Destroy() end
+            end
+        end
+        CurrentDropdownState.OptionButtons = {}
+        CurrentDropdownState.Selected = nil
+        CurrentDropdownState.Options = {}
+        CurrentDropdownState.Callback = nil
+        CurrentDropdownState.Arrow = nil
+        CurrentDropdownState.Button = nil
+        CurrentDropdownState.Rebuild = nil
+    end
+
     for _, data in ipairs(OpenDropdowns) do
         if data and data.Menu and data.Menu.Parent then
             data.Menu.Visible = false
@@ -442,6 +486,7 @@ local function CloseAllDropdowns()
         end
     end
 end
+
 
 local function RegisterDropdown(menu, arrow, btnRef)
     local data = {Menu = menu, Arrow = arrow, Button = btnRef, IsOpen = false, HeartbeatConn = nil}
@@ -1296,6 +1341,88 @@ function Quantum:CreateWindow(data)
         BorderSizePixel = 0,
         ZIndex = 14
     })
+    DropdownOverlay = Create("Frame", {
+        Name = "DropdownOverlay",
+        Parent = MainFrame,
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Visible = false,
+        ZIndex = 98,
+        Active = true,
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, Config.CornerRadius), Parent = DropdownOverlay})
+
+    DropdownPanel = Create("Frame", {
+        Name = "DropdownPanel",
+        Parent = MainFrame,
+        Size = UDim2.new(0, 180, 1, -Config.TopbarHeight),
+        Position = UDim2.new(1, -180, 0, Config.TopbarHeight),
+        BackgroundColor3 = CurrentTheme.Background,
+        BorderSizePixel = 0,
+        Visible = false,
+        ClipsDescendants = true,
+        ZIndex = 99,
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, Config.CornerRadius), Parent = DropdownPanel})
+    Create("UIStroke", {Color = CurrentTheme.Border, Thickness = 1, Parent = DropdownPanel})
+
+    local DropdownPanelHeader = Create("Frame", {
+        Name = "Header",
+        Parent = DropdownPanel,
+        Size = UDim2.new(1, 0, 0, 36),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ZIndex = 100,
+    })
+
+    DropdownPanelTitle = Create("TextLabel", {
+        Parent = DropdownPanelHeader,
+        Size = UDim2.new(1, -10, 0, 20),
+        Position = UDim2.new(0, 8, 0, 8),
+        BackgroundTransparency = 1,
+        Text = "Select",
+        TextColor3 = CurrentTheme.Text,
+        TextSize = 12,
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 100,
+    })
+
+    DropdownPanelSearch = Create("TextBox", {
+        Parent = DropdownPanel,
+        Size = UDim2.new(1, -10, 0, 28),
+        Position = UDim2.new(0, 5, 0, 32),
+        BackgroundColor3 = CurrentTheme.Element,
+        Text = "",
+        PlaceholderText = "Search...",
+        TextColor3 = CurrentTheme.Text,
+        PlaceholderColor3 = CurrentTheme.SubText,
+        TextSize = 11,
+        Font = Enum.Font.Gotham,
+        ClearTextOnFocus = false,
+        ZIndex = 100,
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = DropdownPanelSearch})
+
+    DropdownPanelScroll = Create("ScrollingFrame", {
+        Parent = DropdownPanel,
+        Size = UDim2.new(1, -10, 1, -68),
+        Position = UDim2.new(0, 5, 0, 64),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 2,
+        ScrollBarImageColor3 = CurrentTheme.Accent,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        ZIndex = 100,
+    })
+    Create("UIListLayout", {
+        Parent = DropdownPanelScroll,
+        Padding = UDim.new(0, 3),
+        SortOrder = Enum.SortOrder.LayoutOrder,
+    })
 
     local ResizeHandle = Create("ImageButton", {
         Name = "ResizeHandle",
@@ -1387,6 +1514,32 @@ function Quantum:CreateWindow(data)
         end)
     end
 
+    DropdownOverlay.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            CloseAllDropdowns()
+        end
+    end)
+
+    local clickConn = UserInputService.InputBegan:Connect(function(input, gpe)
+        if not CurrentDropdownState or not CurrentDropdownState.IsOpen then return end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            local mousePos = UserInputService:GetMouseLocation()
+            local mainPos = MainFrame.AbsolutePosition
+            local mainSize = MainFrame.AbsoluteSize
+            if mousePos.X < mainPos.X or mousePos.X > mainPos.X + mainSize.X or
+               mousePos.Y < mainPos.Y or mousePos.Y > mainPos.Y + mainSize.Y then
+                CloseAllDropdowns()
+            end
+        end
+    end)
+    table.insert(DropdownConnections, clickConn)
+
+    DropdownPanelSearch:GetPropertyChangedSignal("Text"):Connect(function()
+        if CurrentDropdownState and CurrentDropdownState.IsOpen and CurrentDropdownState.Rebuild then
+            CurrentDropdownState.Rebuild(DropdownPanelSearch.Text)
+        end
+    end)
+
     ListenTheme(function(theme)
         MainFrame.BackgroundColor3 = theme.Background
         Shadow.ImageColor3 = theme.Shadow
@@ -1410,6 +1563,12 @@ function Quantum:CreateWindow(data)
         SearchIcon.ImageColor3 = theme.SubText
         SearchBox.TextColor3 = theme.Text
         SearchBox.PlaceholderColor3 = theme.SubText
+        DropdownPanel.BackgroundColor3 = theme.Background
+        DropdownPanelTitle.TextColor3 = theme.Text
+        DropdownPanelSearch.BackgroundColor3 = theme.Element
+        DropdownPanelSearch.TextColor3 = theme.Text
+        DropdownPanelSearch.PlaceholderColor3 = theme.SubText
+        DropdownPanelScroll.ScrollBarImageColor3 = theme.Accent
     end)
 
     local WindowAPI = {}
@@ -2209,76 +2368,19 @@ function Quantum:CreateWindow(data)
                     ZIndex = 20
                 })
 
-                local defaultText, _ = NormalizeOption(default)
-                if defaultText ~= "" then
-                    DropdownBtn.Text = defaultText
-                    DropdownBtn.TextColor3 = CurrentTheme.Text
-                else
-                    DropdownBtn.Text = "Select option"
-                    DropdownBtn.TextColor3 = CurrentTheme.SubText
-                end
-
-                local MenuFrame = Create("Frame", {
-                    Parent = MainWindowScreen,
-                    Size = UDim2.new(0, 160, 0, 0),
-                    Position = UDim2.new(0, 0, 0, 0),
-                    BackgroundColor3 = CurrentTheme.Background,
-                    BorderSizePixel = 0,
-                    ClipsDescendants = true,
-                    Visible = false,
-                    ZIndex = 500
-                })
-                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = MenuFrame})
-                Create("UIStroke", {Color = CurrentTheme.Border, Thickness = 1, Parent = MenuFrame})
-
-                local ddData = RegisterDropdown(MenuFrame, Arrow, DropdownBtn)
-                table.insert(sectionDropdowns, ddData)
-
-                local SearchBox = Create("TextBox", {
-                    Parent = MenuFrame,
-                    Size = UDim2.new(1, -8, 0, 28),
-                    Position = UDim2.new(0, 4, 0, 4),
-                    BackgroundColor3 = Color3.fromRGB(55, 55, 60),
-                    Text = "",
-                    PlaceholderText = "Search...",
-                    TextColor3 = CurrentTheme.Text,
-                    PlaceholderColor3 = CurrentTheme.SubText,
-                    TextSize = 12,
-                    Font = Enum.Font.Gotham,
-                    ClearTextOnFocus = false,
-                    ZIndex = 31
-                })
-                Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = SearchBox})
-                Create("UIStroke", {Color = Color3.fromRGB(80, 80, 85), Thickness = 1, Parent = SearchBox})
-
-                Create("ImageLabel", {
-                    Parent = SearchBox,
-                    Size = UDim2.new(0, 14, 0, 14),
-                    Position = UDim2.new(1, -18, 0.5, -7),
-                    BackgroundTransparency = 1,
-                    Image = GetIcon("Search"),
-                    ImageColor3 = CurrentTheme.SubText,
-                    ZIndex = 32
-                })
-
-                local OptionsScroll = Create("ScrollingFrame", {
-                    Parent = MenuFrame,
-                    Size = UDim2.new(1, -8, 0, 0),
-                    Position = UDim2.new(0, 4, 0, 28),
-                    BackgroundTransparency = 1,
-                    BorderSizePixel = 0,
-                    ScrollBarThickness = 2,
-                    ScrollBarImageColor3 = CurrentTheme.Accent,
-                    CanvasSize = UDim2.new(0, 0, 0, 0),
-                    ZIndex = 31
-                })
-
-                Create("UIListLayout", {
-                    Parent = OptionsScroll,
-                    Padding = UDim.new(0, 2)
-                })
-
                 local selected = default
+                local function UpdateButtonText()
+                    local selText, _ = NormalizeOption(selected)
+                    if selText ~= "" then
+                        DropdownBtn.Text = selText
+                        DropdownBtn.TextColor3 = CurrentTheme.Text
+                    else
+                        DropdownBtn.Text = "Select option"
+                        DropdownBtn.TextColor3 = CurrentTheme.SubText
+                    end
+                end
+                UpdateButtonText()
+
                 local optionButtons = {}
 
                 local function BuildOptions(filterText)
@@ -2287,19 +2389,25 @@ function Quantum:CreateWindow(data)
                     end
                     optionButtons = {}
 
+                    for _, child in ipairs(DropdownPanelScroll:GetChildren()) do
+                        if child:IsA("GuiObject") and child.Name ~= "UIListLayout" then
+                            child:Destroy()
+                        end
+                    end
+
                     local count = 0
                     for _, opt in ipairs(options) do
                         local optText, optIcon = NormalizeOption(opt)
                         if not filterText or filterText == "" or string.find(string.lower(optText), string.lower(filterText), 1, true) then
                             local optBtn = Create("TextButton", {
-                                Parent = OptionsScroll,
+                                Parent = DropdownPanelScroll,
                                 Size = UDim2.new(1, 0, 0, 30),
                                 BackgroundColor3 = CurrentTheme.Element,
                                 Text = "",
                                 TextColor3 = CurrentTheme.Text,
                                 TextSize = 12,
                                 Font = Enum.Font.Gotham,
-                                ZIndex = 32
+                                ZIndex = 101
                             })
                             Create("UICorner", {CornerRadius = UDim.new(0, 3), Parent = optBtn})
 
@@ -2311,7 +2419,7 @@ function Quantum:CreateWindow(data)
                                     BackgroundTransparency = 1,
                                     Image = GetIcon(optIcon),
                                     ImageColor3 = CurrentTheme.SubText,
-                                    ZIndex = 33,
+                                    ZIndex = 102,
                                 })
                                 local txt = Create("TextLabel", {
                                     Parent = optBtn,
@@ -2323,7 +2431,7 @@ function Quantum:CreateWindow(data)
                                     TextSize = 12,
                                     Font = Enum.Font.Gotham,
                                     TextXAlignment = Enum.TextXAlignment.Left,
-                                    ZIndex = 33,
+                                    ZIndex = 102,
                                 })
                             else
                                 optBtn.Text = optText
@@ -2331,18 +2439,9 @@ function Quantum:CreateWindow(data)
 
                             optBtn.MouseButton1Click:Connect(function()
                                 selected = opt
-                                local selText, _ = NormalizeOption(selected)
-                                DropdownBtn.Text = selText
-                                DropdownBtn.TextColor3 = CurrentTheme.Text
+                                UpdateButtonText()
                                 callback(selected)
-                                ddData.IsOpen = false
-                                MenuFrame.Visible = false
-                                MenuFrame.Size = UDim2.new(0, 160, 0, 0)
-                                Arrow.Rotation = 0
-                                if ddData.HeartbeatConn then
-                                    pcall(function() ddData.HeartbeatConn:Disconnect() end)
-                                    ddData.HeartbeatConn = nil
-                                end
+                                CloseAllDropdowns()
                             end)
 
                             optBtn.MouseEnter:Connect(function()
@@ -2357,118 +2456,52 @@ function Quantum:CreateWindow(data)
                         end
                     end
 
-                    OptionsScroll.Size = UDim2.new(1, -8, 1, -36)
-                    OptionsScroll.CanvasSize = UDim2.new(0, 0, 0, count * 28 + 4)
-                end
-
-                BuildOptions("")
-
-                SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-                    BuildOptions(SearchBox.Text)
-                end)
-
-                local function UpdateMenuPosition()
-                    if not DropdownBtn or not DropdownBtn.Parent then return end
-                    if not MenuFrame or not MenuFrame.Parent then return end
-                    local btnAbs = DropdownBtn.AbsolutePosition
-                    local btnSize = DropdownBtn.AbsoluteSize
-                    local menuWidth = 160
-                    local posX = btnAbs.X + btnSize.X - menuWidth
-                    local posY = btnAbs.Y + btnSize.Y + 2
-                    local contentHeight = math.min(#options * 28 + 36, 220)
-                    local menuHeight = math.min(contentHeight, 220)
-                    local screenHeight = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.Y or 1080
-                    if posY + menuHeight > screenHeight - 10 then
-                        posY = btnAbs.Y - menuHeight - 2
-                    end
-                    MenuFrame.Position = UDim2.new(0, posX, 0, posY)
-                    MenuFrame.Size = UDim2.new(0, menuWidth, 0, menuHeight)
+                    DropdownPanelScroll.CanvasSize = UDim2.new(0, 0, 0, count * 33 + 4)
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(function()
-                    if ddData.IsOpen then
-                        ddData.IsOpen = false
-                        MenuFrame.Visible = false
-                        MenuFrame.Size = UDim2.new(0, 160, 0, 0)
-                        Arrow.Rotation = 0
-                        if ddData.HeartbeatConn then
-                            pcall(function() ddData.HeartbeatConn:Disconnect() end)
-                            ddData.HeartbeatConn = nil
-                        end
+                    if CurrentDropdownState.IsOpen and CurrentDropdownState.Button == DropdownBtn then
+                        CloseAllDropdowns()
                     else
                         CloseAllDropdowns()
-                        ddData.IsOpen = true
-                        UpdateMenuPosition()
-                        MenuFrame.Visible = true
+                        CurrentDropdownState.IsOpen = true
+                        CurrentDropdownState.IsMulti = false
+                        CurrentDropdownState.Options = options
+                        CurrentDropdownState.Selected = selected
+                        CurrentDropdownState.Callback = callback
+                        CurrentDropdownState.Arrow = Arrow
+                        CurrentDropdownState.Button = DropdownBtn
+                        CurrentDropdownState.Rebuild = BuildOptions
+                        CurrentDropdownState.OptionButtons = optionButtons
+
+                        DropdownPanelTitle.Text = dropdownName
+                        DropdownPanelSearch.Text = ""
+
+                        DropdownPanel.Visible = true
+                        DropdownOverlay.Visible = true
+                        Tween(DropdownOverlay, {BackgroundTransparency = 0.88}, 0.2)
                         Arrow.Rotation = 180
-                        SearchBox.Text = ""
+
                         BuildOptions("")
-                        
-                        ddData.HeartbeatConn = RunService.Heartbeat:Connect(function()
-                            if ddData.IsOpen and DropdownBtn and DropdownBtn.Parent then
-                                UpdateMenuPosition()
-                            else
-                                if ddData.HeartbeatConn then
-                                    pcall(function() ddData.HeartbeatConn:Disconnect() end)
-                                    ddData.HeartbeatConn = nil
-                                end
-                            end
-                        end)
                     end
                 end)
 
-                
                 TabContent:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
-                    if ddData.IsOpen then
-                        ddData.IsOpen = false
-                        MenuFrame.Visible = false
-                        MenuFrame.Size = UDim2.new(0, 160, 0, 0)
-                        Arrow.Rotation = 0
-                        if ddData.HeartbeatConn then
-                            pcall(function() ddData.HeartbeatConn:Disconnect() end)
-                            ddData.HeartbeatConn = nil
-                        end
+                    if CurrentDropdownState.IsOpen and CurrentDropdownState.Button == DropdownBtn then
+                        CloseAllDropdowns()
                     end
                 end)
-
-                local clickConn = UserInputService.InputBegan:Connect(function(input, gpe)
-                    if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
-                        if ddData.IsOpen then
-                            local mousePos = UserInputService:GetMouseLocation()
-                            local menuPos = MenuFrame.AbsolutePosition
-                            local menuSize = MenuFrame.AbsoluteSize
-                            if mousePos.X < menuPos.X or mousePos.X > menuPos.X + menuSize.X or
-                               mousePos.Y < menuPos.Y or mousePos.Y > menuPos.Y + menuSize.Y then
-                                local btnPos = DropdownBtn.AbsolutePosition
-                                local btnSize = DropdownBtn.AbsoluteSize
-                                if mousePos.X < btnPos.X or mousePos.X > btnPos.X + btnSize.X or
-                                   mousePos.Y < btnPos.Y or mousePos.Y > btnPos.Y + btnSize.Y then
-                                    ddData.IsOpen = false
-                                    MenuFrame.Visible = false
-                                    MenuFrame.Size = UDim2.new(0, 160, 0, 0)
-                                    Arrow.Rotation = 0
-                                    if ddData.HeartbeatConn then
-                                        pcall(function() ddData.HeartbeatConn:Disconnect() end)
-                                        ddData.HeartbeatConn = nil
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end)
-                table.insert(DropdownConnections, clickConn)
 
                 ListenTheme(function(theme)
                     DropdownFrame.BackgroundColor3 = theme.Background
                     DropdownBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
-                    local selText, _ = NormalizeOption(selected)
-                    DropdownBtn.TextColor3 = selText ~= "" and selText ~= "Select option" and theme.Text or theme.SubText
+                    UpdateButtonText()
                     Arrow.ImageColor3 = theme.SubText
-                    MenuFrame.BackgroundColor3 = theme.Background
-                    SearchBox.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
-                    SearchBox.TextColor3 = theme.Text
-                    SearchBox.PlaceholderColor3 = theme.SubText
-                    OptionsScroll.ScrollBarImageColor3 = theme.Accent
+                    DropdownPanel.BackgroundColor3 = theme.Background
+                    DropdownPanelSearch.BackgroundColor3 = theme.Element
+                    DropdownPanelSearch.TextColor3 = theme.Text
+                    DropdownPanelSearch.PlaceholderColor3 = theme.SubText
+                    DropdownPanelScroll.ScrollBarImageColor3 = theme.Accent
                     for _, btn in ipairs(optionButtons) do
                         if btn and btn.Parent then
                             btn.BackgroundColor3 = theme.Element
@@ -2484,17 +2517,15 @@ function Quantum:CreateWindow(data)
                     options = newOptions or {}
                     if newDefault ~= nil then
                         selected = newDefault
-                        local selText, _ = NormalizeOption(selected)
-                        DropdownBtn.Text = selText
-                        DropdownBtn.TextColor3 = CurrentTheme.Text
+                        UpdateButtonText()
                     end
-                    BuildOptions("")
+                    if CurrentDropdownState.IsOpen and CurrentDropdownState.Button == DropdownBtn then
+                        BuildOptions(DropdownPanelSearch.Text)
+                    end
                 end
                 function DropdownAPI:Set(value)
                     selected = value
-                    local selText, _ = NormalizeOption(selected)
-                    DropdownBtn.Text = selText
-                    DropdownBtn.TextColor3 = CurrentTheme.Text
+                    UpdateButtonText()
                     callback(selected)
                 end
                 function DropdownAPI:Get()
@@ -2625,66 +2656,6 @@ function Quantum:CreateWindow(data)
                 end
                 UpdateButtonText()
 
-                local MenuFrame = Create("Frame", {
-                    Parent = MainWindowScreen,
-                    Size = UDim2.new(0, 160, 0, 0),
-                    Position = UDim2.new(0, 0, 0, 0),
-                    BackgroundColor3 = CurrentTheme.Background,
-                    BorderSizePixel = 0,
-                    ClipsDescendants = true,
-                    Visible = false,
-                    ZIndex = 500
-                })
-                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = MenuFrame})
-                Create("UIStroke", {Color = CurrentTheme.Border, Thickness = 1, Parent = MenuFrame})
-
-                local ddData = RegisterDropdown(MenuFrame, Arrow, DropdownBtn)
-                table.insert(sectionDropdowns, ddData)
-
-                local SearchBox = Create("TextBox", {
-                    Parent = MenuFrame,
-                    Size = UDim2.new(1, -8, 0, 28),
-                    Position = UDim2.new(0, 4, 0, 4),
-                    BackgroundColor3 = Color3.fromRGB(55, 55, 60),
-                    Text = "",
-                    PlaceholderText = "Search...",
-                    TextColor3 = CurrentTheme.Text,
-                    PlaceholderColor3 = CurrentTheme.SubText,
-                    TextSize = 12,
-                    Font = Enum.Font.Gotham,
-                    ClearTextOnFocus = false,
-                    ZIndex = 31
-                })
-                Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = SearchBox})
-                Create("UIStroke", {Color = Color3.fromRGB(80, 80, 85), Thickness = 1, Parent = SearchBox})
-
-                Create("ImageLabel", {
-                    Parent = SearchBox,
-                    Size = UDim2.new(0, 14, 0, 14),
-                    Position = UDim2.new(1, -18, 0.5, -7),
-                    BackgroundTransparency = 1,
-                    Image = GetIcon("Search"),
-                    ImageColor3 = CurrentTheme.SubText,
-                    ZIndex = 32
-                })
-
-                local OptionsScroll = Create("ScrollingFrame", {
-                    Parent = MenuFrame,
-                    Size = UDim2.new(1, -8, 0, 0),
-                    Position = UDim2.new(0, 4, 0, 28),
-                    BackgroundTransparency = 1,
-                    BorderSizePixel = 0,
-                    ScrollBarThickness = 2,
-                    ScrollBarImageColor3 = CurrentTheme.Accent,
-                    CanvasSize = UDim2.new(0, 0, 0, 0),
-                    ZIndex = 31
-                })
-
-                Create("UIListLayout", {
-                    Parent = OptionsScroll,
-                    Padding = UDim.new(0, 2)
-                })
-
                 local optionItems = {}
 
                 local function IsSelected(opt)
@@ -2702,16 +2673,22 @@ function Quantum:CreateWindow(data)
                     end
                     optionItems = {}
 
+                    for _, child in ipairs(DropdownPanelScroll:GetChildren()) do
+                        if child:IsA("GuiObject") and child.Name ~= "UIListLayout" then
+                            child:Destroy()
+                        end
+                    end
+
                     local count = 0
                     for _, opt in ipairs(options) do
                         local optText, optIcon = NormalizeOption(opt)
                         if not filterText or filterText == "" or string.find(string.lower(optText), string.lower(filterText), 1, true) then
 
                         local row = Create("Frame", {
-                            Parent = OptionsScroll,
+                            Parent = DropdownPanelScroll,
                             Size = UDim2.new(1, 0, 0, 26),
                             BackgroundColor3 = CurrentTheme.Element,
-                            ZIndex = 32,
+                            ZIndex = 101,
                         })
                         Create("UICorner", {CornerRadius = UDim.new(0, 3), Parent = row})
 
@@ -2721,7 +2698,7 @@ function Quantum:CreateWindow(data)
                             Position = UDim2.new(0, 6, 0.5, -7),
                             BackgroundColor3 = CurrentTheme.Background,
                             BorderSizePixel = 0,
-                            ZIndex = 33,
+                            ZIndex = 102,
                         })
                         Create("UICorner", {CornerRadius = UDim.new(0, 2), Parent = checkBox})
 
@@ -2732,7 +2709,7 @@ function Quantum:CreateWindow(data)
                             BackgroundTransparency = 1,
                             Image = GetIcon("Check"),
                             ImageColor3 = CurrentTheme.Accent,
-                            ZIndex = 34,
+                            ZIndex = 103,
                             Visible = IsSelected(opt),
                         })
 
@@ -2745,7 +2722,7 @@ function Quantum:CreateWindow(data)
                                 BackgroundTransparency = 1,
                                 Image = GetIcon(optIcon),
                                 ImageColor3 = CurrentTheme.SubText,
-                                ZIndex = 33,
+                                ZIndex = 102,
                             })
                             textX = 44
                         end
@@ -2760,7 +2737,7 @@ function Quantum:CreateWindow(data)
                             TextSize = 11,
                             Font = Enum.Font.Gotham,
                             TextXAlignment = Enum.TextXAlignment.Left,
-                            ZIndex = 33,
+                            ZIndex = 102,
                         })
 
                         local clickBtn = Create("TextButton", {
@@ -2768,7 +2745,7 @@ function Quantum:CreateWindow(data)
                             Size = UDim2.new(1, 0, 1, 0),
                             BackgroundTransparency = 1,
                             Text = "",
-                            ZIndex = 35,
+                            ZIndex = 104,
                         })
 
                         clickBtn.MouseButton1Click:Connect(function()
@@ -2800,117 +2777,52 @@ function Quantum:CreateWindow(data)
                         end
                     end
 
-                    OptionsScroll.Size = UDim2.new(1, -8, 1, -36)
-                    OptionsScroll.CanvasSize = UDim2.new(0, 0, 0, count * 28 + 4)
-                end
-
-                BuildOptions()
-
-                SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-                    BuildOptions(SearchBox.Text)
-                end)
-
-                local function UpdateMenuPosition()
-                    if not DropdownBtn or not DropdownBtn.Parent then return end
-                    if not MenuFrame or not MenuFrame.Parent then return end
-                    local btnAbs = DropdownBtn.AbsolutePosition
-                    local btnSize = DropdownBtn.AbsoluteSize
-                    local menuWidth = 160
-                    local posX = btnAbs.X + btnSize.X - menuWidth
-                    local posY = btnAbs.Y + btnSize.Y + 2
-                    local contentHeight = math.min(#options * 28 + 36, 220)
-                    local menuHeight = math.min(contentHeight, 220)
-                    local screenHeight = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.Y or 1080
-                    if posY + menuHeight > screenHeight - 10 then
-                        posY = btnAbs.Y - menuHeight - 2
-                    end
-                    MenuFrame.Position = UDim2.new(0, posX, 0, posY)
-                    MenuFrame.Size = UDim2.new(0, menuWidth, 0, menuHeight)
+                    DropdownPanelScroll.CanvasSize = UDim2.new(0, 0, 0, count * 29 + 4)
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(function()
-                    if ddData.IsOpen then
-                        ddData.IsOpen = false
-                        MenuFrame.Visible = false
-                        MenuFrame.Size = UDim2.new(0, 160, 0, 0)
-                        Arrow.Rotation = 0
-                        if ddData.HeartbeatConn then
-                            pcall(function() ddData.HeartbeatConn:Disconnect() end)
-                            ddData.HeartbeatConn = nil
-                        end
+                    if CurrentDropdownState.IsOpen and CurrentDropdownState.Button == DropdownBtn then
+                        CloseAllDropdowns()
                     else
                         CloseAllDropdowns()
-                        ddData.IsOpen = true
-                        UpdateMenuPosition()
-                        MenuFrame.Visible = true
+                        CurrentDropdownState.IsOpen = true
+                        CurrentDropdownState.IsMulti = true
+                        CurrentDropdownState.Options = options
+                        CurrentDropdownState.Selected = selected
+                        CurrentDropdownState.Callback = callback
+                        CurrentDropdownState.Arrow = Arrow
+                        CurrentDropdownState.Button = DropdownBtn
+                        CurrentDropdownState.Rebuild = BuildOptions
+                        CurrentDropdownState.OptionButtons = optionItems
+
+                        DropdownPanelTitle.Text = dropdownName
+                        DropdownPanelSearch.Text = ""
+
+                        DropdownPanel.Visible = true
+                        DropdownOverlay.Visible = true
+                        Tween(DropdownOverlay, {BackgroundTransparency = 0.88}, 0.2)
                         Arrow.Rotation = 180
-                        SearchBox.Text = ""
+
                         BuildOptions()
-                        
-                        ddData.HeartbeatConn = RunService.Heartbeat:Connect(function()
-                            if ddData.IsOpen and DropdownBtn and DropdownBtn.Parent then
-                                UpdateMenuPosition()
-                            else
-                                if ddData.HeartbeatConn then
-                                    pcall(function() ddData.HeartbeatConn:Disconnect() end)
-                                    ddData.HeartbeatConn = nil
-                                end
-                            end
-                        end)
                     end
                 end)
 
-                
                 TabContent:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
-                    if ddData.IsOpen then
-                        ddData.IsOpen = false
-                        MenuFrame.Visible = false
-                        MenuFrame.Size = UDim2.new(0, 160, 0, 0)
-                        Arrow.Rotation = 0
-                        if ddData.HeartbeatConn then
-                            pcall(function() ddData.HeartbeatConn:Disconnect() end)
-                            ddData.HeartbeatConn = nil
-                        end
+                    if CurrentDropdownState.IsOpen and CurrentDropdownState.Button == DropdownBtn then
+                        CloseAllDropdowns()
                     end
                 end)
-
-                local clickConn = UserInputService.InputBegan:Connect(function(input, gpe)
-                    if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
-                        if ddData.IsOpen then
-                            local mousePos = UserInputService:GetMouseLocation()
-                            local menuPos = MenuFrame.AbsolutePosition
-                            local menuSize = MenuFrame.AbsoluteSize
-                            if mousePos.X < menuPos.X or mousePos.X > menuPos.X + menuSize.X or
-                               mousePos.Y < menuPos.Y or mousePos.Y > menuPos.Y + menuSize.Y then
-                                local btnPos = DropdownBtn.AbsolutePosition
-                                local btnSize = DropdownBtn.AbsoluteSize
-                                if mousePos.X < btnPos.X or mousePos.X > btnPos.X + btnSize.X or
-                                   mousePos.Y < btnPos.Y or mousePos.Y > btnPos.Y + btnSize.Y then
-                                    ddData.IsOpen = false
-                                    MenuFrame.Visible = false
-                                    MenuFrame.Size = UDim2.new(0, 160, 0, 0)
-                                    Arrow.Rotation = 0
-                                    if ddData.HeartbeatConn then
-                                        pcall(function() ddData.HeartbeatConn:Disconnect() end)
-                                        ddData.HeartbeatConn = nil
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end)
-                table.insert(DropdownConnections, clickConn)
 
                 ListenTheme(function(theme)
                     DropdownFrame.BackgroundColor3 = theme.Background
                     DropdownBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
                     UpdateButtonText()
                     Arrow.ImageColor3 = theme.SubText
-                    MenuFrame.BackgroundColor3 = theme.Background
-                    SearchBox.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
-                    SearchBox.TextColor3 = theme.Text
-                    SearchBox.PlaceholderColor3 = theme.SubText
-                    OptionsScroll.ScrollBarImageColor3 = theme.Accent
+                    DropdownPanel.BackgroundColor3 = theme.Background
+                    DropdownPanelSearch.BackgroundColor3 = theme.Element
+                    DropdownPanelSearch.TextColor3 = theme.Text
+                    DropdownPanelSearch.PlaceholderColor3 = theme.SubText
+                    DropdownPanelScroll.ScrollBarImageColor3 = theme.Accent
                     for _, row in ipairs(optionItems) do
                         if row and row.Parent then
                             row.BackgroundColor3 = theme.Element
@@ -2926,7 +2838,9 @@ function Quantum:CreateWindow(data)
                         for _, v in ipairs(newDefault) do table.insert(selected, v) end
                         UpdateButtonText()
                     end
-                    BuildOptions()
+                    if CurrentDropdownState.IsOpen and CurrentDropdownState.Button == DropdownBtn then
+                        BuildOptions(DropdownPanelSearch.Text)
+                    end
                 end
                 function MultiDropdownAPI:Set(values)
                     selected = {}
