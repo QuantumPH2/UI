@@ -191,11 +191,6 @@ local LegacyIcons = {
     ["trendingUp"] = "rbxassetid://7734058803",
 }
 
-
-
-
-
-
 local IconModule = {
     IconsType = "lucide",
     New = nil,
@@ -326,7 +321,6 @@ function IconModule.Icon2(Icon, Type, DefaultFormat)
     return IconModule.Icon(Icon, Type, true)
 end
 
-
 local packUrls = {
     lucide = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/lucide/dist/Icons.lua",
     solar = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/solar/dist/Icons.lua",
@@ -342,8 +336,6 @@ for packName, url in pairs(packUrls) do
         IconModule.Icons[packName] = pack
     end
 end
-
-
 
 local function Create(className, properties)
     local instance = Instance.new(className)
@@ -382,7 +374,6 @@ end
 local function GetIcon(name, iconType)
     if not name then return {Image = LegacyIcons.Info} end
 
-    
     local iconData = IconModule.Icon2(name, iconType)
     if iconData then
         if type(iconData) == "string" then
@@ -396,12 +387,10 @@ local function GetIcon(name, iconType)
         end
     end
 
-    
     if LegacyIcons[name] then 
         return {Image = LegacyIcons[name]} 
     end
 
-    
     if type(name) == "string" and (name:sub(1, 13) == "rbxassetid://" or name:sub(1, 4) == "http") then
         return {Image = name}
     end
@@ -420,6 +409,23 @@ local CurrentTheme = Config.Themes[Config.DefaultTheme]
 local ThemeListeners = {}
 local OpenDropdowns = {}
 local DropdownConnections = {}
+local CurrentDropdownState = {
+    IsOpen = false,
+    IsMulti = false,
+    Selected = nil,
+    Options = {},
+    Callback = nil,
+    Arrow = nil,
+    Button = nil,
+    Rebuild = nil,
+    OptionButtons = {},
+}
+
+local DropdownPanel = nil
+local DropdownOverlay = nil
+local DropdownPanelTitle = nil
+local DropdownPanelSearch = nil
+local DropdownPanelScroll = nil
 
 local function ListenTheme(callback)
     table.insert(ThemeListeners, callback)
@@ -427,6 +433,32 @@ local function ListenTheme(callback)
 end
 
 local function CloseAllDropdowns()
+    if CurrentDropdownState and CurrentDropdownState.IsOpen then
+        CurrentDropdownState.IsOpen = false
+        if DropdownPanel then
+            DropdownPanel.Visible = false
+        end
+        if DropdownOverlay then
+            DropdownOverlay.Visible = false
+            DropdownOverlay.BackgroundTransparency = 1
+        end
+        if CurrentDropdownState.Arrow then
+            CurrentDropdownState.Arrow.Rotation = 0
+        end
+        if CurrentDropdownState.OptionButtons then
+            for _, btn in ipairs(CurrentDropdownState.OptionButtons) do
+                if btn then btn:Destroy() end
+            end
+        end
+        CurrentDropdownState.OptionButtons = {}
+        CurrentDropdownState.Selected = nil
+        CurrentDropdownState.Options = {}
+        CurrentDropdownState.Callback = nil
+        CurrentDropdownState.Arrow = nil
+        CurrentDropdownState.Button = nil
+        CurrentDropdownState.Rebuild = nil
+    end
+
     for _, data in ipairs(OpenDropdowns) do
         if data and data.Menu and data.Menu.Parent then
             data.Menu.Visible = false
@@ -448,7 +480,6 @@ local function RegisterDropdown(menu, arrow, btnRef)
     table.insert(OpenDropdowns, data)
     return data
 end
-
 
 local ConfigManager = {}
 ConfigManager.__index = ConfigManager
@@ -474,6 +505,11 @@ function ConfigManager:Load()
             end)
             if ok2 and type(data) == "table" then
                 self.Data = data
+                for key, elem in pairs(self.Elements) do
+                    if elem.Set and self.Data[key] ~= nil then
+                        pcall(function() elem.Set(self.Data[key]) end)
+                    end
+                end
                 return true
             end
         end
@@ -482,6 +518,7 @@ function ConfigManager:Load()
 end
 
 function ConfigManager:Save()
+    self:SyncData()
     if typeof(writefile) == "function" then
         local ok, content = pcall(function()
             return HttpService:JSONEncode(self.Data)
@@ -536,6 +573,17 @@ function ConfigManager:StopAutoSave()
     end
 end
 
+function ConfigManager:SyncData()
+    for key, elem in pairs(self.Elements) do
+        if elem.Get then
+            local ok, val = pcall(elem.Get)
+            if ok then
+                self.Data[key] = val
+            end
+        end
+    end
+end
+
 function ConfigManager:Set(key, value)
     self.Data[key] = value
 end
@@ -560,6 +608,7 @@ function ConfigManager:BindElement(key, elementType, getValueFunc, setValueFunc)
 end
 
 function ConfigManager:SaveNamedConfig(name)
+    self:SyncData()
     if typeof(writefile) ~= "function" then return false end
     local path = self.WindowName .. "_" .. name .. "_Quantum.json"
     local ok, content = pcall(function()
@@ -600,6 +649,17 @@ function ConfigManager:DeleteNamedConfig(name)
     return false
 end
 
+function ConfigManager:DeleteAllConfigs()
+    if typeof(delfile) ~= "function" then return false end
+    local names = self:GetAllConfigNames()
+    for _, name in ipairs(names) do
+        local path = self.WindowName .. "_" .. name .. "_Quantum.json"
+        pcall(delfile, path)
+    end
+    self.Data = {}
+    return true
+end
+
 function ConfigManager:GetAllConfigNames()
     local names = {}
     if typeof(listfiles) == "function" then
@@ -617,7 +677,6 @@ function ConfigManager:GetAllConfigNames()
     end
     return names
 end
-
 
 local NotifyScreen = nil
 local NotifyLayout = nil
@@ -753,7 +812,6 @@ local function CreateFloatingIcon(customIcon)
         Enabled = true
     })
 
-    
     local Backdrop = Create("Frame", {
         Name = "Backdrop",
         Parent = FloatingIconScreen,
@@ -829,19 +887,22 @@ local function CreateFloatingIcon(customIcon)
                     end
                     if MainFrame then
                         MainFrame.Visible = true
-                        MainFrame.Size = UDim2.new(0, 440, 0, 280)
-                        MainFrame.Position = UDim2.new(0.5, -200, 0.5, -130)
+                        MainFrame.Active = true
+                        MainFrame.Size = UDim2.new(0, 460, 0, 280)
+                        MainFrame.Position = UDim2.new(0.5, -230, 0.5, -140)
                     end
                 elseif IsMinimized then
                     IsMinimized = false
                     if MainFrame then
                         MainFrame.Visible = true
+                        MainFrame.Active = true
                     end
                 else
                     CloseAllDropdowns()
                     IsMinimized = true
                     if MainFrame then
                         MainFrame.Visible = false
+                        MainFrame.Active = false
                     end
                 end
             end
@@ -1162,7 +1223,10 @@ function Quantum:CreateWindow(data)
     MakeControl("Minimize", "Minus", UDim2.new(0, 8, 0.5, -11), function()
         CloseAllDropdowns()
         IsMinimized = true
-        MainFrame.Visible = false
+        if MainFrame then
+            MainFrame.Visible = false
+            MainFrame.Active = false
+        end
     end)
 
     local IsMaximized = false
@@ -1186,6 +1250,8 @@ function Quantum:CreateWindow(data)
         IsMinimized = false
         if MainFrame then
             MainFrame.Visible = false
+            MainFrame.Active = false
+            MainFrame.Position = UDim2.new(0, -9999, 0, -9999)
         end
         if MainWindowScreen then
             MainWindowScreen.Enabled = false
@@ -1219,7 +1285,6 @@ function Quantum:CreateWindow(data)
         ZIndex = 15
     })
 
-    
     local SearchFrame = Create("Frame", {
         Parent = Sidebar,
         Size = UDim2.new(1, -10, 0, 32),
@@ -1295,6 +1360,88 @@ function Quantum:CreateWindow(data)
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
         ZIndex = 14
+    })
+    DropdownOverlay = Create("Frame", {
+        Name = "DropdownOverlay",
+        Parent = MainFrame,
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Visible = false,
+        ZIndex = 98,
+        Active = true,
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, Config.CornerRadius), Parent = DropdownOverlay})
+
+    DropdownPanel = Create("Frame", {
+        Name = "DropdownPanel",
+        Parent = MainFrame,
+        Size = UDim2.new(0, 180, 1, -Config.TopbarHeight),
+        Position = UDim2.new(1, -180, 0, Config.TopbarHeight),
+        BackgroundColor3 = CurrentTheme.Background,
+        BorderSizePixel = 0,
+        Visible = false,
+        ClipsDescendants = true,
+        Active = true,
+        ZIndex = 99,
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, Config.CornerRadius), Parent = DropdownPanel})
+    Create("UIStroke", {Color = CurrentTheme.Border, Thickness = 1, Parent = DropdownPanel})
+
+    local DropdownPanelHeader = Create("Frame", {
+        Name = "Header",
+        Parent = DropdownPanel,
+        Size = UDim2.new(1, 0, 0, 36),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ZIndex = 100,
+    })
+
+    DropdownPanelTitle = Create("TextLabel", {
+        Parent = DropdownPanelHeader,
+        Size = UDim2.new(1, -10, 0, 20),
+        Position = UDim2.new(0, 8, 0, 8),
+        BackgroundTransparency = 1,
+        Text = "Select",
+        TextColor3 = CurrentTheme.Text,
+        TextSize = 12,
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 100,
+    })
+
+    DropdownPanelSearch = Create("TextBox", {
+        Parent = DropdownPanel,
+        Size = UDim2.new(1, -10, 0, 28),
+        Position = UDim2.new(0, 5, 0, 32),
+        BackgroundColor3 = CurrentTheme.Element,
+        Text = "",
+        PlaceholderText = "Search...",
+        TextColor3 = CurrentTheme.Text,
+        PlaceholderColor3 = CurrentTheme.SubText,
+        TextSize = 11,
+        Font = Enum.Font.Gotham,
+        ClearTextOnFocus = false,
+        ZIndex = 100,
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = DropdownPanelSearch})
+
+    DropdownPanelScroll = Create("ScrollingFrame", {
+        Parent = DropdownPanel,
+        Size = UDim2.new(1, -10, 1, -68),
+        Position = UDim2.new(0, 5, 0, 64),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 2,
+        ScrollBarImageColor3 = CurrentTheme.Accent,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        ZIndex = 100,
+    })
+    Create("UIListLayout", {
+        Parent = DropdownPanelScroll,
+        Padding = UDim.new(0, 3),
+        SortOrder = Enum.SortOrder.LayoutOrder,
     })
 
     local ResizeHandle = Create("ImageButton", {
@@ -1381,11 +1528,38 @@ function Quantum:CreateWindow(data)
                         CloseAllDropdowns()
                     end
                     MainFrame.Visible = not MainFrame.Visible
+                    MainFrame.Active = MainFrame.Visible
                     IsMinimized = not MainFrame.Visible
                 end
             end
         end)
     end
+
+    DropdownOverlay.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            CloseAllDropdowns()
+        end
+    end)
+
+    local clickConn = UserInputService.InputBegan:Connect(function(input, gpe)
+        if not CurrentDropdownState or not CurrentDropdownState.IsOpen then return end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            local mousePos = UserInputService:GetMouseLocation()
+            local mainPos = MainFrame.AbsolutePosition
+            local mainSize = MainFrame.AbsoluteSize
+            if mousePos.X < mainPos.X or mousePos.X > mainPos.X + mainSize.X or
+               mousePos.Y < mainPos.Y or mousePos.Y > mainPos.Y + mainSize.Y then
+                CloseAllDropdowns()
+            end
+        end
+    end)
+    table.insert(DropdownConnections, clickConn)
+
+    DropdownPanelSearch:GetPropertyChangedSignal("Text"):Connect(function()
+        if CurrentDropdownState and CurrentDropdownState.IsOpen and CurrentDropdownState.Rebuild then
+            CurrentDropdownState.Rebuild(DropdownPanelSearch.Text)
+        end
+    end)
 
     ListenTheme(function(theme)
         MainFrame.BackgroundColor3 = theme.Background
@@ -1410,16 +1584,20 @@ function Quantum:CreateWindow(data)
         SearchIcon.ImageColor3 = theme.SubText
         SearchBox.TextColor3 = theme.Text
         SearchBox.PlaceholderColor3 = theme.SubText
+        DropdownPanel.BackgroundColor3 = theme.Background
+        DropdownPanelTitle.TextColor3 = theme.Text
+        DropdownPanelSearch.BackgroundColor3 = theme.Element
+        DropdownPanelSearch.TextColor3 = theme.Text
+        DropdownPanelSearch.PlaceholderColor3 = theme.SubText
+        DropdownPanelScroll.ScrollBarImageColor3 = theme.Accent
     end)
 
     local WindowAPI = {}
     WindowAPI.Notify = function(_, d) Quantum:Notify(d) end
-    -- Theme switching removed, only QuantumDark available
     WindowAPI.Config = ConfigManager.new(windowName)
     WindowAPI.Config:Load()
     WindowAPI.Config:StartAutoSave()
 
-    
     WindowAPI.EnableAutoSave = function(_, interval)
         WindowAPI.Config:EnableAutoSave(interval)
     end
@@ -1494,6 +1672,7 @@ function Quantum:CreateWindow(data)
             TextSize = 12,
             Font = Enum.Font.Gotham,
             TextXAlignment = Enum.TextXAlignment.Left,
+            TextTruncate = Enum.TextTruncate.AtEnd,
             ZIndex = 18
         })
 
@@ -1517,7 +1696,6 @@ function Quantum:CreateWindow(data)
             ScrollBarThickness = 2,
             ScrollBarImageColor3 = CurrentTheme.Accent,
             CanvasSize = UDim2.new(0, 0, 0, 0),
-            AutomaticCanvasSize = Enum.AutomaticSize.Y,
             Visible = false,
             ZIndex = 15
         })
@@ -1580,6 +1758,7 @@ function Quantum:CreateWindow(data)
         TabAPI._CurrentSection = nil
         TabAPI._Sections = {}
         TabAPI._TabContent = TabContent
+        TabAPI.ConfigManager = WindowAPI.Config
 
         function TabAPI:CreateSection(sectionData)
             sectionData = sectionData or {}
@@ -1632,6 +1811,7 @@ function Quantum:CreateWindow(data)
                 TextSize = 11,
                 Font = Enum.Font.GothamBold,
                 TextXAlignment = Enum.TextXAlignment.Left,
+                TextTruncate = Enum.TextTruncate.AtEnd,
                 ZIndex = 18
             })
 
@@ -1721,6 +1901,7 @@ function Quantum:CreateWindow(data)
             SectionAPI._SectionItems = SectionItems
             SectionAPI._SectionDropdowns = sectionDropdowns
             SectionAPI._UpdateSize = UpdateSize
+            SectionAPI.ConfigManager = TabAPI.ConfigManager
 
             function SectionAPI:CreateToggle(toggleData)
                 toggleData = toggleData or {}
@@ -1764,6 +1945,7 @@ function Quantum:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.Gotham,
                     TextXAlignment = Enum.TextXAlignment.Left,
+                    TextTruncate = Enum.TextTruncate.AtEnd,
                     ZIndex = 19
                 })
 
@@ -1902,6 +2084,7 @@ function Quantum:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.Gotham,
                     TextXAlignment = Enum.TextXAlignment.Left,
+                    TextTruncate = Enum.TextTruncate.AtEnd,
                     ZIndex = 19
                 })
 
@@ -2065,6 +2248,7 @@ function Quantum:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.GothamBold,
                     TextXAlignment = Enum.TextXAlignment.Left,
+                    TextTruncate = Enum.TextTruncate.AtEnd,
                     ZIndex = 19
                 })
 
@@ -2209,76 +2393,19 @@ function Quantum:CreateWindow(data)
                     ZIndex = 20
                 })
 
-                local defaultText, _ = NormalizeOption(default)
-                if defaultText ~= "" then
-                    DropdownBtn.Text = defaultText
-                    DropdownBtn.TextColor3 = CurrentTheme.Text
-                else
-                    DropdownBtn.Text = "Select option"
-                    DropdownBtn.TextColor3 = CurrentTheme.SubText
-                end
-
-                local MenuFrame = Create("Frame", {
-                    Parent = MainWindowScreen,
-                    Size = UDim2.new(0, 160, 0, 0),
-                    Position = UDim2.new(0, 0, 0, 0),
-                    BackgroundColor3 = CurrentTheme.Background,
-                    BorderSizePixel = 0,
-                    ClipsDescendants = true,
-                    Visible = false,
-                    ZIndex = 500
-                })
-                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = MenuFrame})
-                Create("UIStroke", {Color = CurrentTheme.Border, Thickness = 1, Parent = MenuFrame})
-
-                local ddData = RegisterDropdown(MenuFrame, Arrow, DropdownBtn)
-                table.insert(sectionDropdowns, ddData)
-
-                local SearchBox = Create("TextBox", {
-                    Parent = MenuFrame,
-                    Size = UDim2.new(1, -8, 0, 28),
-                    Position = UDim2.new(0, 4, 0, 4),
-                    BackgroundColor3 = Color3.fromRGB(55, 55, 60),
-                    Text = "",
-                    PlaceholderText = "Search...",
-                    TextColor3 = CurrentTheme.Text,
-                    PlaceholderColor3 = CurrentTheme.SubText,
-                    TextSize = 12,
-                    Font = Enum.Font.Gotham,
-                    ClearTextOnFocus = false,
-                    ZIndex = 31
-                })
-                Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = SearchBox})
-                Create("UIStroke", {Color = Color3.fromRGB(80, 80, 85), Thickness = 1, Parent = SearchBox})
-
-                Create("ImageLabel", {
-                    Parent = SearchBox,
-                    Size = UDim2.new(0, 14, 0, 14),
-                    Position = UDim2.new(1, -18, 0.5, -7),
-                    BackgroundTransparency = 1,
-                    Image = GetIcon("Search"),
-                    ImageColor3 = CurrentTheme.SubText,
-                    ZIndex = 32
-                })
-
-                local OptionsScroll = Create("ScrollingFrame", {
-                    Parent = MenuFrame,
-                    Size = UDim2.new(1, -8, 0, 0),
-                    Position = UDim2.new(0, 4, 0, 28),
-                    BackgroundTransparency = 1,
-                    BorderSizePixel = 0,
-                    ScrollBarThickness = 2,
-                    ScrollBarImageColor3 = CurrentTheme.Accent,
-                    CanvasSize = UDim2.new(0, 0, 0, 0),
-                    ZIndex = 31
-                })
-
-                Create("UIListLayout", {
-                    Parent = OptionsScroll,
-                    Padding = UDim.new(0, 2)
-                })
-
                 local selected = default
+                local function UpdateButtonText()
+                    local selText, _ = NormalizeOption(selected)
+                    if selText ~= "" then
+                        DropdownBtn.Text = selText
+                        DropdownBtn.TextColor3 = CurrentTheme.Text
+                    else
+                        DropdownBtn.Text = "Select option"
+                        DropdownBtn.TextColor3 = CurrentTheme.SubText
+                    end
+                end
+                UpdateButtonText()
+
                 local optionButtons = {}
 
                 local function BuildOptions(filterText)
@@ -2287,19 +2414,25 @@ function Quantum:CreateWindow(data)
                     end
                     optionButtons = {}
 
+                    for _, child in ipairs(DropdownPanelScroll:GetChildren()) do
+                        if child:IsA("GuiObject") and child.Name ~= "UIListLayout" then
+                            child:Destroy()
+                        end
+                    end
+
                     local count = 0
                     for _, opt in ipairs(options) do
                         local optText, optIcon = NormalizeOption(opt)
                         if not filterText or filterText == "" or string.find(string.lower(optText), string.lower(filterText), 1, true) then
                             local optBtn = Create("TextButton", {
-                                Parent = OptionsScroll,
+                                Parent = DropdownPanelScroll,
                                 Size = UDim2.new(1, 0, 0, 30),
                                 BackgroundColor3 = CurrentTheme.Element,
                                 Text = "",
                                 TextColor3 = CurrentTheme.Text,
                                 TextSize = 12,
                                 Font = Enum.Font.Gotham,
-                                ZIndex = 32
+                                ZIndex = 101
                             })
                             Create("UICorner", {CornerRadius = UDim.new(0, 3), Parent = optBtn})
 
@@ -2311,7 +2444,7 @@ function Quantum:CreateWindow(data)
                                     BackgroundTransparency = 1,
                                     Image = GetIcon(optIcon),
                                     ImageColor3 = CurrentTheme.SubText,
-                                    ZIndex = 33,
+                                    ZIndex = 102,
                                 })
                                 local txt = Create("TextLabel", {
                                     Parent = optBtn,
@@ -2323,7 +2456,7 @@ function Quantum:CreateWindow(data)
                                     TextSize = 12,
                                     Font = Enum.Font.Gotham,
                                     TextXAlignment = Enum.TextXAlignment.Left,
-                                    ZIndex = 33,
+                                    ZIndex = 102,
                                 })
                             else
                                 optBtn.Text = optText
@@ -2331,18 +2464,9 @@ function Quantum:CreateWindow(data)
 
                             optBtn.MouseButton1Click:Connect(function()
                                 selected = opt
-                                local selText, _ = NormalizeOption(selected)
-                                DropdownBtn.Text = selText
-                                DropdownBtn.TextColor3 = CurrentTheme.Text
+                                UpdateButtonText()
                                 callback(selected)
-                                ddData.IsOpen = false
-                                MenuFrame.Visible = false
-                                MenuFrame.Size = UDim2.new(0, 160, 0, 0)
-                                Arrow.Rotation = 0
-                                if ddData.HeartbeatConn then
-                                    pcall(function() ddData.HeartbeatConn:Disconnect() end)
-                                    ddData.HeartbeatConn = nil
-                                end
+                                CloseAllDropdowns()
                             end)
 
                             optBtn.MouseEnter:Connect(function()
@@ -2357,118 +2481,52 @@ function Quantum:CreateWindow(data)
                         end
                     end
 
-                    OptionsScroll.Size = UDim2.new(1, -8, 1, -36)
-                    OptionsScroll.CanvasSize = UDim2.new(0, 0, 0, count * 28 + 4)
-                end
-
-                BuildOptions("")
-
-                SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-                    BuildOptions(SearchBox.Text)
-                end)
-
-                local function UpdateMenuPosition()
-                    if not DropdownBtn or not DropdownBtn.Parent then return end
-                    if not MenuFrame or not MenuFrame.Parent then return end
-                    local btnAbs = DropdownBtn.AbsolutePosition
-                    local btnSize = DropdownBtn.AbsoluteSize
-                    local menuWidth = 160
-                    local posX = btnAbs.X + btnSize.X - menuWidth
-                    local posY = btnAbs.Y + btnSize.Y + 2
-                    local contentHeight = math.min(#options * 28 + 36, 220)
-                    local menuHeight = math.min(contentHeight, 220)
-                    local screenHeight = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.Y or 1080
-                    if posY + menuHeight > screenHeight - 10 then
-                        posY = btnAbs.Y - menuHeight - 2
-                    end
-                    MenuFrame.Position = UDim2.new(0, posX, 0, posY)
-                    MenuFrame.Size = UDim2.new(0, menuWidth, 0, menuHeight)
+                    DropdownPanelScroll.CanvasSize = UDim2.new(0, 0, 0, count * 33 + 4)
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(function()
-                    if ddData.IsOpen then
-                        ddData.IsOpen = false
-                        MenuFrame.Visible = false
-                        MenuFrame.Size = UDim2.new(0, 160, 0, 0)
-                        Arrow.Rotation = 0
-                        if ddData.HeartbeatConn then
-                            pcall(function() ddData.HeartbeatConn:Disconnect() end)
-                            ddData.HeartbeatConn = nil
-                        end
+                    if CurrentDropdownState.IsOpen and CurrentDropdownState.Button == DropdownBtn then
+                        CloseAllDropdowns()
                     else
                         CloseAllDropdowns()
-                        ddData.IsOpen = true
-                        UpdateMenuPosition()
-                        MenuFrame.Visible = true
+                        CurrentDropdownState.IsOpen = true
+                        CurrentDropdownState.IsMulti = false
+                        CurrentDropdownState.Options = options
+                        CurrentDropdownState.Selected = selected
+                        CurrentDropdownState.Callback = callback
+                        CurrentDropdownState.Arrow = Arrow
+                        CurrentDropdownState.Button = DropdownBtn
+                        CurrentDropdownState.Rebuild = BuildOptions
+                        CurrentDropdownState.OptionButtons = optionButtons
+
+                        DropdownPanelTitle.Text = dropdownName
+                        DropdownPanelSearch.Text = ""
+
+                        DropdownPanel.Visible = true
+                        DropdownOverlay.Visible = true
+                        Tween(DropdownOverlay, {BackgroundTransparency = 0.88}, 0.2)
                         Arrow.Rotation = 180
-                        SearchBox.Text = ""
+
                         BuildOptions("")
-                        
-                        ddData.HeartbeatConn = RunService.Heartbeat:Connect(function()
-                            if ddData.IsOpen and DropdownBtn and DropdownBtn.Parent then
-                                UpdateMenuPosition()
-                            else
-                                if ddData.HeartbeatConn then
-                                    pcall(function() ddData.HeartbeatConn:Disconnect() end)
-                                    ddData.HeartbeatConn = nil
-                                end
-                            end
-                        end)
                     end
                 end)
 
-                
                 TabContent:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
-                    if ddData.IsOpen then
-                        ddData.IsOpen = false
-                        MenuFrame.Visible = false
-                        MenuFrame.Size = UDim2.new(0, 160, 0, 0)
-                        Arrow.Rotation = 0
-                        if ddData.HeartbeatConn then
-                            pcall(function() ddData.HeartbeatConn:Disconnect() end)
-                            ddData.HeartbeatConn = nil
-                        end
+                    if CurrentDropdownState.IsOpen and CurrentDropdownState.Button == DropdownBtn then
+                        CloseAllDropdowns()
                     end
                 end)
-
-                local clickConn = UserInputService.InputBegan:Connect(function(input, gpe)
-                    if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
-                        if ddData.IsOpen then
-                            local mousePos = UserInputService:GetMouseLocation()
-                            local menuPos = MenuFrame.AbsolutePosition
-                            local menuSize = MenuFrame.AbsoluteSize
-                            if mousePos.X < menuPos.X or mousePos.X > menuPos.X + menuSize.X or
-                               mousePos.Y < menuPos.Y or mousePos.Y > menuPos.Y + menuSize.Y then
-                                local btnPos = DropdownBtn.AbsolutePosition
-                                local btnSize = DropdownBtn.AbsoluteSize
-                                if mousePos.X < btnPos.X or mousePos.X > btnPos.X + btnSize.X or
-                                   mousePos.Y < btnPos.Y or mousePos.Y > btnPos.Y + btnSize.Y then
-                                    ddData.IsOpen = false
-                                    MenuFrame.Visible = false
-                                    MenuFrame.Size = UDim2.new(0, 160, 0, 0)
-                                    Arrow.Rotation = 0
-                                    if ddData.HeartbeatConn then
-                                        pcall(function() ddData.HeartbeatConn:Disconnect() end)
-                                        ddData.HeartbeatConn = nil
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end)
-                table.insert(DropdownConnections, clickConn)
 
                 ListenTheme(function(theme)
                     DropdownFrame.BackgroundColor3 = theme.Background
                     DropdownBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
-                    local selText, _ = NormalizeOption(selected)
-                    DropdownBtn.TextColor3 = selText ~= "" and selText ~= "Select option" and theme.Text or theme.SubText
+                    UpdateButtonText()
                     Arrow.ImageColor3 = theme.SubText
-                    MenuFrame.BackgroundColor3 = theme.Background
-                    SearchBox.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
-                    SearchBox.TextColor3 = theme.Text
-                    SearchBox.PlaceholderColor3 = theme.SubText
-                    OptionsScroll.ScrollBarImageColor3 = theme.Accent
+                    DropdownPanel.BackgroundColor3 = theme.Background
+                    DropdownPanelSearch.BackgroundColor3 = theme.Element
+                    DropdownPanelSearch.TextColor3 = theme.Text
+                    DropdownPanelSearch.PlaceholderColor3 = theme.SubText
+                    DropdownPanelScroll.ScrollBarImageColor3 = theme.Accent
                     for _, btn in ipairs(optionButtons) do
                         if btn and btn.Parent then
                             btn.BackgroundColor3 = theme.Element
@@ -2484,17 +2542,15 @@ function Quantum:CreateWindow(data)
                     options = newOptions or {}
                     if newDefault ~= nil then
                         selected = newDefault
-                        local selText, _ = NormalizeOption(selected)
-                        DropdownBtn.Text = selText
-                        DropdownBtn.TextColor3 = CurrentTheme.Text
+                        UpdateButtonText()
                     end
-                    BuildOptions("")
+                    if CurrentDropdownState.IsOpen and CurrentDropdownState.Button == DropdownBtn then
+                        BuildOptions(DropdownPanelSearch.Text)
+                    end
                 end
                 function DropdownAPI:Set(value)
                     selected = value
-                    local selText, _ = NormalizeOption(selected)
-                    DropdownBtn.Text = selText
-                    DropdownBtn.TextColor3 = CurrentTheme.Text
+                    UpdateButtonText()
                     callback(selected)
                 end
                 function DropdownAPI:Get()
@@ -2625,66 +2681,6 @@ function Quantum:CreateWindow(data)
                 end
                 UpdateButtonText()
 
-                local MenuFrame = Create("Frame", {
-                    Parent = MainWindowScreen,
-                    Size = UDim2.new(0, 160, 0, 0),
-                    Position = UDim2.new(0, 0, 0, 0),
-                    BackgroundColor3 = CurrentTheme.Background,
-                    BorderSizePixel = 0,
-                    ClipsDescendants = true,
-                    Visible = false,
-                    ZIndex = 500
-                })
-                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = MenuFrame})
-                Create("UIStroke", {Color = CurrentTheme.Border, Thickness = 1, Parent = MenuFrame})
-
-                local ddData = RegisterDropdown(MenuFrame, Arrow, DropdownBtn)
-                table.insert(sectionDropdowns, ddData)
-
-                local SearchBox = Create("TextBox", {
-                    Parent = MenuFrame,
-                    Size = UDim2.new(1, -8, 0, 28),
-                    Position = UDim2.new(0, 4, 0, 4),
-                    BackgroundColor3 = Color3.fromRGB(55, 55, 60),
-                    Text = "",
-                    PlaceholderText = "Search...",
-                    TextColor3 = CurrentTheme.Text,
-                    PlaceholderColor3 = CurrentTheme.SubText,
-                    TextSize = 12,
-                    Font = Enum.Font.Gotham,
-                    ClearTextOnFocus = false,
-                    ZIndex = 31
-                })
-                Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = SearchBox})
-                Create("UIStroke", {Color = Color3.fromRGB(80, 80, 85), Thickness = 1, Parent = SearchBox})
-
-                Create("ImageLabel", {
-                    Parent = SearchBox,
-                    Size = UDim2.new(0, 14, 0, 14),
-                    Position = UDim2.new(1, -18, 0.5, -7),
-                    BackgroundTransparency = 1,
-                    Image = GetIcon("Search"),
-                    ImageColor3 = CurrentTheme.SubText,
-                    ZIndex = 32
-                })
-
-                local OptionsScroll = Create("ScrollingFrame", {
-                    Parent = MenuFrame,
-                    Size = UDim2.new(1, -8, 0, 0),
-                    Position = UDim2.new(0, 4, 0, 28),
-                    BackgroundTransparency = 1,
-                    BorderSizePixel = 0,
-                    ScrollBarThickness = 2,
-                    ScrollBarImageColor3 = CurrentTheme.Accent,
-                    CanvasSize = UDim2.new(0, 0, 0, 0),
-                    ZIndex = 31
-                })
-
-                Create("UIListLayout", {
-                    Parent = OptionsScroll,
-                    Padding = UDim.new(0, 2)
-                })
-
                 local optionItems = {}
 
                 local function IsSelected(opt)
@@ -2702,16 +2698,22 @@ function Quantum:CreateWindow(data)
                     end
                     optionItems = {}
 
+                    for _, child in ipairs(DropdownPanelScroll:GetChildren()) do
+                        if child:IsA("GuiObject") and child.Name ~= "UIListLayout" then
+                            child:Destroy()
+                        end
+                    end
+
                     local count = 0
                     for _, opt in ipairs(options) do
                         local optText, optIcon = NormalizeOption(opt)
                         if not filterText or filterText == "" or string.find(string.lower(optText), string.lower(filterText), 1, true) then
 
                         local row = Create("Frame", {
-                            Parent = OptionsScroll,
+                            Parent = DropdownPanelScroll,
                             Size = UDim2.new(1, 0, 0, 26),
                             BackgroundColor3 = CurrentTheme.Element,
-                            ZIndex = 32,
+                            ZIndex = 101,
                         })
                         Create("UICorner", {CornerRadius = UDim.new(0, 3), Parent = row})
 
@@ -2721,7 +2723,7 @@ function Quantum:CreateWindow(data)
                             Position = UDim2.new(0, 6, 0.5, -7),
                             BackgroundColor3 = CurrentTheme.Background,
                             BorderSizePixel = 0,
-                            ZIndex = 33,
+                            ZIndex = 102,
                         })
                         Create("UICorner", {CornerRadius = UDim.new(0, 2), Parent = checkBox})
 
@@ -2732,7 +2734,7 @@ function Quantum:CreateWindow(data)
                             BackgroundTransparency = 1,
                             Image = GetIcon("Check"),
                             ImageColor3 = CurrentTheme.Accent,
-                            ZIndex = 34,
+                            ZIndex = 103,
                             Visible = IsSelected(opt),
                         })
 
@@ -2745,7 +2747,7 @@ function Quantum:CreateWindow(data)
                                 BackgroundTransparency = 1,
                                 Image = GetIcon(optIcon),
                                 ImageColor3 = CurrentTheme.SubText,
-                                ZIndex = 33,
+                                ZIndex = 102,
                             })
                             textX = 44
                         end
@@ -2760,7 +2762,7 @@ function Quantum:CreateWindow(data)
                             TextSize = 11,
                             Font = Enum.Font.Gotham,
                             TextXAlignment = Enum.TextXAlignment.Left,
-                            ZIndex = 33,
+                            ZIndex = 102,
                         })
 
                         local clickBtn = Create("TextButton", {
@@ -2768,7 +2770,7 @@ function Quantum:CreateWindow(data)
                             Size = UDim2.new(1, 0, 1, 0),
                             BackgroundTransparency = 1,
                             Text = "",
-                            ZIndex = 35,
+                            ZIndex = 104,
                         })
 
                         clickBtn.MouseButton1Click:Connect(function()
@@ -2800,117 +2802,52 @@ function Quantum:CreateWindow(data)
                         end
                     end
 
-                    OptionsScroll.Size = UDim2.new(1, -8, 1, -36)
-                    OptionsScroll.CanvasSize = UDim2.new(0, 0, 0, count * 28 + 4)
-                end
-
-                BuildOptions()
-
-                SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-                    BuildOptions(SearchBox.Text)
-                end)
-
-                local function UpdateMenuPosition()
-                    if not DropdownBtn or not DropdownBtn.Parent then return end
-                    if not MenuFrame or not MenuFrame.Parent then return end
-                    local btnAbs = DropdownBtn.AbsolutePosition
-                    local btnSize = DropdownBtn.AbsoluteSize
-                    local menuWidth = 160
-                    local posX = btnAbs.X + btnSize.X - menuWidth
-                    local posY = btnAbs.Y + btnSize.Y + 2
-                    local contentHeight = math.min(#options * 28 + 36, 220)
-                    local menuHeight = math.min(contentHeight, 220)
-                    local screenHeight = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.Y or 1080
-                    if posY + menuHeight > screenHeight - 10 then
-                        posY = btnAbs.Y - menuHeight - 2
-                    end
-                    MenuFrame.Position = UDim2.new(0, posX, 0, posY)
-                    MenuFrame.Size = UDim2.new(0, menuWidth, 0, menuHeight)
+                    DropdownPanelScroll.CanvasSize = UDim2.new(0, 0, 0, count * 29 + 4)
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(function()
-                    if ddData.IsOpen then
-                        ddData.IsOpen = false
-                        MenuFrame.Visible = false
-                        MenuFrame.Size = UDim2.new(0, 160, 0, 0)
-                        Arrow.Rotation = 0
-                        if ddData.HeartbeatConn then
-                            pcall(function() ddData.HeartbeatConn:Disconnect() end)
-                            ddData.HeartbeatConn = nil
-                        end
+                    if CurrentDropdownState.IsOpen and CurrentDropdownState.Button == DropdownBtn then
+                        CloseAllDropdowns()
                     else
                         CloseAllDropdowns()
-                        ddData.IsOpen = true
-                        UpdateMenuPosition()
-                        MenuFrame.Visible = true
+                        CurrentDropdownState.IsOpen = true
+                        CurrentDropdownState.IsMulti = true
+                        CurrentDropdownState.Options = options
+                        CurrentDropdownState.Selected = selected
+                        CurrentDropdownState.Callback = callback
+                        CurrentDropdownState.Arrow = Arrow
+                        CurrentDropdownState.Button = DropdownBtn
+                        CurrentDropdownState.Rebuild = BuildOptions
+                        CurrentDropdownState.OptionButtons = optionItems
+
+                        DropdownPanelTitle.Text = dropdownName
+                        DropdownPanelSearch.Text = ""
+
+                        DropdownPanel.Visible = true
+                        DropdownOverlay.Visible = true
+                        Tween(DropdownOverlay, {BackgroundTransparency = 0.88}, 0.2)
                         Arrow.Rotation = 180
-                        SearchBox.Text = ""
+
                         BuildOptions()
-                        
-                        ddData.HeartbeatConn = RunService.Heartbeat:Connect(function()
-                            if ddData.IsOpen and DropdownBtn and DropdownBtn.Parent then
-                                UpdateMenuPosition()
-                            else
-                                if ddData.HeartbeatConn then
-                                    pcall(function() ddData.HeartbeatConn:Disconnect() end)
-                                    ddData.HeartbeatConn = nil
-                                end
-                            end
-                        end)
                     end
                 end)
 
-                
                 TabContent:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
-                    if ddData.IsOpen then
-                        ddData.IsOpen = false
-                        MenuFrame.Visible = false
-                        MenuFrame.Size = UDim2.new(0, 160, 0, 0)
-                        Arrow.Rotation = 0
-                        if ddData.HeartbeatConn then
-                            pcall(function() ddData.HeartbeatConn:Disconnect() end)
-                            ddData.HeartbeatConn = nil
-                        end
+                    if CurrentDropdownState.IsOpen and CurrentDropdownState.Button == DropdownBtn then
+                        CloseAllDropdowns()
                     end
                 end)
-
-                local clickConn = UserInputService.InputBegan:Connect(function(input, gpe)
-                    if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
-                        if ddData.IsOpen then
-                            local mousePos = UserInputService:GetMouseLocation()
-                            local menuPos = MenuFrame.AbsolutePosition
-                            local menuSize = MenuFrame.AbsoluteSize
-                            if mousePos.X < menuPos.X or mousePos.X > menuPos.X + menuSize.X or
-                               mousePos.Y < menuPos.Y or mousePos.Y > menuPos.Y + menuSize.Y then
-                                local btnPos = DropdownBtn.AbsolutePosition
-                                local btnSize = DropdownBtn.AbsoluteSize
-                                if mousePos.X < btnPos.X or mousePos.X > btnPos.X + btnSize.X or
-                                   mousePos.Y < btnPos.Y or mousePos.Y > btnPos.Y + btnSize.Y then
-                                    ddData.IsOpen = false
-                                    MenuFrame.Visible = false
-                                    MenuFrame.Size = UDim2.new(0, 160, 0, 0)
-                                    Arrow.Rotation = 0
-                                    if ddData.HeartbeatConn then
-                                        pcall(function() ddData.HeartbeatConn:Disconnect() end)
-                                        ddData.HeartbeatConn = nil
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end)
-                table.insert(DropdownConnections, clickConn)
 
                 ListenTheme(function(theme)
                     DropdownFrame.BackgroundColor3 = theme.Background
                     DropdownBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
                     UpdateButtonText()
                     Arrow.ImageColor3 = theme.SubText
-                    MenuFrame.BackgroundColor3 = theme.Background
-                    SearchBox.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
-                    SearchBox.TextColor3 = theme.Text
-                    SearchBox.PlaceholderColor3 = theme.SubText
-                    OptionsScroll.ScrollBarImageColor3 = theme.Accent
+                    DropdownPanel.BackgroundColor3 = theme.Background
+                    DropdownPanelSearch.BackgroundColor3 = theme.Element
+                    DropdownPanelSearch.TextColor3 = theme.Text
+                    DropdownPanelSearch.PlaceholderColor3 = theme.SubText
+                    DropdownPanelScroll.ScrollBarImageColor3 = theme.Accent
                     for _, row in ipairs(optionItems) do
                         if row and row.Parent then
                             row.BackgroundColor3 = theme.Element
@@ -2926,7 +2863,9 @@ function Quantum:CreateWindow(data)
                         for _, v in ipairs(newDefault) do table.insert(selected, v) end
                         UpdateButtonText()
                     end
-                    BuildOptions()
+                    if CurrentDropdownState.IsOpen and CurrentDropdownState.Button == DropdownBtn then
+                        BuildOptions(DropdownPanelSearch.Text)
+                    end
                 end
                 function MultiDropdownAPI:Set(values)
                     selected = {}
@@ -2985,6 +2924,7 @@ function Quantum:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.Gotham,
                     TextXAlignment = Enum.TextXAlignment.Left,
+                    TextTruncate = Enum.TextTruncate.AtEnd,
                     ZIndex = 19
                 })
 
@@ -3088,6 +3028,7 @@ function Quantum:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.Gotham,
                     TextXAlignment = Enum.TextXAlignment.Left,
+                    TextTruncate = Enum.TextTruncate.AtEnd,
                     ZIndex = 19
                 })
 
@@ -3180,7 +3121,7 @@ function Quantum:CreateWindow(data)
 
                 local Label = Create("TextLabel", {
                     Parent = LabelFrame,
-                    Size = UDim2.new(0, 200, 0, 18),
+                    Size = UDim2.new(1, -30, 0, 18),
                     Position = UDim2.new(0, 22, 0, 0),
                     BackgroundTransparency = 1,
                     Text = labelText,
@@ -3188,6 +3129,7 @@ function Quantum:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.Gotham,
                     TextXAlignment = Enum.TextXAlignment.Left,
+                    TextTruncate = Enum.TextTruncate.AtEnd,
                     RichText = true,
                     ZIndex = 19
                 })
@@ -3287,7 +3229,6 @@ function Quantum:CreateWindow(data)
                     end
                 end)
 
-                
                 task.spawn(function()
                     for i = 1, 5 do
                         task.wait(0.1)
@@ -3352,6 +3293,7 @@ function Quantum:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.Gotham,
                     TextXAlignment = Enum.TextXAlignment.Left,
+                    TextTruncate = Enum.TextTruncate.AtEnd,
                     ZIndex = 19
                 })
 
@@ -3541,7 +3483,7 @@ function Quantum:CreateWindow(data)
 
                 local StatusLabel = Create("TextLabel", {
                     Parent = StatusFrame,
-                    Size = UDim2.new(0, 200, 0, 18),
+                    Size = UDim2.new(1, -30, 0, 18),
                     Position = UDim2.new(0, 30, 0, 0),
                     BackgroundTransparency = 1,
                     Text = statusText,
@@ -3549,6 +3491,7 @@ function Quantum:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.Gotham,
                     TextXAlignment = Enum.TextXAlignment.Left,
+                    TextTruncate = Enum.TextTruncate.AtEnd,
                     ZIndex = 19
                 })
 
@@ -3615,6 +3558,7 @@ function Quantum:CreateWindow(data)
                     TextSize = 12,
                     Font = Enum.Font.GothamBold,
                     TextXAlignment = Enum.TextXAlignment.Left,
+                    TextTruncate = Enum.TextTruncate.AtEnd,
                     ZIndex = 19
                 })
 
@@ -3698,6 +3642,7 @@ function Quantum:CreateWindow(data)
                             TextSize = 11,
                             Font = Enum.Font.Gotham,
                             TextXAlignment = Enum.TextXAlignment.Left,
+                            TextTruncate = Enum.TextTruncate.AtEnd,
                             ZIndex = 21
                         })
 
@@ -3792,10 +3737,126 @@ function Quantum:CreateWindow(data)
                 return QuestAPI
             end
 
+            function SectionAPI:CreateConfigManager(configData)
+                configData = configData or {}
+                local manager = configData.Manager or self.ConfigManager
+                if not manager then
+                    warn("CreateConfigManager: No ConfigManager available.")
+                    return {}
+                end
+
+                local NameInput = self:CreateInput({
+                    Name = "Config Name",
+                    Placeholder = "Enter config name...",
+                    Default = "",
+                    Callback = function() end
+                })
+
+                local ConfigDropdown = self:CreateDropdown({
+                    Name = "Saved Configs",
+                    Options = manager:GetAllConfigNames(),
+                    Default = "",
+                    Callback = function() end
+                })
+
+                local function RefreshDropdown()
+                    local names = manager:GetAllConfigNames()
+                    ConfigDropdown:Refresh(names, "")
+                end
+
+                local function MakeBtnRow()
+                    local Row = Create("Frame", {
+                        Parent = self._SectionItems,
+                        Size = UDim2.new(1, 0, 0, 32),
+                        BackgroundTransparency = 1,
+                        LayoutOrder = #self._SectionItems:GetChildren(),
+                        ZIndex = 18
+                    })
+                    return Row
+                end
+
+                local function MakeBtn(parent, name, bgColor, pos, callback)
+                    local btn = Create("TextButton", {
+                        Parent = parent,
+                        Size = UDim2.new(0.5, -2, 1, 0),
+                        Position = pos,
+                        BackgroundColor3 = bgColor,
+                        Text = name,
+                        TextColor3 = CurrentTheme.Text,
+                        TextSize = 11,
+                        Font = Enum.Font.GothamBold,
+                        AutoButtonColor = false,
+                        ZIndex = 19
+                    })
+                    Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = btn})
+                    btn.MouseEnter:Connect(function()
+                        Tween(btn, {BackgroundColor3 = Color3.fromRGB(
+                            math.clamp(bgColor.R * 255 + 20, 0, 255),
+                            math.clamp(bgColor.G * 255 + 20, 0, 255),
+                            math.clamp(bgColor.B * 255 + 20, 0, 255)
+                        )}, 0.15)
+                    end)
+                    btn.MouseLeave:Connect(function()
+                        Tween(btn, {BackgroundColor3 = bgColor}, 0.15)
+                    end)
+                    btn.MouseButton1Click:Connect(callback)
+                    return btn
+                end
+
+                local Row1 = MakeBtnRow()
+                MakeBtn(Row1, "Save Config", Color3.fromRGB(60, 180, 100), UDim2.new(0, 0, 0, 0), function()
+                    local name = NameInput:Get()
+                    if not name or name == "" then
+                        Quantum:Notify({Title = "Config", Content = "Please enter a config name!", Duration = 3, Icon = "AlertTriangle"})
+                        return
+                    end
+                    manager:SaveNamedConfig(name)
+                    RefreshDropdown()
+                    Quantum:Notify({Title = "Config", Content = "Saved config: " .. name, Duration = 3, Icon = "Check"})
+                end)
+
+                MakeBtn(Row1, "Load Config", Color3.fromRGB(55, 120, 200), UDim2.new(0.5, 4, 0, 0), function()
+                    local name = ConfigDropdown:Get()
+                    if not name or name == "" then
+                        Quantum:Notify({Title = "Config", Content = "Please select a config!", Duration = 3, Icon = "AlertTriangle"})
+                        return
+                    end
+                    local success = manager:LoadNamedConfig(name)
+                    if success then
+                        Quantum:Notify({Title = "Config", Content = "Loaded config: " .. name, Duration = 3, Icon = "Check"})
+                    else
+                        Quantum:Notify({Title = "Config", Content = "Failed to load config: " .. name, Duration = 3, Icon = "AlertTriangle"})
+                    end
+                end)
+
+                local Row2 = MakeBtnRow()
+                MakeBtn(Row2, "Remove Selected", Color3.fromRGB(200, 160, 60), UDim2.new(0, 0, 0, 0), function()
+                    local name = ConfigDropdown:Get()
+                    if not name or name == "" then
+                        Quantum:Notify({Title = "Config", Content = "Please select a config to remove!", Duration = 3, Icon = "AlertTriangle"})
+                        return
+                    end
+                    manager:DeleteNamedConfig(name)
+                    RefreshDropdown()
+                    Quantum:Notify({Title = "Config", Content = "Removed config: " .. name, Duration = 3, Icon = "Check"})
+                end)
+
+                MakeBtn(Row2, "Remove All", Color3.fromRGB(220, 60, 60), UDim2.new(0.5, 4, 0, 0), function()
+                    manager:DeleteAllConfigs()
+                    RefreshDropdown()
+                    Quantum:Notify({Title = "Config", Content = "All configs removed!", Duration = 3, Icon = "Check"})
+                end)
+
+                local API = {
+                    Refresh = RefreshDropdown,
+                    GetManager = function() return manager end
+                }
+                return API
+            end
+
             return SectionAPI
         end
 
-        
         function TabAPI:Section(data)
             local sec = self:CreateSection(data)
             self._CurrentSection = sec
@@ -3867,10 +3928,14 @@ function Quantum:CreateWindow(data)
             return self._CurrentSection:CreateQuestList(data)
         end
 
+        function TabAPI:ConfigManager(data)
+            if not self._CurrentSection then self:Section({Name = "Default", Opened = true}) end
+            return self._CurrentSection:CreateConfigManager(data)
+        end
+
         return TabAPI
     end
 
-    
     SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
         local text = SearchBox.Text:lower()
         for _, tab in ipairs(TabButtons) do
