@@ -1315,13 +1315,26 @@ function Quantum:CreateWindow(data)
         CloseAllDropdowns()
         IsClosed = true
         IsMinimized = false
-        if MainFrame then
-            MainFrame.Visible = false
-        end
         if MainWindowScreen then
-            MainWindowScreen.Enabled = false
+            MainWindowScreen:Destroy()
+            MainWindowScreen = nil
         end
-        ConfirmOverlay.Visible = false
+        if FloatingIconScreen then
+            FloatingIconScreen:Destroy()
+            FloatingIconScreen = nil
+        end
+        if NotifyScreen then
+            NotifyScreen:Destroy()
+            NotifyScreen = nil
+        end
+        for _, conn in ipairs(FloatingConnections) do
+            if conn then pcall(function() conn:Disconnect() end) end
+        end
+        FloatingConnections = {}
+        for _, conn in ipairs(DropdownConnections) do
+            if conn then pcall(function() conn:Disconnect() end) end
+        end
+        DropdownConnections = {}
     end)
 
     ConfirmNo.MouseButton1Click:Connect(function()
@@ -1377,7 +1390,7 @@ function Quantum:CreateWindow(data)
         Position = UDim2.new(0, 22, 0, 0),
         BackgroundTransparency = 1,
         Text = "",
-        PlaceholderText = "Search tabs...",
+        PlaceholderText = "Search features...",
         TextColor3 = CurrentTheme.Text,
         PlaceholderColor3 = CurrentTheme.SubText,
         TextSize = 12,
@@ -1508,6 +1521,10 @@ function Quantum:CreateWindow(data)
         Parent = DropdownPanelScroll,
         Padding = UDim.new(0, 3),
         SortOrder = Enum.SortOrder.LayoutOrder,
+    })
+    Create("UIPadding", {
+        Parent = DropdownPanelScroll,
+        PaddingBottom = UDim.new(0, 30)
     })
 
     local ResizeHandle = Create("ImageButton", {
@@ -2612,7 +2629,7 @@ function Quantum:CreateWindow(data)
                         end
                     end
 
-                    DropdownPanelScroll.CanvasSize = UDim2.new(0, 0, 0, count * 33 + 30)
+                    -- DropdownPanelScroll.CanvasSize is handled by AutomaticCanvasSize + UIPadding
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(function()
@@ -2935,7 +2952,7 @@ function Quantum:CreateWindow(data)
                         end
                     end
 
-                    DropdownPanelScroll.CanvasSize = UDim2.new(0, 0, 0, count * 29 + 30)
+                    -- DropdownPanelScroll.CanvasSize is handled by AutomaticCanvasSize + UIPadding
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(function()
