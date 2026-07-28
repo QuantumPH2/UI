@@ -191,6 +191,11 @@ local LegacyIcons = {
     ["trendingUp"] = "rbxassetid://7734058803",
 }
 
+
+
+
+
+
 local IconModule = {
     IconsType = "lucide",
     New = nil,
@@ -321,6 +326,7 @@ function IconModule.Icon2(Icon, Type, DefaultFormat)
     return IconModule.Icon(Icon, Type, true)
 end
 
+
 local packUrls = {
     lucide = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/lucide/dist/Icons.lua",
     solar = "https://raw.githubusercontent.com/Footagesus/Icons/refs/heads/main/solar/dist/Icons.lua",
@@ -336,6 +342,8 @@ for packName, url in pairs(packUrls) do
         IconModule.Icons[packName] = pack
     end
 end
+
+
 
 local function Create(className, properties)
     local instance = Instance.new(className)
@@ -374,6 +382,7 @@ end
 local function GetIcon(name, iconType)
     if not name then return {Image = LegacyIcons.Info} end
 
+    
     local iconData = IconModule.Icon2(name, iconType)
     if iconData then
         if type(iconData) == "string" then
@@ -387,10 +396,12 @@ local function GetIcon(name, iconType)
         end
     end
 
+    
     if LegacyIcons[name] then 
         return {Image = LegacyIcons[name]} 
     end
 
+    
     if type(name) == "string" and (name:sub(1, 13) == "rbxassetid://" or name:sub(1, 4) == "http") then
         return {Image = name}
     end
@@ -426,6 +437,7 @@ local DropdownOverlay = nil
 local DropdownPanelTitle = nil
 local DropdownPanelSearch = nil
 local DropdownPanelScroll = nil
+
 
 local function ListenTheme(callback)
     table.insert(ThemeListeners, callback)
@@ -475,11 +487,13 @@ local function CloseAllDropdowns()
     end
 end
 
+
 local function RegisterDropdown(menu, arrow, btnRef)
     local data = {Menu = menu, Arrow = arrow, Button = btnRef, IsOpen = false, HeartbeatConn = nil}
     table.insert(OpenDropdowns, data)
     return data
 end
+
 
 local ConfigManager = {}
 ConfigManager.__index = ConfigManager
@@ -505,11 +519,6 @@ function ConfigManager:Load()
             end)
             if ok2 and type(data) == "table" then
                 self.Data = data
-                for key, elem in pairs(self.Elements) do
-                    if elem.Set and self.Data[key] ~= nil then
-                        pcall(function() elem.Set(self.Data[key]) end)
-                    end
-                end
                 return true
             end
         end
@@ -518,7 +527,6 @@ function ConfigManager:Load()
 end
 
 function ConfigManager:Save()
-    self:SyncData()
     if typeof(writefile) == "function" then
         local ok, content = pcall(function()
             return HttpService:JSONEncode(self.Data)
@@ -573,17 +581,6 @@ function ConfigManager:StopAutoSave()
     end
 end
 
-function ConfigManager:SyncData()
-    for key, elem in pairs(self.Elements) do
-        if elem.Get then
-            local ok, val = pcall(elem.Get)
-            if ok then
-                self.Data[key] = val
-            end
-        end
-    end
-end
-
 function ConfigManager:Set(key, value)
     self.Data[key] = value
 end
@@ -608,7 +605,6 @@ function ConfigManager:BindElement(key, elementType, getValueFunc, setValueFunc)
 end
 
 function ConfigManager:SaveNamedConfig(name)
-    self:SyncData()
     if typeof(writefile) ~= "function" then return false end
     local path = self.WindowName .. "_" .. name .. "_Quantum.json"
     local ok, content = pcall(function()
@@ -649,17 +645,6 @@ function ConfigManager:DeleteNamedConfig(name)
     return false
 end
 
-function ConfigManager:DeleteAllConfigs()
-    if typeof(delfile) ~= "function" then return false end
-    local names = self:GetAllConfigNames()
-    for _, name in ipairs(names) do
-        local path = self.WindowName .. "_" .. name .. "_Quantum.json"
-        pcall(delfile, path)
-    end
-    self.Data = {}
-    return true
-end
-
 function ConfigManager:GetAllConfigNames()
     local names = {}
     if typeof(listfiles) == "function" then
@@ -676,6 +661,93 @@ function ConfigManager:GetAllConfigNames()
         end
     end
     return names
+end
+
+function ConfigManager:BuildConfigSection(tab)
+    local section = tab:CreateSection({Name = "Configuration", Icon = "Settings", Collapsed = false})
+    
+    section:CreateToggle({
+        Name = "Auto Save Config",
+        Default = self.AutoSave,
+        Callback = function(state)
+            if state then
+                self:EnableAutoSave(2)
+                Quantum:Notify({Title = "Auto Save", Content = "Auto save enabled (2s)", Duration = 3, Icon = "Check"})
+            else
+                self:DisableAutoSave()
+                Quantum:Notify({Title = "Auto Save", Content = "Auto save disabled", Duration = 3, Icon = "X"})
+            end
+        end
+    })
+
+    local configListDropdown = section:CreateDropdown({
+        Name = "Config List",
+        Options = self:GetAllConfigNames(),
+        Default = "Select Config",
+        Callback = function(val)
+            self.SelectedConfig = val
+        end
+    })
+    
+    local configInput = section:CreateInput({
+        Name = "Config Name",
+        PlaceholderText = "Enter config name...",
+        Callback = function(val)
+            self.InputConfigName = val
+        end
+    })
+
+    section:CreateButtonRow({
+        {
+            Name = "Save",
+            Callback = function()
+                local nameToSave = (self.InputConfigName and self.InputConfigName ~= "") and self.InputConfigName or self.SelectedConfig
+                if nameToSave and nameToSave ~= "Select Config" then
+                    self:SaveNamedConfig(nameToSave)
+                    Quantum:Notify({Title = "Config Saved", Content = "Saved config: " .. nameToSave, Duration = 3, Icon = "Check"})
+                    configListDropdown:Refresh(self:GetAllConfigNames(), nameToSave)
+                else
+                    Quantum:Notify({Title = "Error", Content = "Please enter or select a config name", Duration = 3, Icon = "AlertTriangle"})
+                end
+            end
+        },
+        {
+            Name = "Load",
+            Callback = function()
+                if self.SelectedConfig and self.SelectedConfig ~= "Select Config" then
+                    local success = self:LoadNamedConfig(self.SelectedConfig)
+                    if success then
+                        Quantum:Notify({Title = "Config Loaded", Content = "Loaded config: " .. self.SelectedConfig, Duration = 3, Icon = "Check"})
+                    else
+                        Quantum:Notify({Title = "Error", Content = "Failed to load config", Duration = 3, Icon = "AlertTriangle"})
+                    end
+                end
+            end
+        },
+        {
+            Name = "Remove",
+            Callback = function()
+                if self.SelectedConfig and self.SelectedConfig ~= "Select Config" then
+                    self:DeleteNamedConfig(self.SelectedConfig)
+                    Quantum:Notify({Title = "Config Removed", Content = "Removed config: " .. self.SelectedConfig, Duration = 3, Icon = "Trash"})
+                    self.SelectedConfig = nil
+                    configListDropdown:Refresh(self:GetAllConfigNames(), "Select Config")
+                end
+            end
+        },
+        {
+            Name = "Clear All",
+            Callback = function()
+                local allConfigs = self:GetAllConfigNames()
+                for _, name in ipairs(allConfigs) do
+                    self:DeleteNamedConfig(name)
+                end
+                Quantum:Notify({Title = "Configs Cleared", Content = "All configs removed", Duration = 3, Icon = "Trash"})
+                self.SelectedConfig = nil
+                configListDropdown:Refresh({}, "Select Config")
+            end
+        }
+    })
 end
 
 local NotifyScreen = nil
@@ -812,6 +884,7 @@ local function CreateFloatingIcon(customIcon)
         Enabled = true
     })
 
+    
     local Backdrop = Create("Frame", {
         Name = "Backdrop",
         Parent = FloatingIconScreen,
@@ -887,22 +960,19 @@ local function CreateFloatingIcon(customIcon)
                     end
                     if MainFrame then
                         MainFrame.Visible = true
-                        MainFrame.Active = true
-                        MainFrame.Size = UDim2.new(0, 460, 0, 280)
-                        MainFrame.Position = UDim2.new(0.5, -230, 0.5, -140)
+                        MainFrame.Size = UDim2.new(0, 440, 0, 280)
+                        MainFrame.Position = UDim2.new(0.5, -200, 0.5, -130)
                     end
                 elseif IsMinimized then
                     IsMinimized = false
                     if MainFrame then
                         MainFrame.Visible = true
-                        MainFrame.Active = true
                     end
                 else
                     CloseAllDropdowns()
                     IsMinimized = true
                     if MainFrame then
                         MainFrame.Visible = false
-                        MainFrame.Active = false
                     end
                 end
             end
@@ -1223,10 +1293,7 @@ function Quantum:CreateWindow(data)
     MakeControl("Minimize", "Minus", UDim2.new(0, 8, 0.5, -11), function()
         CloseAllDropdowns()
         IsMinimized = true
-        if MainFrame then
-            MainFrame.Visible = false
-            MainFrame.Active = false
-        end
+        MainFrame.Visible = false
     end)
 
     local IsMaximized = false
@@ -1250,8 +1317,6 @@ function Quantum:CreateWindow(data)
         IsMinimized = false
         if MainFrame then
             MainFrame.Visible = false
-            MainFrame.Active = false
-            MainFrame.Position = UDim2.new(0, -9999, 0, -9999)
         end
         if MainWindowScreen then
             MainWindowScreen.Enabled = false
@@ -1285,6 +1350,7 @@ function Quantum:CreateWindow(data)
         ZIndex = 15
     })
 
+    
     local SearchFrame = Create("Frame", {
         Parent = Sidebar,
         Size = UDim2.new(1, -10, 0, 32),
@@ -1383,7 +1449,6 @@ function Quantum:CreateWindow(data)
         BorderSizePixel = 0,
         Visible = false,
         ClipsDescendants = true,
-        Active = true,
         ZIndex = 99,
     })
     Create("UICorner", {CornerRadius = UDim.new(0, Config.CornerRadius), Parent = DropdownPanel})
@@ -1436,6 +1501,7 @@ function Quantum:CreateWindow(data)
         ScrollBarThickness = 2,
         ScrollBarImageColor3 = CurrentTheme.Accent,
         CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
         ZIndex = 100,
     })
     Create("UIListLayout", {
@@ -1528,7 +1594,6 @@ function Quantum:CreateWindow(data)
                         CloseAllDropdowns()
                     end
                     MainFrame.Visible = not MainFrame.Visible
-                    MainFrame.Active = MainFrame.Visible
                     IsMinimized = not MainFrame.Visible
                 end
             end
@@ -1594,10 +1659,12 @@ function Quantum:CreateWindow(data)
 
     local WindowAPI = {}
     WindowAPI.Notify = function(_, d) Quantum:Notify(d) end
+    -- Theme switching removed, only QuantumDark available
     WindowAPI.Config = ConfigManager.new(windowName)
     WindowAPI.Config:Load()
     WindowAPI.Config:StartAutoSave()
 
+    
     WindowAPI.EnableAutoSave = function(_, interval)
         WindowAPI.Config:EnableAutoSave(interval)
     end
@@ -1672,7 +1739,6 @@ function Quantum:CreateWindow(data)
             TextSize = 12,
             Font = Enum.Font.Gotham,
             TextXAlignment = Enum.TextXAlignment.Left,
-            TextTruncate = Enum.TextTruncate.AtEnd,
             ZIndex = 18
         })
 
@@ -1696,6 +1762,7 @@ function Quantum:CreateWindow(data)
             ScrollBarThickness = 2,
             ScrollBarImageColor3 = CurrentTheme.Accent,
             CanvasSize = UDim2.new(0, 0, 0, 0),
+            AutomaticCanvasSize = Enum.AutomaticSize.Y,
             Visible = false,
             ZIndex = 15
         })
@@ -1758,7 +1825,6 @@ function Quantum:CreateWindow(data)
         TabAPI._CurrentSection = nil
         TabAPI._Sections = {}
         TabAPI._TabContent = TabContent
-        TabAPI.ConfigManager = WindowAPI.Config
 
         function TabAPI:CreateSection(sectionData)
             sectionData = sectionData or {}
@@ -1811,7 +1877,6 @@ function Quantum:CreateWindow(data)
                 TextSize = 11,
                 Font = Enum.Font.GothamBold,
                 TextXAlignment = Enum.TextXAlignment.Left,
-                TextTruncate = Enum.TextTruncate.AtEnd,
                 ZIndex = 18
             })
 
@@ -1875,6 +1940,12 @@ function Quantum:CreateWindow(data)
                 TabContent.CanvasSize = UDim2.new(0, 0, 0, TabContent.UIListLayout.AbsoluteContentSize.Y + 16)
             end
 
+            SectionItems.UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                if not isCollapsed then
+                    UpdateSize()
+                end
+            end)
+
             SectionHeader.MouseButton1Click:Connect(function()
                 isCollapsed = not isCollapsed
                 UpdateSize()
@@ -1901,7 +1972,6 @@ function Quantum:CreateWindow(data)
             SectionAPI._SectionItems = SectionItems
             SectionAPI._SectionDropdowns = sectionDropdowns
             SectionAPI._UpdateSize = UpdateSize
-            SectionAPI.ConfigManager = TabAPI.ConfigManager
 
             function SectionAPI:CreateToggle(toggleData)
                 toggleData = toggleData or {}
@@ -1945,7 +2015,6 @@ function Quantum:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.Gotham,
                     TextXAlignment = Enum.TextXAlignment.Left,
-                    TextTruncate = Enum.TextTruncate.AtEnd,
                     ZIndex = 19
                 })
 
@@ -2084,7 +2153,6 @@ function Quantum:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.Gotham,
                     TextXAlignment = Enum.TextXAlignment.Left,
-                    TextTruncate = Enum.TextTruncate.AtEnd,
                     ZIndex = 19
                 })
 
@@ -2248,7 +2316,6 @@ function Quantum:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.GothamBold,
                     TextXAlignment = Enum.TextXAlignment.Left,
-                    TextTruncate = Enum.TextTruncate.AtEnd,
                     ZIndex = 19
                 })
 
@@ -2291,6 +2358,70 @@ function Quantum:CreateWindow(data)
                 end)
 
                 return {Click = callback}
+            end
+
+            function SectionAPI:CreateButtonRow(buttonsData)
+                local RowFrame = Create("Frame", {
+                    Parent = SectionItems,
+                    Size = UDim2.new(1, 0, 0, 28),
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+                    LayoutOrder = #SectionItems:GetChildren(),
+                    ZIndex = 18
+                })
+
+                Create("UIListLayout", {
+                    Parent = RowFrame,
+                    FillDirection = Enum.FillDirection.Horizontal,
+                    SortOrder = Enum.SortOrder.LayoutOrder,
+                    Padding = UDim.new(0, 4)
+                })
+
+                local buttonWidth = 1 / #buttonsData
+                
+                for _, data in ipairs(buttonsData) do
+                    local btn = Create("TextButton", {
+                        Parent = RowFrame,
+                        Size = UDim2.new(buttonWidth, -((#buttonsData - 1) * 4 / #buttonsData), 1, 0),
+                        BackgroundColor3 = CurrentTheme.Element,
+                        Text = data.Name or "Button",
+                        TextColor3 = CurrentTheme.Text,
+                        TextSize = 11,
+                        Font = Enum.Font.GothamBold,
+                        AutoButtonColor = false,
+                        ZIndex = 19
+                    })
+                    Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = btn})
+                    Create("UIStroke", {
+                        Color = CurrentTheme.Border,
+                        Thickness = 1,
+                        Transparency = 0.5,
+                        Parent = btn
+                    })
+
+                    btn.MouseEnter:Connect(function()
+                        btn.BackgroundColor3 = CurrentTheme.Accent
+                        btn.TextColor3 = Color3.fromRGB(0, 0, 0)
+                    end)
+                    btn.MouseLeave:Connect(function()
+                        btn.BackgroundColor3 = CurrentTheme.Element
+                        btn.TextColor3 = CurrentTheme.Text
+                    end)
+                    btn.MouseButton1Click:Connect(function()
+                        if data.Callback then data.Callback() end
+                    end)
+                end
+                
+                ListenTheme(function(theme)
+                    for _, child in ipairs(RowFrame:GetChildren()) do
+                        if child:IsA("TextButton") then
+                            child.BackgroundColor3 = theme.Element
+                            child.TextColor3 = theme.Text
+                            local stroke = child:FindFirstChildOfClass("UIStroke")
+                            if stroke then stroke.Color = theme.Border end
+                        end
+                    end
+                end)
             end
 
             function SectionAPI:CreateDropdown(dropdownData)
@@ -2481,7 +2612,7 @@ function Quantum:CreateWindow(data)
                         end
                     end
 
-                    DropdownPanelScroll.CanvasSize = UDim2.new(0, 0, 0, count * 33 + 4)
+                    DropdownPanelScroll.CanvasSize = UDim2.new(0, 0, 0, count * 33 + 30)
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(function()
@@ -2502,9 +2633,11 @@ function Quantum:CreateWindow(data)
                         DropdownPanelTitle.Text = dropdownName
                         DropdownPanelSearch.Text = ""
 
+                        DropdownPanel.Position = UDim2.new(1, 20, 0, Config.TopbarHeight)
                         DropdownPanel.Visible = true
                         DropdownOverlay.Visible = true
                         Tween(DropdownOverlay, {BackgroundTransparency = 0.88}, 0.2)
+                        Tween(DropdownPanel, {Position = UDim2.new(1, -180, 0, Config.TopbarHeight)}, 0.3)
                         Arrow.Rotation = 180
 
                         BuildOptions("")
@@ -2802,7 +2935,7 @@ function Quantum:CreateWindow(data)
                         end
                     end
 
-                    DropdownPanelScroll.CanvasSize = UDim2.new(0, 0, 0, count * 29 + 4)
+                    DropdownPanelScroll.CanvasSize = UDim2.new(0, 0, 0, count * 29 + 30)
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(function()
@@ -2823,9 +2956,11 @@ function Quantum:CreateWindow(data)
                         DropdownPanelTitle.Text = dropdownName
                         DropdownPanelSearch.Text = ""
 
+                        DropdownPanel.Position = UDim2.new(1, 20, 0, Config.TopbarHeight)
                         DropdownPanel.Visible = true
                         DropdownOverlay.Visible = true
                         Tween(DropdownOverlay, {BackgroundTransparency = 0.88}, 0.2)
+                        Tween(DropdownPanel, {Position = UDim2.new(1, -180, 0, Config.TopbarHeight)}, 0.3)
                         Arrow.Rotation = 180
 
                         BuildOptions()
@@ -2924,7 +3059,6 @@ function Quantum:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.Gotham,
                     TextXAlignment = Enum.TextXAlignment.Left,
-                    TextTruncate = Enum.TextTruncate.AtEnd,
                     ZIndex = 19
                 })
 
@@ -3028,7 +3162,6 @@ function Quantum:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.Gotham,
                     TextXAlignment = Enum.TextXAlignment.Left,
-                    TextTruncate = Enum.TextTruncate.AtEnd,
                     ZIndex = 19
                 })
 
@@ -3121,7 +3254,7 @@ function Quantum:CreateWindow(data)
 
                 local Label = Create("TextLabel", {
                     Parent = LabelFrame,
-                    Size = UDim2.new(1, -30, 0, 18),
+                    Size = UDim2.new(0, 200, 0, 18),
                     Position = UDim2.new(0, 22, 0, 0),
                     BackgroundTransparency = 1,
                     Text = labelText,
@@ -3129,7 +3262,6 @@ function Quantum:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.Gotham,
                     TextXAlignment = Enum.TextXAlignment.Left,
-                    TextTruncate = Enum.TextTruncate.AtEnd,
                     RichText = true,
                     ZIndex = 19
                 })
@@ -3229,6 +3361,7 @@ function Quantum:CreateWindow(data)
                     end
                 end)
 
+                
                 task.spawn(function()
                     for i = 1, 5 do
                         task.wait(0.1)
@@ -3293,7 +3426,6 @@ function Quantum:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.Gotham,
                     TextXAlignment = Enum.TextXAlignment.Left,
-                    TextTruncate = Enum.TextTruncate.AtEnd,
                     ZIndex = 19
                 })
 
@@ -3483,7 +3615,7 @@ function Quantum:CreateWindow(data)
 
                 local StatusLabel = Create("TextLabel", {
                     Parent = StatusFrame,
-                    Size = UDim2.new(1, -30, 0, 18),
+                    Size = UDim2.new(0, 200, 0, 18),
                     Position = UDim2.new(0, 30, 0, 0),
                     BackgroundTransparency = 1,
                     Text = statusText,
@@ -3491,7 +3623,6 @@ function Quantum:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.Gotham,
                     TextXAlignment = Enum.TextXAlignment.Left,
-                    TextTruncate = Enum.TextTruncate.AtEnd,
                     ZIndex = 19
                 })
 
@@ -3558,7 +3689,6 @@ function Quantum:CreateWindow(data)
                     TextSize = 12,
                     Font = Enum.Font.GothamBold,
                     TextXAlignment = Enum.TextXAlignment.Left,
-                    TextTruncate = Enum.TextTruncate.AtEnd,
                     ZIndex = 19
                 })
 
@@ -3642,7 +3772,6 @@ function Quantum:CreateWindow(data)
                             TextSize = 11,
                             Font = Enum.Font.Gotham,
                             TextXAlignment = Enum.TextXAlignment.Left,
-                            TextTruncate = Enum.TextTruncate.AtEnd,
                             ZIndex = 21
                         })
 
@@ -3737,126 +3866,10 @@ function Quantum:CreateWindow(data)
                 return QuestAPI
             end
 
-            function SectionAPI:CreateConfigManager(configData)
-                configData = configData or {}
-                local manager = configData.Manager or self.ConfigManager
-                if not manager then
-                    warn("CreateConfigManager: No ConfigManager available.")
-                    return {}
-                end
-
-                local NameInput = self:CreateInput({
-                    Name = "Config Name",
-                    Placeholder = "Enter config name...",
-                    Default = "",
-                    Callback = function() end
-                })
-
-                local ConfigDropdown = self:CreateDropdown({
-                    Name = "Saved Configs",
-                    Options = manager:GetAllConfigNames(),
-                    Default = "",
-                    Callback = function() end
-                })
-
-                local function RefreshDropdown()
-                    local names = manager:GetAllConfigNames()
-                    ConfigDropdown:Refresh(names, "")
-                end
-
-                local function MakeBtnRow()
-                    local Row = Create("Frame", {
-                        Parent = self._SectionItems,
-                        Size = UDim2.new(1, 0, 0, 32),
-                        BackgroundTransparency = 1,
-                        LayoutOrder = #self._SectionItems:GetChildren(),
-                        ZIndex = 18
-                    })
-                    return Row
-                end
-
-                local function MakeBtn(parent, name, bgColor, pos, callback)
-                    local btn = Create("TextButton", {
-                        Parent = parent,
-                        Size = UDim2.new(0.5, -2, 1, 0),
-                        Position = pos,
-                        BackgroundColor3 = bgColor,
-                        Text = name,
-                        TextColor3 = CurrentTheme.Text,
-                        TextSize = 11,
-                        Font = Enum.Font.GothamBold,
-                        AutoButtonColor = false,
-                        ZIndex = 19
-                    })
-                    Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = btn})
-                    btn.MouseEnter:Connect(function()
-                        Tween(btn, {BackgroundColor3 = Color3.fromRGB(
-                            math.clamp(bgColor.R * 255 + 20, 0, 255),
-                            math.clamp(bgColor.G * 255 + 20, 0, 255),
-                            math.clamp(bgColor.B * 255 + 20, 0, 255)
-                        )}, 0.15)
-                    end)
-                    btn.MouseLeave:Connect(function()
-                        Tween(btn, {BackgroundColor3 = bgColor}, 0.15)
-                    end)
-                    btn.MouseButton1Click:Connect(callback)
-                    return btn
-                end
-
-                local Row1 = MakeBtnRow()
-                MakeBtn(Row1, "Save Config", Color3.fromRGB(60, 180, 100), UDim2.new(0, 0, 0, 0), function()
-                    local name = NameInput:Get()
-                    if not name or name == "" then
-                        Quantum:Notify({Title = "Config", Content = "Please enter a config name!", Duration = 3, Icon = "AlertTriangle"})
-                        return
-                    end
-                    manager:SaveNamedConfig(name)
-                    RefreshDropdown()
-                    Quantum:Notify({Title = "Config", Content = "Saved config: " .. name, Duration = 3, Icon = "Check"})
-                end)
-
-                MakeBtn(Row1, "Load Config", Color3.fromRGB(55, 120, 200), UDim2.new(0.5, 4, 0, 0), function()
-                    local name = ConfigDropdown:Get()
-                    if not name or name == "" then
-                        Quantum:Notify({Title = "Config", Content = "Please select a config!", Duration = 3, Icon = "AlertTriangle"})
-                        return
-                    end
-                    local success = manager:LoadNamedConfig(name)
-                    if success then
-                        Quantum:Notify({Title = "Config", Content = "Loaded config: " .. name, Duration = 3, Icon = "Check"})
-                    else
-                        Quantum:Notify({Title = "Config", Content = "Failed to load config: " .. name, Duration = 3, Icon = "AlertTriangle"})
-                    end
-                end)
-
-                local Row2 = MakeBtnRow()
-                MakeBtn(Row2, "Remove Selected", Color3.fromRGB(200, 160, 60), UDim2.new(0, 0, 0, 0), function()
-                    local name = ConfigDropdown:Get()
-                    if not name or name == "" then
-                        Quantum:Notify({Title = "Config", Content = "Please select a config to remove!", Duration = 3, Icon = "AlertTriangle"})
-                        return
-                    end
-                    manager:DeleteNamedConfig(name)
-                    RefreshDropdown()
-                    Quantum:Notify({Title = "Config", Content = "Removed config: " .. name, Duration = 3, Icon = "Check"})
-                end)
-
-                MakeBtn(Row2, "Remove All", Color3.fromRGB(220, 60, 60), UDim2.new(0.5, 4, 0, 0), function()
-                    manager:DeleteAllConfigs()
-                    RefreshDropdown()
-                    Quantum:Notify({Title = "Config", Content = "All configs removed!", Duration = 3, Icon = "Check"})
-                end)
-
-                local API = {
-                    Refresh = RefreshDropdown,
-                    GetManager = function() return manager end
-                }
-                return API
-            end
-
             return SectionAPI
         end
 
+        
         function TabAPI:Section(data)
             local sec = self:CreateSection(data)
             self._CurrentSection = sec
@@ -3871,6 +3884,11 @@ function Quantum:CreateWindow(data)
         function TabAPI:Button(data)
             if not self._CurrentSection then self:Section({Name = "Default", Opened = true}) end
             return self._CurrentSection:CreateButton(data)
+        end
+
+        function TabAPI:ButtonRow(data)
+            if not self._CurrentSection then self:Section({Name = "Default", Opened = true}) end
+            return self._CurrentSection:CreateButtonRow(data)
         end
 
         function TabAPI:Toggle(data)
@@ -3928,14 +3946,10 @@ function Quantum:CreateWindow(data)
             return self._CurrentSection:CreateQuestList(data)
         end
 
-        function TabAPI:ConfigManager(data)
-            if not self._CurrentSection then self:Section({Name = "Default", Opened = true}) end
-            return self._CurrentSection:CreateConfigManager(data)
-        end
-
         return TabAPI
     end
 
+    
     SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
         local text = SearchBox.Text:lower()
         for _, tab in ipairs(TabButtons) do
