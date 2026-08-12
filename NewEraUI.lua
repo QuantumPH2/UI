@@ -141,6 +141,7 @@ do
         local shine = theme.Accent
 
         local conn = _RunService.RenderStepped:Connect(function(dt)
+            if not getgenv().ShineEnabled or (#_shineObjs == 0 and #_strokeObjs == 0) then return end
             _accum = _accum + dt
             if _accum < 0.033 then return end
             local step = _accum
@@ -6855,12 +6856,13 @@ local aa = {
                 h.Value = n
                 local borderCol = ah.GetThemeProperty("InElementBorder") or Color3.fromRGB(80, 80, 80)
                 k.Color = borderCol
+                j.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
                 af:Create(
                     j,
                     TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
                     {Position = UDim2.new(0, h.Value and 20 or 2, 0.5, 0)}
                 ):Play()
-                local activeBg = ah.GetThemeProperty("Accent") or Color3.fromRGB(0, 120, 215)
+                local activeBg = ah.GetThemeProperty("ToggleToggled") or ah.GetThemeProperty("Accent") or Color3.fromRGB(16, 160, 95)
                 local inactiveBg = ah.GetThemeProperty("ToggleSlider") or Color3.fromRGB(30, 30, 35)
                 af:Create(
                     l,
@@ -9237,6 +9239,8 @@ local aa = {
         af["Emerald"] = {
             Name = "Emerald",
             Accent = Color3.fromRGB(16, 160, 95),
+            Background = "rbxassetid://100391623230690",
+            BackgroundTransparency = 0.15,
             AcrylicMain = Color3.fromRGB(8, 16, 11),
             AcrylicBorder = Color3.fromRGB(14, 120, 70),
             AcrylicGradient = ColorSequence.new({
@@ -9281,6 +9285,11 @@ local aa = {
             ButtonGradient = { Background = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 200, 100)), ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 30, 16)) }), Stroke = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 230, 118)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 150)), ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 200, 100)) }) },
             ThemeAccentColors = { Color3.fromRGB(0, 230, 118) },
         }
+
+        if af["Emerald"] then
+            af["Emerald"].Background = "rbxassetid://100391623230690"
+            af["Emerald"].BackgroundTransparency = 0.15
+        end
 
         if af["Blood Red"] then
             af["Blood Red"].Background = "rbxassetid://121343473918667"
