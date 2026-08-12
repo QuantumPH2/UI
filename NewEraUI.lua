@@ -1977,7 +1977,7 @@ local aa = {
                         },
                         {
                             j("UICorner", {CornerRadius = UDim.new(0, 10)}),
-                            j("UIGradient", {Rotation = 90, ThemeTag = {Color = "AcrylicGradient"}})
+                            j("UIGradient", {Rotation = 0, ThemeTag = {Color = "AcrylicGradient"}})
                         }
                     ),
                     j(
@@ -4420,7 +4420,7 @@ local aa = {
             )
             v.ContainerHolder =
                 s(
-                "Frame",
+                "CanvasGroup",
                 {
                     Size = UDim2.new(1, -t.TabWidth - 32, 1, -102),
                     Position = UDim2.fromOffset(t.TabWidth + 26, 90),
@@ -4553,7 +4553,11 @@ local aa = {
             )
             v.ContainerBackMotor:onStep(
                 function(K)
-                    v.ContainerHolder.GroupTransparency = K
+                    if v.ContainerHolder and v.ContainerHolder:IsA("CanvasGroup") then
+                        v.ContainerHolder.GroupTransparency = K
+                    else
+                        pcall(function() v.ContainerHolder.GroupTransparency = K end)
+                    end
                 end
             )
             v.ContainerPosMotor:onStep(
@@ -5787,7 +5791,7 @@ local aa = {
                 _ddBgChild
             }
             if ddSearchFrame then table.insert(uChildren, 1, ddSearchFrame) end
-            local u = e("Frame", {Size = UDim2.fromScale(1, 0.6), ThemeTag = {BackgroundColor3 = "DropdownHolder"}}, uChildren)
+            local u = e("Frame", {Size = UDim2.fromScale(1, 1), ThemeTag = {BackgroundColor3 = "DropdownHolder"}}, uChildren)
             local _isManagerDD = j.IsManagerDropdown == true
             if _isManagerDD then
                 -- Manager-built dropdowns (theme list, font list, config list, layouts list) mirror
@@ -5830,7 +5834,7 @@ local aa = {
 
             local v = e("Frame", {
                 Size = UDim2.new(0, 230, 1, 0),
-                Position = UDim2.new(1, 0, 0, 0),
+                Position = UDim2.new(0, 0, 0, 0),
                 BackgroundTransparency = 1,
                 ZIndex = 95,
                 ClipsDescendants = true,
@@ -5850,124 +5854,38 @@ local aa = {
             table.insert(k.OpenFrames, v)
             local function _winFrame()
                 local winGui = h.Library.GUI or h.Library.PopupGUI
-                return winGui and winGui:FindFirstChildWhichIsA("Frame", true)
+                return h.Root or (winGui and winGui:FindFirstChildWhichIsA("Frame", true))
             end
             local w, x = function()
-                    if j.OutsideWindow or j.DropdownOutsideWindow then
-                        -- Side popup: appear around the window (right, left, top or bottom),
-                        -- automatically picking a free slot when multiple are open at once.
-                        local winFrame = _winFrame()
-                        local winLeft   = winFrame and winFrame.AbsolutePosition.X or 0
-                        local winTop    = winFrame and winFrame.AbsolutePosition.Y or 0
-                        local winRight  = winFrame and (winFrame.AbsolutePosition.X + winFrame.AbsoluteSize.X) or (p.AbsolutePosition.X + p.AbsoluteSize.X + 8)
-                        local winBottom = winFrame and (winFrame.AbsolutePosition.Y + winFrame.AbsoluteSize.Y) or (p.AbsolutePosition.Y + p.AbsoluteSize.Y + 8)
-                        local winCenterX = winFrame and (winLeft + winFrame.AbsoluteSize.X / 2) or winLeft
-                        local popW     = v.AbsoluteSize.X
-                        local popH     = v.AbsoluteSize.Y
-
-                        local rightFits  = (winRight + 8 + popW) <= (ai.ViewportSize.X - 8)
-                        local leftFits   = (winLeft - 8 - popW) >= 8
-                        local topFits    = (winTop - 8 - popH) >= 8
-                        local bottomFits = (winBottom + 8 + popH) <= (ai.ViewportSize.Y - 8)
-
-                        local slotOrder = {"right", "left", "bottom", "top"}
-                        local fits = {right = rightFits, left = leftFits, top = topFits, bottom = bottomFits}
-                        local side = nil
-                        -- Prefer a slot that's completely free
-                        for _, s2 in ipairs(slotOrder) do
-                            if fits[s2] and (_outsideSideOwner[s2] == nil or _outsideSideOwner[s2] == l) then
-                                side = s2
-                                break
-                            end
-                        end
-                        -- Nothing fully free: fall back to whatever slot fits, preferring "right"
-                        if not side then
-                            for _, s2 in ipairs(slotOrder) do
-                                if fits[s2] then side = s2; break end
-                            end
-                        end
-                        side = side or "right"
-
-                        if _outsideSideOwner[l._outsideSide or ""] == l then
-                            _outsideSideOwner[l._outsideSide] = nil
-                        end
-                        l._outsideSide = side
-                        _outsideSideOwner[side] = l
-
-                        local popX, popY
-                        if side == "left" then
-                            popX = leftFits and (winLeft - 8 - popW) or math.min(winLeft - 8 - popW, ai.ViewportSize.X - popW - 8)
-                            popX = math.min(popX, winLeft - popW - 2)
-                            if #l.Values > 10 then popY = winTop else
-                                popY = math.max(8, math.min(p.AbsolutePosition.Y + p.AbsoluteSize.Y / 2 - popH / 2, ai.ViewportSize.Y - popH - 8))
-                            end
-                        elseif side == "top" then
-                            popY = topFits and (winTop - 8 - popH) or math.min(winTop - 8 - popH, 8)
-                            popY = math.min(popY, winTop - popH - 2)
-                            popX = math.max(8, math.min(winCenterX - popW / 2, ai.ViewportSize.X - popW - 8))
-                        elseif side == "bottom" then
-                            popY = bottomFits and (winBottom + 8) or math.max(winBottom + 2, ai.ViewportSize.Y - popH - 8)
-                            -- Slight diagonal offset from the window's left edge, distinguishing it from a centred top/bottom popup
-                            popX = math.max(8, math.min(winLeft + 24, ai.ViewportSize.X - popW - 8))
-                        else -- right
-                            popX = rightFits and (winRight + 8) or math.max(winRight + 2, ai.ViewportSize.X - popW - 8)
-                            if #l.Values > 10 then popY = winTop else
-                                popY = math.max(8, math.min(p.AbsolutePosition.Y + p.AbsoluteSize.Y / 2 - popH / 2, ai.ViewportSize.Y - popH - 8))
-                            end
-                        end
-                        -- Final safety net: if the computed position still spatially overlaps the
-                        -- window's own bounds (e.g. on very small screens), nudge it to the nearest
-                        -- non-overlapping edge so dropdowns can never sit on top of and block the
-                        -- title bar or any other part of the window from receiving input.
-                        if winFrame then
-                            local popRight, popBottom = popX + popW, popY + popH
-                            local overlapsWindow = popX < winRight and popRight > winLeft and popY < winBottom and popBottom > winTop
-                            if overlapsWindow then
-                                if side == "left" or side == "right" then
-                                    popX = (side == "left") and (winLeft - popW - 2) or (winRight + 2)
-                                else
-                                    popY = (side == "top") and (winTop - popH - 2) or (winBottom + 2)
-                                end
-                            end
-                        end
-                        v.Position = UDim2.fromOffset(popX, popY)
-                    else
-                        -- Normal popup: appear below the button, aligned to button left
-                        local popX = p.AbsolutePosition.X
-                        local popY = p.AbsolutePosition.Y + p.AbsoluteSize.Y + 4
-                        -- Flip above if not enough space below
-                        if popY + v.AbsoluteSize.Y > ai.ViewportSize.Y - 8 then
-                            popY = p.AbsolutePosition.Y - v.AbsoluteSize.Y - 4
-                        end
-                        popY = math.max(8, popY)
-                        v.Position = UDim2.fromOffset(popX, popY)
+                    local winFrame = _winFrame()
+                    if not winFrame then return end
+                    
+                    if v.Parent ~= winFrame then
+                        v.Parent = winFrame
                     end
+                    if dimOverlay.Parent ~= winFrame then
+                        dimOverlay.Parent = winFrame
+                    end
+
+                    local winW = winFrame.AbsoluteSize.X
+                    local popW = math.clamp(p.AbsoluteSize.X + 20, 220, math.max(220, winW - 10))
+                    
+                    -- Dropdown spans from top of UI to bottom of UI inside the window frame
+                    v.Size = UDim2.new(0, popW, 1, 0)
+
+                    local btnRelX = p.AbsolutePosition.X - winFrame.AbsolutePosition.X
+                    local maxPopX = math.max(0, winW - popW)
+                    local popX = math.clamp(btnRelX, 0, maxPopX)
+
+                    v.Position = UDim2.new(0, popX, 0, 0)
                 end, 0
             local y, z = function()
-                    local minH = 42
-                    local maxH = 392
-                    if j.OutsideWindow or j.DropdownOutsideWindow then
-                        local winFrame = _winFrame()
-                        local winH = winFrame and winFrame.AbsoluteSize.Y or ai.ViewportSize.Y
-                        local isSideSlot = (l._outsideSide == "left" or l._outsideSide == "right" or l._outsideSide == nil)
-                        if #l.Values > 10 and isSideSlot then
-                            -- Side-panel mode: dropdown is the same size as the window
-                            v.Size = UDim2.fromOffset(x, winH)
-                        else
-                            maxH = math.max(minH, winH - 16)
-                            local h2 = s.AbsoluteContentSize.Y + 10
-                            v.Size = UDim2.fromOffset(x, math.max(math.min(h2, maxH), minH))
-                        end
-                    else
-                        if #l.Values > 10 then
-                            v.Size = UDim2.fromOffset(x, math.min(maxH, 392))
-                        else
-                            local h2 = s.AbsoluteContentSize.Y + 10
-                            v.Size = UDim2.fromOffset(x, math.max(math.min(h2, maxH), minH))
-                        end
+                    local winFrame = _winFrame()
+                    if winFrame then
+                        v.Size = UDim2.new(v.Size.X.Scale, v.Size.X.Offset, 1, 0)
                     end
                 end, function()
-                    t.CanvasSize = UDim2.fromOffset(0, s.AbsoluteContentSize.Y)
+                    t.CanvasSize = UDim2.fromOffset(0, s.AbsoluteContentSize.Y + 10)
                 end
             y()
             w()
@@ -9318,48 +9236,48 @@ local aa = {
 
         af["Emerald"] = {
             Name = "Emerald",
-            Accent = Color3.fromRGB(0, 230, 118),
+            Accent = Color3.fromRGB(16, 160, 95),
             AcrylicMain = Color3.fromRGB(8, 16, 11),
-            AcrylicBorder = Color3.fromRGB(0, 200, 100),
+            AcrylicBorder = Color3.fromRGB(14, 120, 70),
             AcrylicGradient = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 230, 118)),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(5, 25, 12))
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(6, 16, 11)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 115, 65))
             }),
             AcrylicNoise = 1,
-            TitleBarLine = Color3.fromRGB(0, 180, 90),
+            TitleBarLine = Color3.fromRGB(12, 100, 55),
             Tab = Color3.fromRGB(10, 22, 14),
             Element = Color3.fromRGB(12, 24, 16),
-            ElementBorder = Color3.fromRGB(0, 150, 75),
-            InElementBorder = Color3.fromRGB(0, 200, 100),
+            ElementBorder = Color3.fromRGB(10, 90, 50),
+            InElementBorder = Color3.fromRGB(14, 120, 70),
             ElementTransparency = 0.4,
             ToggleSlider = Color3.fromRGB(18, 36, 24),
-            ToggleToggled = Color3.fromRGB(0, 230, 118),
+            ToggleToggled = Color3.fromRGB(16, 160, 95),
             SliderRail = Color3.fromRGB(18, 36, 24),
             DropdownFrame = Color3.fromRGB(10, 22, 14),
             DropdownHolder = Color3.fromRGB(8, 16, 11),
-            DropdownBorder = Color3.fromRGB(0, 180, 90),
+            DropdownBorder = Color3.fromRGB(12, 100, 55),
             DropdownOption = Color3.fromRGB(14, 28, 18),
             Keybind = Color3.fromRGB(14, 28, 18),
             Input = Color3.fromRGB(10, 22, 14),
             InputFocused = Color3.fromRGB(4, 12, 8),
-            InputIndicator = Color3.fromRGB(0, 230, 118),
-            InputIndicatorFocus = Color3.fromRGB(0, 255, 140),
+            InputIndicator = Color3.fromRGB(16, 160, 95),
+            InputIndicatorFocus = Color3.fromRGB(20, 180, 105),
             Dialog = Color3.fromRGB(10, 22, 14),
             DialogHolder = Color3.fromRGB(8, 16, 11),
-            DialogHolderLine = Color3.fromRGB(0, 180, 90),
+            DialogHolderLine = Color3.fromRGB(12, 100, 55),
             DialogButton = Color3.fromRGB(12, 24, 16),
-            DialogButtonBorder = Color3.fromRGB(0, 200, 100),
-            DialogBorder = Color3.fromRGB(0, 180, 90),
+            DialogButtonBorder = Color3.fromRGB(14, 120, 70),
+            DialogBorder = Color3.fromRGB(12, 100, 55),
             DialogInput = Color3.fromRGB(14, 28, 18),
-            DialogInputLine = Color3.fromRGB(0, 230, 118),
+            DialogInputLine = Color3.fromRGB(16, 160, 95),
             Text = Color3.fromRGB(255, 255, 255),
             SubText = Color3.fromRGB(200, 225, 210),
-            Hover = Color3.fromRGB(0, 180, 90),
+            Hover = Color3.fromRGB(12, 100, 55),
             HoverChange = 0.05,
             ShineEnabled = true,
-            Shine = { Speed = 0.5, RotationSpeed = 25, ColorSequence = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 30, 18)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 230, 118)), ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 30, 18)) }) },
+            Shine = { Speed = 0.5, RotationSpeed = 25, ColorSequence = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 30, 18)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(16, 160, 95)), ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 30, 18)) }) },
             StrokeShine = true,
-            StrokeDark = Color3.fromRGB(0, 150, 75),
+            StrokeDark = Color3.fromRGB(10, 90, 50),
             ButtonGradient = { Background = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 200, 100)), ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 30, 16)) }), Stroke = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 230, 118)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 150)), ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 200, 100)) }) },
             ThemeAccentColors = { Color3.fromRGB(0, 230, 118) },
         }
