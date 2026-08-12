@@ -4381,6 +4381,69 @@ local aa = {
                 {v.AcrylicPaint.Frame, v.TabDisplay, v.ContainerHolder, F, E}
             )
             v.TitleBar = e(d.Parent.TitleBar) {Title = t.Title, SubTitle = t.SubTitle, Parent = v.Root, Window = v, Icon = t.TitleIcon}
+            v.MinimizeIcon = t.MinimizeIcon or t.FloatingIcon or t.TitleIcon or "rbxassetid://10723415903"
+            local floatGui = j.GUI or j.PopupGUI or t.Parent
+            local floatBtn = s("TextButton", {
+                Size = UDim2.fromOffset(50, 50),
+                Position = UDim2.new(0.9, -60, 0.15, 0),
+                BackgroundColor3 = Color3.fromRGB(24, 24, 28),
+                BackgroundTransparency = 0.15,
+                AutoButtonColor = false,
+                Text = "",
+                ZIndex = 100,
+                Visible = false,
+                Parent = floatGui,
+            }, {
+                s("UICorner", { CornerRadius = UDim.new(0, 14) }),
+                s("UIStroke", {
+                    Color = Color3.fromRGB(80, 80, 100),
+                    Thickness = 1.5,
+                    ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+                    ThemeTag = { Color = "Accent" }
+                })
+            })
+
+            local floatIconImg = s("ImageLabel", {
+                Size = UDim2.fromOffset(28, 28),
+                Position = UDim2.fromScale(0.5, 0.5),
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                BackgroundTransparency = 1,
+                Image = v.MinimizeIcon,
+                ImageColor3 = Color3.fromRGB(255, 255, 255),
+                ZIndex = 101,
+                Parent = floatBtn
+            })
+
+            local fDragging = false
+            local fDragStart, fStartPos
+            m.AddSignal(floatBtn.InputBegan, function(M)
+                if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
+                    fDragging = true
+                    fDragStart = M.Position
+                    fStartPos = floatBtn.Position
+                end
+            end)
+            m.AddSignal(h.InputChanged, function(M)
+                if fDragging and (M.UserInputType == Enum.UserInputType.MouseMovement or M.UserInputType == Enum.UserInputType.Touch) then
+                    local delta = M.Position - fDragStart
+                    floatBtn.Position = UDim2.new(fStartPos.X.Scale, fStartPos.X.Offset + delta.X, fStartPos.Y.Scale, fStartPos.Y.Offset + delta.Y)
+                end
+            end)
+            m.AddSignal(h.InputEnded, function(M)
+                if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
+                    fDragging = false
+                end
+            end)
+
+            m.AddSignal(floatBtn.MouseButton1Click, function()
+                v:Minimize()
+            end)
+
+            function v.SetMinimizeIcon(self, iconId)
+                v.MinimizeIcon = iconId
+                floatIconImg.Image = iconId
+            end
+            v.SetFloatingIcon = v.SetMinimizeIcon
             if e(k).UseAcrylic then
                 v.AcrylicPaint.AddParent(v.Root)
             end
@@ -4537,6 +4600,7 @@ local aa = {
             function v.Show(M)
                 v.Minimized = false
                 v.Root.Visible = true
+                floatBtn.Visible = false
                 pcall(function()
                     local ovs = e(k)._SBOverlays
                     if ovs then for _, ov in ipairs(ovs) do ov.Visible = true end end
@@ -4545,6 +4609,7 @@ local aa = {
             function v.Hide(M)
                 v.Minimized = true
                 v.Root.Visible = false
+                floatBtn.Visible = true
                 pcall(function()
                     local ovs = e(k)._SBOverlays
                     if ovs then for _, ov in ipairs(ovs) do ov.Visible = false end end
@@ -4553,6 +4618,7 @@ local aa = {
             function v.Minimize(M)
                 v.Minimized = not v.Minimized
                 v.Root.Visible = not v.Minimized
+                floatBtn.Visible = v.Minimized
                 pcall(function()
                     local ovs = e(k)._SBOverlays
                     if ovs then for _, ov in ipairs(ovs) do ov.Visible = not v.Minimized end end
@@ -4560,7 +4626,7 @@ local aa = {
                 if not C then
                     C = true
                     local N = u.MinimizeKeybind and u.MinimizeKeybind.Value or u.MinimizeKey.Name
-                    u:Notify {Title = "Interface", Content = "Press " .. N .. " to toggle the interface.", Duration = 6}
+                    u:Notify {Title = "Interface", Content = "Press " .. N .. " or tap floating icon to toggle.", Duration = 6}
                 end
             end
             function v.Destroy(M)
@@ -5656,12 +5722,42 @@ local aa = {
                 local acrylicBorder = c.GetThemeProperty("AcrylicBorder")
                 if acrylicBorder then ddStroke.Color = acrylicBorder end
             end
-            local v =
-                e(
-                "Frame",
-                {BackgroundTransparency = 1, Size = UDim2.fromOffset(170, 300), Parent = h.Library.PopupGUI or h.Library.GUI, Visible = false},
-                {u, e("UISizeConstraint", {MinSize = Vector2.new(170, 0)})}
-            )
+            local winRoot = h.Root or (h.Library.GUI and h.Library.GUI:FindFirstChildWhichIsA("Frame", true))
+            local popupParent = winRoot or h.Library.PopupGUI or h.Library.GUI
+
+            local dimOverlay = e("TextButton", {
+                Size = UDim2.fromScale(1, 1),
+                Position = UDim2.fromScale(0, 0),
+                BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+                BackgroundTransparency = 1,
+                AutoButtonColor = false,
+                Text = "",
+                ZIndex = 90,
+                Visible = false,
+                Parent = popupParent,
+            }, {
+                e("UICorner", { CornerRadius = UDim.new(0, 10) })
+            })
+
+            local v = e("Frame", {
+                Size = UDim2.new(0, 230, 1, 0),
+                Position = UDim2.new(1, 0, 0, 0),
+                BackgroundTransparency = 1,
+                ZIndex = 95,
+                ClipsDescendants = true,
+                Visible = false,
+                Parent = popupParent,
+            }, {
+                u,
+                e("UICorner", { CornerRadius = UDim.new(0, 10) }),
+                e("UISizeConstraint", { MinSize = Vector2.new(170, 0) })
+            })
+
+            c.AddSignal(dimOverlay.MouseButton1Click, function()
+                if l.Opened then
+                    l:Close()
+                end
+            end)
             table.insert(k.OpenFrames, v)
             local function _winFrame()
                 local winGui = h.Library.GUI or h.Library.PopupGUI
@@ -5836,30 +5932,60 @@ local aa = {
                 _applyDropShine(l, u, shouldAnimate)
             end
             function l.Open(B)
+                for openDD, _ in pairs(_openDropdowns) do
+                    if openDD ~= l and openDD.Close then
+                        pcall(function() openDD:Close() end)
+                    end
+                end
+
                 l.Opened = true
                 A.ScrollingEnabled = false
-                y()
-                w()
-                y()
+                v.Size = UDim2.new(0, math.max(220, x or 220), 1, 0)
+                v.Position = UDim2.new(1, 0, 0, 0)
+                
+                dimOverlay.Visible = true
+                dimOverlay.BackgroundTransparency = 1
                 v.Visible = true
                 _openDropdowns[l] = true
                 l._refreshShine()
+
+                af:Create(
+                    dimOverlay,
+                    TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+                    { BackgroundTransparency = 0.45 }
+                ):Play()
+
+                af:Create(
+                    v,
+                    TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+                    { Position = UDim2.new(1, -v.Size.X.Offset, 0, 0) }
+                ):Play()
+
                 af:Create(
                     u,
                     TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-                    {Size = UDim2.fromScale(1, 1)}
+                    { Size = UDim2.fromScale(1, 1) }
                 ):Play()
             end
+
             function l.Close(B)
                 l.Opened = false
                 A.ScrollingEnabled = true
-                u.Size = UDim2.fromScale(1, 0.6)
                 _openDropdowns[l] = nil
-                v.Visible = false
                 _clearDropShine(l)
-                if l._outsideSide and _outsideSideOwner[l._outsideSide] == l then
-                    _outsideSideOwner[l._outsideSide] = nil
-                end
+
+                local tSlide = af:Create(v, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.In), { Position = UDim2.new(1, 0, 0, 0) })
+                local tDim = af:Create(dimOverlay, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.In), { BackgroundTransparency = 1 })
+                
+                tSlide:Play()
+                tDim:Play()
+
+                tSlide.Completed:Connect(function()
+                    if not l.Opened then
+                        v.Visible = false
+                        dimOverlay.Visible = false
+                    end
+                end)
             end
             function l.Display(B)
                 local C, D = l.Values, ""
