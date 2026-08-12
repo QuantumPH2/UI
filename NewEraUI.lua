@@ -123,7 +123,7 @@ do
         table.clear(_shineObjs)
         table.clear(_strokeObjs)
 
-        if not theme or not root or not getgenv().ShineEnabled or not theme.ShineEnabled or not theme.Shine then return end
+        if true then return end -- Shine/light effect disabled
         local ShineConfig   = theme.Shine
         local Speed         = ShineConfig.Speed         or 0.5
         local RotationSpeed = ShineConfig.RotationSpeed or 25
@@ -176,7 +176,7 @@ do
     end
 end
 if not Animation then Animation = {Apply = function() end} end
-getgenv().ShineEnabled = getgenv().ShineEnabled == true and true or false
+getgenv().ShineEnabled = false
 getgenv().WindowTransparent = getgenv().WindowTransparent or false
 getgenv()._FluentProRefreshOpenDropdownShine = nil
 getgenv()._FluentProManagerDropdowns = {}
@@ -4125,7 +4125,7 @@ local aa = {
                     mkCorner(6), mkStroke(0.6),
                     s("ImageLabel",{
                         Size=UDim2.fromOffset(13,13),
-                        Position=UDim2.new(0,8,0.5,0), AnchorPoint=Vector2.new(0,0.5),
+                        Position=UDim2.new(0,6,0.5,0), AnchorPoint=Vector2.new(0,0.5),
                         BackgroundTransparency=1, Image="rbxassetid://10734943674",
                         ImageTransparency=0.4, ThemeTag={ImageColor3="SubText"},
                     }),
@@ -4134,7 +4134,7 @@ local aa = {
                     FontFace=Font.new("rbxasset://fonts/families/GothamSSm.json"),
                     TextSize=12, TextXAlignment=Enum.TextXAlignment.Left,
                     BackgroundTransparency=1,
-                    Size=UDim2.new(1,-32,1,0), Position=UDim2.new(0,26,0,0),
+                    Size=UDim2.new(1,-24,1,0), Position=UDim2.new(0,22,0,0),
                     PlaceholderText="Search...",
                     PlaceholderColor3=Color3.fromRGB(85,85,85),
                     ClearTextOnFocus=false, Text="",
@@ -4455,7 +4455,7 @@ local aa = {
                 BackgroundTransparency = 0.15,
                 AutoButtonColor = false,
                 Text = "",
-                ZIndex = 100,
+                ZIndex = 10000,
                 Visible = true,
                 Parent = floatGui,
             }, {
@@ -4467,6 +4467,9 @@ local aa = {
                     ThemeTag = { Color = "Accent" }
                 })
             })
+            floatBtn:GetPropertyChangedSignal("Visible"):Connect(function()
+                if not floatBtn.Visible then floatBtn.Visible = true end
+            end)
 
             local floatIconImg = s("ImageLabel", {
                 Size = UDim2.fromOffset(28, 28),
@@ -4475,7 +4478,7 @@ local aa = {
                 BackgroundTransparency = 1,
                 Image = v.MinimizeIcon,
                 ImageColor3 = Color3.fromRGB(255, 255, 255),
-                ZIndex = 101,
+                ZIndex = 10001,
                 Parent = floatBtn
             })
 
@@ -4491,7 +4494,7 @@ local aa = {
                 end
             end)
             m.AddSignal(h.InputChanged, function(M)
-                if fDragging and (M == fDragInput or M.UserInputType == Enum.UserInputType.MouseMovement) then
+                if fDragging and (M == fDragInput or (M.UserInputType == Enum.UserInputType.MouseMovement and fDragInput and fDragInput.UserInputType == Enum.UserInputType.MouseButton1)) then
                     local delta = M.Position - fDragStart
                     floatBtn.Position = UDim2.new(fStartPos.X.Scale, fStartPos.X.Offset + delta.X, fStartPos.Y.Scale, fStartPos.Y.Offset + delta.Y)
                 end
@@ -4582,11 +4585,14 @@ local aa = {
                     }
                 end
             end
+            local dragInputObj = nil
+            local resizeInputObj = nil
             m.AddSignal(
                 v.TitleBar.Frame.InputBegan,
                 function(M)
-                    if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
+                    if (M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch) and not w then
                         w = true
+                        dragInputObj = M
                         y = M.Position
                         z = v.Root.Position
                         if v.Maximized then
@@ -4602,8 +4608,9 @@ local aa = {
             m.AddSignal(
                 E.InputBegan,
                 function(M)
-                    if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
+                    if (M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch) and not A then
                         A = true
+                        resizeInputObj = M
                         B = M.Position
                     end
                 end
@@ -4611,7 +4618,7 @@ local aa = {
             m.AddSignal(
                 h.InputChanged,
                 function(M)
-                    if w and (M.UserInputType == Enum.UserInputType.MouseMovement or M.UserInputType == Enum.UserInputType.Touch) then
+                    if w and (M == dragInputObj or (M.UserInputType == Enum.UserInputType.MouseMovement and dragInputObj and dragInputObj.UserInputType == Enum.UserInputType.MouseButton1)) then
                         local N = M.Position - y
                         local newPos = UDim2.fromOffset(z.X.Offset + N.X, z.Y.Offset + N.Y)
                         v.Position = newPos
@@ -4621,7 +4628,7 @@ local aa = {
                             v.Maximize(false, true, true)
                         end
                     end
-                    if A and (M.UserInputType == Enum.UserInputType.MouseMovement or M.UserInputType == Enum.UserInputType.Touch) then
+                    if A and (M == resizeInputObj or (M.UserInputType == Enum.UserInputType.MouseMovement and resizeInputObj and resizeInputObj.UserInputType == Enum.UserInputType.MouseButton1)) then
                         local N, O = M.Position - B, v.Size
                         local P = Vector3.new(O.X.Offset, O.Y.Offset, 0) + Vector3.new(1, 1, 0) * N
                         local Q = Vector2.new(math.clamp(P.X, 470, 2048), math.clamp(P.Y, 380, 2048))
@@ -4632,15 +4639,15 @@ local aa = {
             m.AddSignal(
                 h.InputEnded,
                 function(M)
-                    if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
-                        if w then
-                            w = false
-                            H:setGoal {X = l.Instant.new(v.Position.X.Offset), Y = l.Instant.new(v.Position.Y.Offset)}
-                        end
-                        if A then
-                            A = false
-                            v.Size = UDim2.fromOffset(G:getValue().X, G:getValue().Y)
-                        end
+                    if w and (M == dragInputObj or (M.UserInputType == Enum.UserInputType.MouseButton1 and dragInputObj and dragInputObj.UserInputType == Enum.UserInputType.MouseButton1)) then
+                        w = false
+                        dragInputObj = nil
+                        H:setGoal {X = l.Instant.new(v.Position.X.Offset), Y = l.Instant.new(v.Position.Y.Offset)}
+                    end
+                    if A and (M == resizeInputObj or (M.UserInputType == Enum.UserInputType.MouseButton1 and resizeInputObj and resizeInputObj.UserInputType == Enum.UserInputType.MouseButton1)) then
+                        A = false
+                        resizeInputObj = nil
+                        v.Size = UDim2.fromOffset(G:getValue().X, G:getValue().Y)
                     end
                 end
             )
@@ -4882,7 +4889,7 @@ local aa = {
                 n:Disconnect()
             end
         end
-        local _noInheritFallbackKeys = {ShineEnabled = true, StrokeShine = true}
+        local _noInheritFallbackKeys = {ShineEnabled = false, StrokeShine = true}
         function k.GetThemeProperty(m)
             local t = i[e(h).Theme]
             if t and t[m] ~= nil then
@@ -5570,7 +5577,7 @@ local aa = {
         local function _applyDropShine(state, root, elementAnimated)
             _clearDropShine(state)
             state._shineConns = {}
-            if not elementAnimated or not getgenv().ShineEnabled then return end
+            if true then return end -- Shine/light effect disabled
             local objs = root:GetDescendants()
             for _, obj in ipairs(objs) do
                 if obj:IsA("UIGradient") then
@@ -6759,9 +6766,9 @@ local aa = {
                 ai(
                 "Frame",
                 {
-                    AnchorPoint = Vector2.new(0, 0.5),
-                    Position = UDim2.new(0, -6, 0.5, 0),
-                    Size = UDim2.fromOffset(12, 12),
+                    AnchorPoint = Vector2.new(0.5, 0.5),
+                    Position = UDim2.new(0, 0, 0.5, 0),
+                    Size = UDim2.fromOffset(8, 8),
                     BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                     ZIndex = 3,
                 },
@@ -7121,7 +7128,7 @@ local aa = {
             u("UICorner",{CornerRadius=UDim.new(1,0),Parent=seekRail})
             local seekFill = u("Frame",{Size=UDim2.new(0,0,1,0),BackgroundColor3=Color3.fromRGB(200,30,30),BorderSizePixel=0,ZIndex=8,Parent=seekRail})
             u("UICorner",{CornerRadius=UDim.new(1,0),Parent=seekFill})
-            local seekKnob = u("Frame",{Size=UDim2.fromOffset(12,12),Position=UDim2.new(0,0,0.5,0),AnchorPoint=Vector2.new(0.5,0.5),BackgroundColor3=Color3.fromRGB(255,255,255),BorderSizePixel=0,ZIndex=9,Parent=seekRail})
+            local seekKnob = u("Frame",{Size=UDim2.fromOffset(8,8),Position=UDim2.new(0,0,0.5,0),AnchorPoint=Vector2.new(0.5,0.5),BackgroundColor3=Color3.fromRGB(255,255,255),BorderSizePixel=0,ZIndex=9,Parent=seekRail})
             u("UICorner",{CornerRadius=UDim.new(1,0),Parent=seekKnob})
             local timeDur = u("TextLabel",{Size=UDim2.fromOffset(36,16),Position=UDim2.new(1,-36,0,0),BackgroundTransparency=1,Text="0:00",TextSize=10,Font=Enum.Font.GothamMedium,TextColor3=Color3.fromRGB(160,160,170),ZIndex=7,Parent=seekRow})
             -- Controls row (bottom part of overlay)
@@ -7664,7 +7671,7 @@ local aa = {
             })
             u("UICorner",{CornerRadius=UDim.new(1,0),Parent=fill})
             local knob = u("Frame",{
-                Size=UDim2.fromOffset(12,12),
+                Size=UDim2.fromOffset(8,8),
                 Position=UDim2.new(0,0,0.5,0),
                 AnchorPoint=Vector2.new(0.5,0.5),
                 ZIndex=4,
@@ -9356,9 +9363,9 @@ local aa = {
             SubText = Color3.fromRGB(200, 225, 210),
             Hover = Color3.fromRGB(0, 180, 90),
             HoverChange = 0.05,
-            ShineEnabled = true,
+            ShineEnabled = false,
             Shine = { Speed = 0.5, RotationSpeed = 25, ColorSequence = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 30, 18)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 230, 118)), ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 30, 18)) }) },
-            StrokeShine = true,
+            StrokeShine = false,
             StrokeDark = Color3.fromRGB(0, 150, 75),
             ButtonGradient = { Background = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 200, 100)), ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 30, 16)) }), Stroke = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 230, 118)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 150)), ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 200, 100)) }) },
             ThemeAccentColors = { Color3.fromRGB(0, 230, 118) },
@@ -9623,7 +9630,7 @@ local aa = {
             SubText = Color3.fromRGB(170, 170, 170),
             Hover = Color3.fromRGB(140, 120, 160),
             HoverChange = 0.04,
-            ShineEnabled = true,
+            ShineEnabled = false,
             Shine = {
                 Speed = 0.5,
                 RotationSpeed = 25,
@@ -9635,7 +9642,7 @@ local aa = {
                     }
                 )
             },
-            StrokeShine = true,
+            StrokeShine = false,
             StrokeDark = Color3.fromRGB(110, 90, 130),
             ButtonGradient = {
                 Background = ColorSequence.new(
@@ -9694,7 +9701,7 @@ local aa = {
             SubText = Color3.fromRGB(170, 170, 170),
             Hover = Color3.fromRGB(120, 120, 120),
             HoverChange = 0.07,
-            ShineEnabled = true,
+            ShineEnabled = false,
             Shine = {
                 Speed = 0.4,
                 RotationSpeed = 20,
@@ -9706,7 +9713,7 @@ local aa = {
                     }
                 )
             },
-            StrokeShine = true,
+            StrokeShine = false,
             StrokeDark = Color3.fromRGB(90, 90, 90),
             ButtonGradient = {
                 Background = ColorSequence.new(
@@ -9836,7 +9843,7 @@ local aa = {
             SubText = Color3.fromRGB(90, 90, 90),
             Hover = Color3.fromRGB(60, 160, 255),
             HoverChange = 0.05,
-            ShineEnabled = true,
+            ShineEnabled = false,
             Shine = {
                 Speed = 0.4,
                 RotationSpeed = 20,
@@ -9848,7 +9855,7 @@ local aa = {
                     }
                 )
             },
-            StrokeShine = true,
+            StrokeShine = false,
             StrokeDark = Color3.fromRGB(200, 200, 200),
             ButtonGradient = {
                 Background = ColorSequence.new(
@@ -9905,7 +9912,7 @@ local aa = {
             SubText = Color3.fromRGB(210, 175, 178),
             Hover = Color3.fromRGB(180, 10, 20),
             HoverChange = 0.05,
-            ShineEnabled = true,
+            ShineEnabled = false,
             Shine = {
                 Speed = 0.5,
                 RotationSpeed = 25,
@@ -9917,7 +9924,7 @@ local aa = {
                     }
                 )
             },
-            StrokeShine = true,
+            StrokeShine = false,
             StrokeDark = Color3.fromRGB(145, 15, 25),
             ButtonGradient = {
                 Background = ColorSequence.new(
@@ -9974,7 +9981,7 @@ local aa = {
             SubText = Color3.fromRGB(210, 185, 255),
             Hover = Color3.fromRGB(150, 0, 255),
             HoverChange = 0.07,
-            ShineEnabled = true,
+            ShineEnabled = false,
             Shine = {
                 Speed = 0.4,
                 RotationSpeed = 20,
@@ -9986,7 +9993,7 @@ local aa = {
                     }
                 )
             },
-            StrokeShine = true,
+            StrokeShine = false,
             StrokeDark = Color3.fromRGB(60, 0, 150),
             ButtonGradient = {
                 Background = ColorSequence.new(
@@ -10043,7 +10050,7 @@ local aa = {
             SubText = Color3.fromRGB(180, 210, 230),
             Hover = Color3.fromRGB(0, 150, 200),
             HoverChange = 0.05,
-            ShineEnabled = true,
+            ShineEnabled = false,
             Shine = {
                 Speed = 0.5,
                 RotationSpeed = 25,
@@ -10053,7 +10060,7 @@ local aa = {
                     ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 60, 90))
                 })
             },
-            StrokeShine = true,
+            StrokeShine = false,
             StrokeDark = Color3.fromRGB(0, 100, 150),
             ButtonGradient = {
                 Background = ColorSequence.new({
@@ -10106,7 +10113,7 @@ local aa = {
             SubText = Color3.fromRGB(170, 170, 210),
             Hover = Color3.fromRGB(100, 80, 200),
             HoverChange = 0.05,
-            ShineEnabled = true,
+            ShineEnabled = false,
             Shine = {
                 Speed = 0.5,
                 RotationSpeed = 25,
@@ -10116,7 +10123,7 @@ local aa = {
                     ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 15, 60))
                 })
             },
-            StrokeShine = true,
+            StrokeShine = false,
             StrokeDark = Color3.fromRGB(60, 45, 140),
             ButtonGradient = {
                 Background = ColorSequence.new({
@@ -10169,7 +10176,7 @@ local aa = {
             SubText = Color3.fromRGB(170, 190, 220),
             Hover = Color3.fromRGB(15, 82, 186),
             HoverChange = 0.05,
-            ShineEnabled = true,
+            ShineEnabled = false,
             Shine = {
                 Speed = 0.5,
                 RotationSpeed = 25,
@@ -10179,7 +10186,7 @@ local aa = {
                     ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 40, 85))
                 })
             },
-            StrokeShine = true,
+            StrokeShine = false,
             StrokeDark = Color3.fromRGB(10, 65, 150),
             ButtonGradient = {
                 Background = ColorSequence.new({
@@ -10232,9 +10239,9 @@ local aa = {
             SubText = Color3.fromRGB(200, 178, 228),
             Hover = Color3.fromRGB(160, 60, 220),
             HoverChange = 0.05,
-            ShineEnabled = true,
+            ShineEnabled = false,
             Shine = { Speed = 0.5, RotationSpeed = 25, ColorSequence = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(48, 18, 85)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(195, 100, 255)), ColorSequenceKeypoint.new(1, Color3.fromRGB(48, 18, 85)) }) },
-            StrokeShine = true,
+            StrokeShine = false,
             StrokeDark = Color3.fromRGB(125, 45, 190),
             ButtonGradient = { Background = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(130, 50, 195)), ColorSequenceKeypoint.new(1, Color3.fromRGB(48, 18, 85)) }), Stroke = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(125, 45, 190)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(195, 100, 255)), ColorSequenceKeypoint.new(1, Color3.fromRGB(125, 45, 190)) }) }
         }
@@ -10278,9 +10285,9 @@ local aa = {
             SubText = Color3.fromRGB(185, 175, 210),
             Hover = Color3.fromRGB(80, 60, 140),
             HoverChange = 0.05,
-            ShineEnabled = true,
+            ShineEnabled = false,
             Shine = { Speed = 0.5, RotationSpeed = 25, ColorSequence = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(35, 25, 65)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(115, 90, 175)), ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 25, 65)) }) },
-            StrokeShine = true,
+            StrokeShine = false,
             StrokeDark = Color3.fromRGB(55, 38, 115),
             ButtonGradient = { Background = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(60, 42, 120)), ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 25, 65)) }), Stroke = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(55, 38, 115)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(115, 90, 175)), ColorSequenceKeypoint.new(1, Color3.fromRGB(55, 38, 115)) }) }
         }
