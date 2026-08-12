@@ -112,39 +112,67 @@ local Animation
 do
     local _RunService = game:GetService("RunService")
     local _conns = {}
+    local _shineObjs = {}
+    local _strokeObjs = {}
+    local _accum = 0
+
     Animation = {}
     function Animation.Apply(theme, root)
         for _, c in ipairs(_conns) do pcall(function() c:Disconnect() end) end
         table.clear(_conns)
+        table.clear(_shineObjs)
+        table.clear(_strokeObjs)
+
         if not theme or not root or not getgenv().ShineEnabled or not theme.ShineEnabled or not theme.Shine then return end
         local ShineConfig   = theme.Shine
         local Speed         = ShineConfig.Speed         or 0.5
         local RotationSpeed = ShineConfig.RotationSpeed or 25
         local ColorSeq      = ShineConfig.ColorSequence
+
         for _, obj in ipairs(root:GetDescendants()) do
             if obj:IsA("UIGradient") then
-                local conn
-                conn = _RunService.RenderStepped:Connect(function(dt)
-                    local t = (obj:GetAttribute("_t") or 0) + dt * Speed
-                    obj:SetAttribute("_t", t)
-                    obj.Rotation = (t * RotationSpeed) % 360
-                    obj.Color    = ColorSeq
-                end)
-                table.insert(_conns, conn)
-            end
-            if obj:IsA("UIStroke") and theme.StrokeShine then
-                local from  = theme.StrokeDark or theme.AcrylicBorder
-                local shine = theme.Accent
-                local conn
-                conn = _RunService.RenderStepped:Connect(function(dt)
-                    local t = (obj:GetAttribute("_t") or 0) + dt * Speed
-                    obj:SetAttribute("_t", t)
-                    obj.Thickness = 2
-                    obj.Color     = from:Lerp(shine, (math.sin(t) + 1) / 2)
-                end)
-                table.insert(_conns, conn)
+                table.insert(_shineObjs, obj)
+            elseif obj:IsA("UIStroke") and theme.StrokeShine then
+                table.insert(_strokeObjs, obj)
             end
         end
+
+        local from  = theme.StrokeDark or theme.AcrylicBorder
+        local shine = theme.Accent
+
+        local conn = _RunService.RenderStepped:Connect(function(dt)
+            _accum = _accum + dt
+            if _accum < 0.033 then return end
+            local step = _accum
+            _accum = 0
+
+            for i = #_shineObjs, 1, -1 do
+                local obj = _shineObjs[i]
+                if obj and obj.Parent then
+                    local t = (obj:GetAttribute("_t") or 0) + step * Speed
+                    obj:SetAttribute("_t", t)
+                    obj.Rotation = (t * RotationSpeed) % 360
+                    if ColorSeq then obj.Color = ColorSeq end
+                else
+                    table.remove(_shineObjs, i)
+                end
+            end
+
+            for i = #_strokeObjs, 1, -1 do
+                local obj = _strokeObjs[i]
+                if obj and obj.Parent then
+                    local t = (obj:GetAttribute("_t") or 0) + step * Speed
+                    obj:SetAttribute("_t", t)
+                    obj.Thickness = 2
+                    if from and shine then
+                        obj.Color = from:Lerp(shine, (math.sin(t) + 1) / 2)
+                    end
+                else
+                    table.remove(_strokeObjs, i)
+                end
+            end
+        end)
+        table.insert(_conns, conn)
     end
 end
 if not Animation then Animation = {Apply = function() end} end
@@ -194,7 +222,7 @@ local aa = {
             Window = nil,
             WindowFrame = nil,
             Unloaded = false,
-            Theme = "Blood Red",
+            Theme = "Emerald",
             FischBypass = (game and game.GameId == 5750914919) or false,
             DialogOpen = false,
             UseAcrylic = false,
@@ -954,7 +982,7 @@ local aa = {
                     TitleIcon = D.TitleIcon,
                 }
             x.Window = E
-            x:SetTheme(D.Theme)
+            x:SetTheme(D.Theme or "Emerald")
             if D.Font then
                 task.defer(function()
                     x.InterfaceManager:ApplyFont(D.Font)
@@ -3609,16 +3637,17 @@ local aa = {
             o.Frame =
                 l(
                 "Frame",
-                {Size = UDim2.new(1, 0, 0, 42), BackgroundTransparency = 1, Parent = n.Parent},
+                {Size = UDim2.new(1, 0, 0, 48), BackgroundTransparency = 1, Parent = n.Parent},
                 {
+                    l("UICorner", {CornerRadius = UDim.new(0, 10)}),
                     l(
                         "Frame",
-                        {Size = UDim2.new(1, -16, 1, 0), Position = UDim2.new(0, 16, 0, 0), BackgroundTransparency = 1},
+                        {Size = UDim2.new(1, -120, 1, 0), Position = UDim2.new(0, 16, 0, 0), BackgroundTransparency = 1},
                         {
                             l(
                                 "UIListLayout",
                                 {
-                                    Padding = UDim.new(0, 5),
+                                    Padding = UDim.new(0, 8),
                                     FillDirection = Enum.FillDirection.Horizontal,
                                     VerticalAlignment = Enum.VerticalAlignment.Center,
                                     SortOrder = Enum.SortOrder.LayoutOrder
@@ -3629,7 +3658,7 @@ local aa = {
                                 {
                                     Name = "TitleIcon",
                                     Image = "",
-                                    Size = UDim2.fromOffset(16, 16),
+                                    Size = UDim2.fromOffset(20, 20),
                                     BackgroundTransparency = 1,
                                     Visible = n.Icon ~= nil,
                                     LayoutOrder = 0,
@@ -3637,44 +3666,80 @@ local aa = {
                                 }
                             ),
                             l(
-                                "TextLabel",
+                                "Frame",
                                 {
-                                    RichText = true,
-                                    Text = n.Title,
-                                    FontFace = Font.new(
-                                        "rbxasset://fonts/families/GothamSSm.json",
-                                        Enum.FontWeight.Regular,
-                                        Enum.FontStyle.Normal
-                                    ),
-                                    TextSize = 12,
-                                    TextXAlignment = "Left",
-                                    TextYAlignment = "Center",
-                                    Size = UDim2.fromScale(0, 1),
-                                    AutomaticSize = Enum.AutomaticSize.X,
+                                    Size = UDim2.new(1, -30, 1, 0),
                                     BackgroundTransparency = 1,
                                     LayoutOrder = 1,
-                                    ThemeTag = {TextColor3 = "Text"}
-                                }
-                            ),
-                            l(
-                                "TextLabel",
+                                },
                                 {
-                                    RichText = true,
-                                    Text = n.SubTitle,
-                                    TextTransparency = 0.4,
-                                    FontFace = Font.new(
-                                        "rbxasset://fonts/families/GothamSSm.json",
-                                        Enum.FontWeight.Regular,
-                                        Enum.FontStyle.Normal
+                                    l(
+                                        "UIListLayout",
+                                        {
+                                            Padding = UDim.new(0, 1),
+                                            FillDirection = Enum.FillDirection.Vertical,
+                                            VerticalAlignment = Enum.VerticalAlignment.Center,
+                                            SortOrder = Enum.SortOrder.LayoutOrder
+                                        }
                                     ),
-                                    TextSize = 12,
-                                    TextXAlignment = "Left",
-                                    TextYAlignment = "Center",
-                                    Size = UDim2.fromScale(0, 1),
-                                    AutomaticSize = Enum.AutomaticSize.X,
-                                    BackgroundTransparency = 1,
-                                    LayoutOrder = 2,
-                                    ThemeTag = {TextColor3 = "Text"}
+                                    l(
+                                        "TextLabel",
+                                        {
+                                            RichText = true,
+                                            Text = n.Title,
+                                            FontFace = Font.new(
+                                                "rbxasset://fonts/families/GothamSSm.json",
+                                                Enum.FontWeight.Bold,
+                                                Enum.FontStyle.Normal
+                                            ),
+                                            TextSize = 16,
+                                            TextXAlignment = "Left",
+                                            TextYAlignment = "Center",
+                                            Size = UDim2.new(1, 0, 0, 20),
+                                            BackgroundTransparency = 1,
+                                            LayoutOrder = 1,
+                                            TextColor3 = Color3.fromRGB(255, 255, 255),
+                                        },
+                                        {
+                                            l("UIGradient", {
+                                                Rotation = 90,
+                                                Color = ColorSequence.new({
+                                                    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 140)),
+                                                    ColorSequenceKeypoint.new(0.65, Color3.fromRGB(0, 210, 100)),
+                                                    ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 45, 25))
+                                                })
+                                            })
+                                        }
+                                    ),
+                                    l(
+                                        "TextLabel",
+                                        {
+                                            RichText = true,
+                                            Text = n.SubTitle,
+                                            TextTransparency = 0,
+                                            FontFace = Font.new(
+                                                "rbxasset://fonts/families/GothamSSm.json",
+                                                Enum.FontWeight.Medium,
+                                                Enum.FontStyle.Normal
+                                            ),
+                                            TextSize = 11,
+                                            TextXAlignment = "Left",
+                                            TextYAlignment = "Center",
+                                            Size = UDim2.new(1, 0, 0, 14),
+                                            BackgroundTransparency = 1,
+                                            LayoutOrder = 2,
+                                            TextColor3 = Color3.fromRGB(255, 255, 255),
+                                        },
+                                        {
+                                            l("UIGradient", {
+                                                Rotation = 90,
+                                                Color = ColorSequence.new({
+                                                    ColorSequenceKeypoint.new(0, Color3.fromRGB(190, 255, 220)),
+                                                    ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 140, 75))
+                                                })
+                                            })
+                                        }
+                                    )
                                 }
                             )
                         }
@@ -4221,7 +4286,7 @@ local aa = {
                     ScrollingDirection = Enum.ScrollingDirection.Y,
                     ClipsDescendants = true,
                 },
-                {v.TabListContainer, D}
+                {v.TabListContainer, D, s("UICorner", {CornerRadius = UDim.new(0, 10)})}
             )
             table.insert(sidebarChildren, v.TabHolder)
 
@@ -5711,7 +5776,7 @@ local aa = {
                 getgenv()._FluentProManagerDropdowns = getgenv()._FluentProManagerDropdowns or {}
                 table.insert(getgenv()._FluentProManagerDropdowns, _syncManagerTransparency)
             end
-            local _isOutsideDD = (j.OutsideWindow or j.DropdownOutsideWindow) == true
+            local _isOutsideDD = false
             local _isManagerDDAnim = j.IsManagerDropdown == true
             local _themeSupportsShineInit = c.GetThemeProperty("ShineEnabled") == true
             local _initialAnimated = _themeSupportsShineInit and (
@@ -9227,7 +9292,7 @@ local aa = {
         local aa, ab, ac, ad, ae = b(47)
         local af = {
             Names = {
-                "AMOLED", "Ash Gray", "Blood Red", "Cyanic", "Amber Glow", "Deep Violet", "Neon Cyber", "Neon Purple", "Royal Blue", "Deep Ocean", "RGB", "Orange", "Charcoal", "Pearl White", "Midnight Blue", "Galaxy Purple", "Cosmic Violet", "Cotton Candy", "Arctic Frost"
+                "Emerald", "AMOLED", "Ash Gray", "Blood Red", "Cyanic", "Amber Glow", "Deep Violet", "Neon Cyber", "Neon Purple", "Royal Blue", "Deep Ocean", "RGB", "Orange", "Charcoal", "Pearl White", "Midnight Blue", "Galaxy Purple", "Cosmic Violet", "Cotton Candy", "Arctic Frost"
             }
         }
         for ag, ah in next, ab:GetChildren() do
@@ -9239,6 +9304,54 @@ local aa = {
             if aj.Background == nil then aj.Background = nil end
             if aj.BackgroundTransparency == nil then aj.BackgroundTransparency = 0 end
         end
+
+        af["Emerald"] = {
+            Name = "Emerald",
+            Accent = Color3.fromRGB(0, 230, 118),
+            AcrylicMain = Color3.fromRGB(8, 16, 11),
+            AcrylicBorder = Color3.fromRGB(0, 200, 100),
+            AcrylicGradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 230, 118)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(5, 25, 12))
+            }),
+            AcrylicNoise = 1,
+            TitleBarLine = Color3.fromRGB(0, 180, 90),
+            Tab = Color3.fromRGB(10, 22, 14),
+            Element = Color3.fromRGB(12, 24, 16),
+            ElementBorder = Color3.fromRGB(0, 150, 75),
+            InElementBorder = Color3.fromRGB(0, 200, 100),
+            ElementTransparency = 0.4,
+            ToggleSlider = Color3.fromRGB(18, 36, 24),
+            ToggleToggled = Color3.fromRGB(0, 230, 118),
+            SliderRail = Color3.fromRGB(18, 36, 24),
+            DropdownFrame = Color3.fromRGB(10, 22, 14),
+            DropdownHolder = Color3.fromRGB(8, 16, 11),
+            DropdownBorder = Color3.fromRGB(0, 180, 90),
+            DropdownOption = Color3.fromRGB(14, 28, 18),
+            Keybind = Color3.fromRGB(14, 28, 18),
+            Input = Color3.fromRGB(10, 22, 14),
+            InputFocused = Color3.fromRGB(4, 12, 8),
+            InputIndicator = Color3.fromRGB(0, 230, 118),
+            InputIndicatorFocus = Color3.fromRGB(0, 255, 140),
+            Dialog = Color3.fromRGB(10, 22, 14),
+            DialogHolder = Color3.fromRGB(8, 16, 11),
+            DialogHolderLine = Color3.fromRGB(0, 180, 90),
+            DialogButton = Color3.fromRGB(12, 24, 16),
+            DialogButtonBorder = Color3.fromRGB(0, 200, 100),
+            DialogBorder = Color3.fromRGB(0, 180, 90),
+            DialogInput = Color3.fromRGB(14, 28, 18),
+            DialogInputLine = Color3.fromRGB(0, 230, 118),
+            Text = Color3.fromRGB(255, 255, 255),
+            SubText = Color3.fromRGB(200, 225, 210),
+            Hover = Color3.fromRGB(0, 180, 90),
+            HoverChange = 0.05,
+            ShineEnabled = true,
+            Shine = { Speed = 0.5, RotationSpeed = 25, ColorSequence = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 30, 18)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 230, 118)), ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 30, 18)) }) },
+            StrokeShine = true,
+            StrokeDark = Color3.fromRGB(0, 150, 75),
+            ButtonGradient = { Background = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 200, 100)), ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 30, 16)) }), Stroke = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 230, 118)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 150)), ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 200, 100)) }) },
+            ThemeAccentColors = { Color3.fromRGB(0, 230, 118) },
+        }
 
         if af["Blood Red"] then
             af["Blood Red"].Background = "rbxassetid://121343473918667"
