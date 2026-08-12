@@ -176,7 +176,7 @@ do
     end
 end
 if not Animation then Animation = {Apply = function() end} end
-getgenv().ShineEnabled = getgenv().ShineEnabled ~= nil and getgenv().ShineEnabled or true
+getgenv().ShineEnabled = getgenv().ShineEnabled == true and true or false
 getgenv().WindowTransparent = getgenv().WindowTransparent or false
 getgenv()._FluentProRefreshOpenDropdownShine = nil
 getgenv()._FluentProManagerDropdowns = {}
@@ -4116,8 +4116,8 @@ local aa = {
             if showSearch then
                 local sb = s("Frame",{
                     Name="SearchBar",
-                    Size=UDim2.new(1,-2,0,searchH),
-                    Position=UDim2.fromOffset(1,topOffset),
+                    Size=UDim2.new(1,0,0,searchH),
+                    Position=UDim2.fromOffset(0,topOffset),
                     BackgroundTransparency=0.72,
                     ZIndex=2,
                     ThemeTag={BackgroundColor3="Element"},
@@ -4456,7 +4456,7 @@ local aa = {
                 AutoButtonColor = false,
                 Text = "",
                 ZIndex = 100,
-                Visible = false,
+                Visible = true,
                 Parent = floatGui,
             }, {
                 s("UICorner", { CornerRadius = UDim.new(0, 14) }),
@@ -4480,23 +4480,26 @@ local aa = {
             })
 
             local fDragging = false
+            local fDragInput = nil
             local fDragStart, fStartPos
             m.AddSignal(floatBtn.InputBegan, function(M)
-                if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
+                if (M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch) and not fDragging then
                     fDragging = true
+                    fDragInput = M
                     fDragStart = M.Position
                     fStartPos = floatBtn.Position
                 end
             end)
             m.AddSignal(h.InputChanged, function(M)
-                if fDragging and (M.UserInputType == Enum.UserInputType.MouseMovement or M.UserInputType == Enum.UserInputType.Touch) then
+                if fDragging and (M == fDragInput or M.UserInputType == Enum.UserInputType.MouseMovement) then
                     local delta = M.Position - fDragStart
                     floatBtn.Position = UDim2.new(fStartPos.X.Scale, fStartPos.X.Offset + delta.X, fStartPos.Y.Scale, fStartPos.Y.Offset + delta.Y)
                 end
             end)
             m.AddSignal(h.InputEnded, function(M)
-                if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
+                if fDragging and (M == fDragInput or (M.UserInputType == Enum.UserInputType.MouseButton1 and fDragInput and fDragInput.UserInputType == Enum.UserInputType.MouseButton1)) then
                     fDragging = false
+                    fDragInput = nil
                 end
             end)
 
@@ -4665,7 +4668,7 @@ local aa = {
             function v.Show(M)
                 v.Minimized = false
                 v.Root.Visible = true
-                floatBtn.Visible = false
+                floatBtn.Visible = true
                 pcall(function()
                     local ovs = e(k)._SBOverlays
                     if ovs then for _, ov in ipairs(ovs) do ov.Visible = true end end
@@ -4683,7 +4686,7 @@ local aa = {
             function v.Minimize(M)
                 v.Minimized = not v.Minimized
                 v.Root.Visible = not v.Minimized
-                floatBtn.Visible = v.Minimized
+                floatBtn.Visible = true
                 pcall(function()
                     local ovs = e(k)._SBOverlays
                     if ovs then for _, ov in ipairs(ovs) do ov.Visible = not v.Minimized end end
@@ -5567,7 +5570,7 @@ local aa = {
         local function _applyDropShine(state, root, elementAnimated)
             _clearDropShine(state)
             state._shineConns = {}
-            if not elementAnimated then return end
+            if not elementAnimated or not getgenv().ShineEnabled then return end
             local objs = root:GetDescendants()
             for _, obj in ipairs(objs) do
                 if obj:IsA("UIGradient") then
@@ -5713,17 +5716,17 @@ local aa = {
                     Position = UDim2.new(0, 8, 0.5, 0),
                     AnchorPoint = Vector2.new(0, 0.5),
                     BackgroundTransparency = 1,
-                    ImageColor3 = Color3.fromRGB(0, 230, 118),
+                    ThemeTag = {ImageColor3 = "SubText"},
                 })
                 ddSearchFrame = e("Frame", {
                     Size = UDim2.new(1, -10, 0, 32),
                     Position = UDim2.fromOffset(5, 5),
-                    BackgroundColor3 = Color3.fromRGB(20, 38, 28),
                     BackgroundTransparency = 0,
                     BorderSizePixel = 0,
+                    ThemeTag = {BackgroundColor3 = "Element"},
                 }, {
                     e("UICorner", {CornerRadius = UDim.new(0, 7)}),
-                    e("UIStroke", {Color = Color3.fromRGB(0, 180, 90), Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border}),
+                    e("UIStroke", {Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, ThemeTag = {Color = "InElementBorder"}}),
                     ddSearchIcon,
                     ddSearchBox,
                 })
@@ -6026,8 +6029,8 @@ local aa = {
 
                 l.Opened = true
                 A.ScrollingEnabled = false
-                v.Size = UDim2.new(0, math.max(220, x or 220), 1, 0)
-                v.Position = UDim2.new(1, 0, 0, 0)
+                y()
+                w()
                 
                 dimOverlay.Visible = true
                 dimOverlay.BackgroundTransparency = 1
@@ -6037,20 +6040,8 @@ local aa = {
 
                 af:Create(
                     dimOverlay,
-                    TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-                    { BackgroundTransparency = 0.45 }
-                ):Play()
-
-                af:Create(
-                    v,
-                    TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-                    { Position = UDim2.new(1, -v.Size.X.Offset, 0, 0) }
-                ):Play()
-
-                af:Create(
-                    u,
                     TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-                    { Size = UDim2.fromScale(1, 1) }
+                    { BackgroundTransparency = 0.5 }
                 ):Play()
             end
 
@@ -6060,13 +6051,10 @@ local aa = {
                 _openDropdowns[l] = nil
                 _clearDropShine(l)
 
-                local tSlide = af:Create(v, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.In), { Position = UDim2.new(1, 0, 0, 0) })
-                local tDim = af:Create(dimOverlay, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.In), { BackgroundTransparency = 1 })
-                
-                tSlide:Play()
+                local tDim = af:Create(dimOverlay, TweenInfo.new(0.15, Enum.EasingStyle.Quart, Enum.EasingDirection.In), { BackgroundTransparency = 1 })
                 tDim:Play()
 
-                tSlide.Completed:Connect(function()
+                tDim.Completed:Connect(function()
                     if not l.Opened then
                         v.Visible = false
                         dimOverlay.Visible = false
@@ -6772,14 +6760,14 @@ local aa = {
                 "Frame",
                 {
                     AnchorPoint = Vector2.new(0, 0.5),
-                    Position = UDim2.new(0, -9, 0.5, 0),
-                    Size = UDim2.fromOffset(18, 18),
+                    Position = UDim2.new(0, -6, 0.5, 0),
+                    Size = UDim2.fromOffset(12, 12),
                     BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                     ZIndex = 3,
                 },
                 {
                     ai("UICorner", {CornerRadius = UDim.new(1, 0)}),
-                    ai("UIStroke", {Color = Color3.fromRGB(0, 230, 118), Thickness = 2})
+                    ai("UIStroke", {Thickness = 1, ThemeTag = {Color = "InElementBorder"}})
                 }
             )
             local l, m, n =
@@ -6816,14 +6804,13 @@ local aa = {
                     Size = UDim2.new(1, 0, 0, 6),
                     AnchorPoint = Vector2.new(1, 0.5),
                     Position = UDim2.new(1, -10, 0.5, 0),
-                    BackgroundColor3 = Color3.fromRGB(22, 44, 30),
                     BackgroundTransparency = 0,
                     Parent = j.Frame,
                     ThemeTag = {BackgroundColor3 = "SliderRail"}
                 },
                 {
                     ai("UICorner", {CornerRadius = UDim.new(1, 0)}),
-                    ai("UIStroke", {Color = Color3.fromRGB(0, 180, 90), Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border}),
+                    ai("UIStroke", {Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, ThemeTag = {Color = "InElementBorder"}}),
                     ai("UISizeConstraint", {MaxSize = Vector2.new(150, math.huge)}),
                     n,
                     m,
@@ -6927,7 +6914,7 @@ local aa = {
                     },
                     {ai("UICorner", {CornerRadius = UDim.new(1, 0)})}
                 ),
-                ai("UIStroke", {Thickness = 1, Color = Color3.fromRGB(0, 160, 80)})
+                ai("UIStroke", {Thickness = 1, ThemeTag = {Color = "InElementBorder"}})
             local l =
                 ai(
                 "Frame",
@@ -6936,8 +6923,8 @@ local aa = {
                     AnchorPoint = Vector2.new(1, 0.5),
                     Position = UDim2.new(1, -10, 0.5, 0),
                     Parent = i.Frame,
-                    BackgroundColor3 = Color3.fromRGB(20, 40, 28),
                     BackgroundTransparency = 0,
+                    ThemeTag = {BackgroundColor3 = "ToggleSlider"}
                 },
                 {ai("UICorner", {CornerRadius = UDim.new(0, 9)}), k, j}
             )
@@ -6948,16 +6935,19 @@ local aa = {
             function h.SetValue(m, n)
                 n = not (not n)
                 h.Value = n
-                k.Color = h.Value and Color3.fromRGB(0, 255, 140) or Color3.fromRGB(0, 160, 80)
+                local borderCol = ah.GetThemeProperty("InElementBorder") or Color3.fromRGB(80, 80, 80)
+                k.Color = borderCol
                 af:Create(
                     j,
                     TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
                     {Position = UDim2.new(0, h.Value and 20 or 2, 0.5, 0)}
                 ):Play()
+                local activeBg = ah.GetThemeProperty("Accent") or Color3.fromRGB(0, 120, 215)
+                local inactiveBg = ah.GetThemeProperty("ToggleSlider") or Color3.fromRGB(30, 30, 35)
                 af:Create(
                     l,
                     TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-                    {BackgroundColor3 = h.Value and Color3.fromRGB(0, 230, 118) or Color3.fromRGB(20, 40, 28)}
+                    {BackgroundColor3 = h.Value and activeBg or inactiveBg}
                 ):Play()
                 g:SafeCallback(h.Callback, h.Value)
                 g:SafeCallback(h.Changed, h.Value)
