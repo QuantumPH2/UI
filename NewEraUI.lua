@@ -120,8 +120,10 @@ do
     function Animation.Apply(theme, root)
         for _, c in ipairs(_conns) do pcall(function() c:Disconnect() end) end
         table.clear(_conns)
-        return
-    end
+        table.clear(_shineObjs)
+        table.clear(_strokeObjs)
+
+        if not theme or not root or not getgenv().ShineEnabled or not theme.ShineEnabled or not theme.Shine then return end
         local ShineConfig   = theme.Shine
         local Speed         = ShineConfig.Speed         or 0.5
         local RotationSpeed = ShineConfig.RotationSpeed or 25
@@ -4114,8 +4116,8 @@ local aa = {
             if showSearch then
                 local sb = s("Frame",{
                     Name="SearchBar",
-                    Size=UDim2.new(1,0,0,searchH),
-                    Position=UDim2.fromOffset(-2,topOffset),
+                    Size=UDim2.new(1,-2,0,searchH),
+                    Position=UDim2.fromOffset(1,topOffset),
                     BackgroundTransparency=0.72,
                     ZIndex=2,
                     ThemeTag={BackgroundColor3="Element"},
@@ -4454,7 +4456,7 @@ local aa = {
                 AutoButtonColor = false,
                 Text = "",
                 ZIndex = 100,
-                Visible = true,
+                Visible = false,
                 Parent = floatGui,
             }, {
                 s("UICorner", { CornerRadius = UDim.new(0, 14) }),
@@ -4478,28 +4480,23 @@ local aa = {
             })
 
             local fDragging = false
-            local fDragInput = nil
             local fDragStart, fStartPos
             m.AddSignal(floatBtn.InputBegan, function(M)
                 if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
                     fDragging = true
-                    fDragInput = M
                     fDragStart = M.Position
                     fStartPos = floatBtn.Position
                 end
             end)
             m.AddSignal(h.InputChanged, function(M)
-                if fDragging and (M == fDragInput or M.UserInputType == Enum.UserInputType.MouseMovement) then
+                if fDragging and (M.UserInputType == Enum.UserInputType.MouseMovement or M.UserInputType == Enum.UserInputType.Touch) then
                     local delta = M.Position - fDragStart
                     floatBtn.Position = UDim2.new(fStartPos.X.Scale, fStartPos.X.Offset + delta.X, fStartPos.Y.Scale, fStartPos.Y.Offset + delta.Y)
                 end
             end)
             m.AddSignal(h.InputEnded, function(M)
-                if M == fDragInput or M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
-                    if M == fDragInput then
-                        fDragging = false
-                        fDragInput = nil
-                    end
+                if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
+                    fDragging = false
                 end
             end)
 
@@ -4668,7 +4665,7 @@ local aa = {
             function v.Show(M)
                 v.Minimized = false
                 v.Root.Visible = true
-                floatBtn.Visible = true
+                floatBtn.Visible = false
                 pcall(function()
                     local ovs = e(k)._SBOverlays
                     if ovs then for _, ov in ipairs(ovs) do ov.Visible = true end end
@@ -4686,7 +4683,7 @@ local aa = {
             function v.Minimize(M)
                 v.Minimized = not v.Minimized
                 v.Root.Visible = not v.Minimized
-                floatBtn.Visible = true
+                floatBtn.Visible = v.Minimized
                 pcall(function()
                     local ovs = e(k)._SBOverlays
                     if ovs then for _, ov in ipairs(ovs) do ov.Visible = not v.Minimized end end
@@ -6775,14 +6772,14 @@ local aa = {
                 "Frame",
                 {
                     AnchorPoint = Vector2.new(0, 0.5),
-                    Position = UDim2.new(0, -6, 0.5, 0),
-                    Size = UDim2.fromOffset(13, 13),
+                    Position = UDim2.new(0, -9, 0.5, 0),
+                    Size = UDim2.fromOffset(18, 18),
                     BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                     ZIndex = 3,
                 },
                 {
                     ai("UICorner", {CornerRadius = UDim.new(1, 0)}),
-                    ai("UIStroke", {Color = Color3.fromRGB(0, 230, 118), Thickness = 1.5})
+                    ai("UIStroke", {Color = Color3.fromRGB(0, 230, 118), Thickness = 2})
                 }
             )
             local l, m, n =
@@ -6881,7 +6878,7 @@ local aa = {
             end
             function h.SetValue(p, s)
                 p.Value = g:Round(math.clamp(s, h.Min, h.Max), h.Rounding)
-                k.Position = UDim2.new((p.Value - h.Min) / (h.Max - h.Min), -6, 0.5, 0)
+                k.Position = UDim2.new((p.Value - h.Min) / (h.Max - h.Min), -10, 0.5, 0)
                 m.Size = UDim2.fromScale((p.Value - h.Min) / (h.Max - h.Min), 1)
                 n.Text = tostring(p.Value)
                 g:SafeCallback(h.Callback, p.Value)
