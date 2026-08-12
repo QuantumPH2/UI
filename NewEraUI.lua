@@ -3054,7 +3054,6 @@ local aa = {
                         pcall(function() sbHolder:Destroy() end)
                     end)
                 end
-                table.insert(_conns, (game:GetService("RunService")).RenderStepped:Connect(updateScrollbar))
                 table.insert(_conns, sf:GetPropertyChangedSignal("CanvasPosition"):Connect(updateScrollbar))
                 table.insert(_conns, sf:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateScrollbar))
                 table.insert(_conns, sf:GetPropertyChangedSignal("Visible"):Connect(updateScrollbar))
@@ -3241,16 +3240,17 @@ local aa = {
                 local iconKey2   = cfg.Icon
                 local startOpen2 = cfg.Open ~= false
                 local pad2 = 5
+                local sectionMargin = 12
                 local ts2 = game:GetService("TweenService")
 
                 local outerWrap2 = k("Frame", {
-                    Size = UDim2.new(1, 0, 0, 26),
+                    Size = UDim2.new(1, 0, 0, 26 + sectionMargin),
                     BackgroundTransparency = 1,
                     LayoutOrder = _order,
                     Parent = x.Container,
                 })
 
-                -- Header row: matches AddSection's heading style exactly (font, size, icon placement)
+                -- Header row: matches AddSection's heading style exactly
                 local header2 = k("TextButton", {
                     Size = UDim2.new(1, 0, 0, 26),
                     BackgroundTransparency = 1,
@@ -3264,10 +3264,10 @@ local aa = {
                     local hIco2 = k("ImageLabel", {
                         Name = "_SecIcon",
                         Size = UDim2.fromOffset(14, 14),
-                        Position = UDim2.fromOffset(0, 3),
+                        Position = UDim2.fromOffset(0, 4),
                         BackgroundTransparency = 1,
                         ImageColor3 = Color3.fromRGB(255, 255, 255),
-                        ImageTransparency = 0.25,
+                        ImageTransparency = 0.2,
                         Parent = header2,
                     })
                     task.defer(function()
@@ -3288,31 +3288,31 @@ local aa = {
                     RichText = true,
                     Text = title2,
                     TextTransparency = 0,
-                    FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
-                    TextSize = 18,
-                    TextXAlignment = "Left",
-                    TextYAlignment = "Center",
-                    Size = UDim2.new(1, -36, 0, 18),
-                    Position = UDim2.fromOffset(titleOffX2, 2),
+                    FontFace = Font.fromEnum(Enum.Font.GothamBold),
+                    TextSize = 15,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    TextYAlignment = Enum.TextYAlignment.Center,
+                    Size = UDim2.new(1, -36, 0, 20),
+                    Position = UDim2.fromOffset(titleOffX2, 3),
                     BackgroundTransparency = 1,
                     ThemeTag = {TextColor3 = "Text"},
                     Parent = header2,
                 })
 
-                -- Chevron on the right, rotates to indicate open/closed state
+                -- Chevron on the right: points DOWN (v) when closed, flips UP (^) when open
                 local arrowIco2 = k("ImageLabel", {
                     Name = "_SecChevron",
                     Size = UDim2.fromOffset(16, 16),
                     AnchorPoint = Vector2.new(1, 0.5),
-                    Position = UDim2.new(1, 0, 0, 11),
+                    Position = UDim2.new(1, 0, 0, 13),
                     BackgroundTransparency = 1,
                     ImageColor3 = Color3.fromRGB(255, 255, 255),
-                    ImageTransparency = 0.25,
+                    ImageTransparency = 0.2,
                     ThemeTag = {ImageColor3 = "Text"},
                     Parent = header2,
                 })
                 do
-                    local arIc = tabLib.GetIcon and tabLib:GetIcon("lucide/chevron-right")
+                    local arIc = tabLib.GetIcon and tabLib:GetIcon("lucide/chevron-down")
                     if arIc and type(arIc) == "table" then
                         arrowIco2.Image = arIc.Image or ""
                         arrowIco2.ImageRectOffset = arIc.ImageRectOffset or Vector2.new()
@@ -3344,10 +3344,10 @@ local aa = {
 
                 local isOpen2 = false
                 local innerH2 = 0
-                local dur2 = 0.22
+                local dur2 = 0.2
                 local ti2 = TweenInfo.new(dur2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
                 local function applyArrow2(open, anim)
-                    local rot = open and 90 or 0
+                    local rot = open and 180 or 0
                     if anim then
                         ts2:Create(arrowIco2, TweenInfo.new(dur2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Rotation = rot}):Play()
                     else
@@ -3358,7 +3358,7 @@ local aa = {
                     isOpen2 = open
                     applyArrow2(open, anim)
                     local ch = open and (innerH2 + pad2 * 2) or 0
-                    local oh = 26 + ch
+                    local oh = 26 + ch + sectionMargin
                     if anim then
                         ts2:Create(contentBg2, ti2, {Size = UDim2.new(1, 0, 0, ch)}):Play()
                         ts2:Create(outerWrap2, ti2, {Size = UDim2.new(1, 0, 0, oh)}):Play()
@@ -3373,7 +3373,7 @@ local aa = {
                     if isOpen2 then
                         local ch = newH + pad2 * 2
                         contentBg2.Size = UDim2.new(1, 0, 0, ch)
-                        outerWrap2.Size = UDim2.new(1, 0, 0, 26 + ch)
+                        outerWrap2.Size = UDim2.new(1, 0, 0, 26 + ch + sectionMargin)
                     end
                 end)
                 header2.MouseButton1Click:Connect(function()
@@ -4420,7 +4420,7 @@ local aa = {
             )
             v.ContainerHolder =
                 s(
-                "CanvasGroup",
+                "Frame",
                 {
                     Size = UDim2.new(1, -t.TabWidth - 32, 1, -102),
                     Position = UDim2.fromOffset(t.TabWidth + 26, 90),
