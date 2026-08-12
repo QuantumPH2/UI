@@ -120,10 +120,8 @@ do
     function Animation.Apply(theme, root)
         for _, c in ipairs(_conns) do pcall(function() c:Disconnect() end) end
         table.clear(_conns)
-        table.clear(_shineObjs)
-        table.clear(_strokeObjs)
-
-        if not theme or not root or not getgenv().ShineEnabled or not theme.ShineEnabled or not theme.Shine then return end
+        return
+    end
         local ShineConfig   = theme.Shine
         local Speed         = ShineConfig.Speed         or 0.5
         local RotationSpeed = ShineConfig.RotationSpeed or 25
@@ -4116,8 +4114,8 @@ local aa = {
             if showSearch then
                 local sb = s("Frame",{
                     Name="SearchBar",
-                    Size=UDim2.new(1,-2,0,searchH),
-                    Position=UDim2.fromOffset(1,topOffset),
+                    Size=UDim2.new(1,0,0,searchH),
+                    Position=UDim2.fromOffset(-2,topOffset),
                     BackgroundTransparency=0.72,
                     ZIndex=2,
                     ThemeTag={BackgroundColor3="Element"},
@@ -4420,7 +4418,7 @@ local aa = {
             )
             v.ContainerHolder =
                 s(
-                "CanvasGroup",
+                "Frame",
                 {
                     Size = UDim2.new(1, -t.TabWidth - 32, 1, -102),
                     Position = UDim2.fromOffset(t.TabWidth + 26, 90),
@@ -4456,7 +4454,7 @@ local aa = {
                 AutoButtonColor = false,
                 Text = "",
                 ZIndex = 100,
-                Visible = false,
+                Visible = true,
                 Parent = floatGui,
             }, {
                 s("UICorner", { CornerRadius = UDim.new(0, 14) }),
@@ -4480,23 +4478,28 @@ local aa = {
             })
 
             local fDragging = false
+            local fDragInput = nil
             local fDragStart, fStartPos
             m.AddSignal(floatBtn.InputBegan, function(M)
                 if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
                     fDragging = true
+                    fDragInput = M
                     fDragStart = M.Position
                     fStartPos = floatBtn.Position
                 end
             end)
             m.AddSignal(h.InputChanged, function(M)
-                if fDragging and (M.UserInputType == Enum.UserInputType.MouseMovement or M.UserInputType == Enum.UserInputType.Touch) then
+                if fDragging and (M == fDragInput or M.UserInputType == Enum.UserInputType.MouseMovement) then
                     local delta = M.Position - fDragStart
                     floatBtn.Position = UDim2.new(fStartPos.X.Scale, fStartPos.X.Offset + delta.X, fStartPos.Y.Scale, fStartPos.Y.Offset + delta.Y)
                 end
             end)
             m.AddSignal(h.InputEnded, function(M)
-                if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
-                    fDragging = false
+                if M == fDragInput or M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
+                    if M == fDragInput then
+                        fDragging = false
+                        fDragInput = nil
+                    end
                 end
             end)
 
@@ -4665,7 +4668,7 @@ local aa = {
             function v.Show(M)
                 v.Minimized = false
                 v.Root.Visible = true
-                floatBtn.Visible = false
+                floatBtn.Visible = true
                 pcall(function()
                     local ovs = e(k)._SBOverlays
                     if ovs then for _, ov in ipairs(ovs) do ov.Visible = true end end
@@ -4683,7 +4686,7 @@ local aa = {
             function v.Minimize(M)
                 v.Minimized = not v.Minimized
                 v.Root.Visible = not v.Minimized
-                floatBtn.Visible = v.Minimized
+                floatBtn.Visible = true
                 pcall(function()
                     local ovs = e(k)._SBOverlays
                     if ovs then for _, ov in ipairs(ovs) do ov.Visible = not v.Minimized end end
@@ -5696,19 +5699,40 @@ local aa = {
                 e("UIListLayout", {Padding = UDim.new(0, 3)})
 
             local ddShowSearch = not (j.NoSearch == true or j.Search == false)
-            local ddSearchBox = ddShowSearch and e("TextBox", {
-                FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json"),
-                TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left,
-                BackgroundTransparency = 0.7, BorderSizePixel = 0,
-                Size = UDim2.new(1, -10, 0, 24), Position = UDim2.fromOffset(5, 5),
-                PlaceholderText = "Search options...", ClearTextOnFocus = false, Text = "",
-                ThemeTag = {TextColor3 = "Text", BackgroundColor3 = "Input", PlaceholderColor3 = "SubText"},
-            }) or nil
-            if ddSearchBox then
-                e("UICorner", {CornerRadius = UDim.new(0, 4)}).Parent = ddSearchBox
+            local ddSearchBox, ddSearchFrame = nil, nil
+            if ddShowSearch then
+                ddSearchBox = e("TextBox", {
+                    FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Medium),
+                    TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left,
+                    BackgroundTransparency = 1, BorderSizePixel = 0,
+                    Size = UDim2.new(1, -34, 1, 0), Position = UDim2.fromOffset(30, 0),
+                    PlaceholderText = "Search options...", ClearTextOnFocus = false, Text = "",
+                    TextColor3 = Color3.fromRGB(255, 255, 255),
+                    PlaceholderColor3 = Color3.fromRGB(170, 210, 185),
+                })
+                local ddSearchIcon = e("ImageLabel", {
+                    Image = "rbxassetid://11422155687",
+                    Size = UDim2.fromOffset(16, 16),
+                    Position = UDim2.new(0, 8, 0.5, 0),
+                    AnchorPoint = Vector2.new(0, 0.5),
+                    BackgroundTransparency = 1,
+                    ImageColor3 = Color3.fromRGB(0, 230, 118),
+                })
+                ddSearchFrame = e("Frame", {
+                    Size = UDim2.new(1, -10, 0, 32),
+                    Position = UDim2.fromOffset(5, 5),
+                    BackgroundColor3 = Color3.fromRGB(20, 38, 28),
+                    BackgroundTransparency = 0,
+                    BorderSizePixel = 0,
+                }, {
+                    e("UICorner", {CornerRadius = UDim.new(0, 7)}),
+                    e("UIStroke", {Color = Color3.fromRGB(0, 180, 90), Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border}),
+                    ddSearchIcon,
+                    ddSearchBox,
+                })
             end
-            local scrollOffY = ddShowSearch and 33 or 5
-            local scrollH    = ddShowSearch and -38 or -10
+            local scrollOffY = ddShowSearch and 42 or 5
+            local scrollH    = ddShowSearch and -47 or -10
             local t =
                 e(
                 "ScrollingFrame",
@@ -5762,7 +5786,7 @@ local aa = {
                 ddGradient,
                 _ddBgChild
             }
-            if ddSearchBox then table.insert(uChildren, 1, ddSearchBox) end
+            if ddSearchFrame then table.insert(uChildren, 1, ddSearchFrame) end
             local u = e("Frame", {Size = UDim2.fromScale(1, 0.6), ThemeTag = {BackgroundColor3 = "DropdownHolder"}}, uChildren)
             local _isManagerDD = j.IsManagerDropdown == true
             if _isManagerDD then
@@ -6748,17 +6772,17 @@ local aa = {
             h.SetDesc = j.SetDesc
             local k =
                 ai(
-                "ImageLabel",
+                "Frame",
                 {
                     AnchorPoint = Vector2.new(0, 0.5),
-                    Position = UDim2.new(0, -10, 0.5, 0),
-                    Size = UDim2.fromOffset(20, 20),
-                    Image = "http://www.roblox.com/asset/?id=12266946128",
-                    ThemeTag = {ImageColor3 = "Accent"},
+                    Position = UDim2.new(0, -6, 0.5, 0),
+                    Size = UDim2.fromOffset(13, 13),
+                    BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                     ZIndex = 3,
                 },
                 {
-
+                    ai("UICorner", {CornerRadius = UDim.new(1, 0)}),
+                    ai("UIStroke", {Color = Color3.fromRGB(0, 230, 118), Thickness = 1.5})
                 }
             )
             local l, m, n =
@@ -6795,12 +6819,14 @@ local aa = {
                     Size = UDim2.new(1, 0, 0, 6),
                     AnchorPoint = Vector2.new(1, 0.5),
                     Position = UDim2.new(1, -10, 0.5, 0),
-                    BackgroundTransparency = 0.4,
+                    BackgroundColor3 = Color3.fromRGB(22, 44, 30),
+                    BackgroundTransparency = 0,
                     Parent = j.Frame,
                     ThemeTag = {BackgroundColor3 = "SliderRail"}
                 },
                 {
                     ai("UICorner", {CornerRadius = UDim.new(1, 0)}),
+                    ai("UIStroke", {Color = Color3.fromRGB(0, 180, 90), Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border}),
                     ai("UISizeConstraint", {MaxSize = Vector2.new(150, math.huge)}),
                     n,
                     m,
@@ -6855,7 +6881,7 @@ local aa = {
             end
             function h.SetValue(p, s)
                 p.Value = g:Round(math.clamp(s, h.Min, h.Max), h.Rounding)
-                k.Position = UDim2.new((p.Value - h.Min) / (h.Max - h.Min), -10, 0.5, 0)
+                k.Position = UDim2.new((p.Value - h.Min) / (h.Max - h.Min), -6, 0.5, 0)
                 m.Size = UDim2.fromScale((p.Value - h.Min) / (h.Max - h.Min), 1)
                 n.Text = tostring(p.Value)
                 g:SafeCallback(h.Callback, p.Value)
@@ -6894,17 +6920,17 @@ local aa = {
             h.SetDesc = i.SetDesc
             local j, k =
                 ai(
-                    "ImageLabel",
+                    "Frame",
                     {
                         AnchorPoint = Vector2.new(0, 0.5),
                         Size = UDim2.fromOffset(14, 14),
                         Position = UDim2.new(0, 2, 0.5, 0),
-                        Image = "http://www.roblox.com/asset/?id=12266946128",
-                        ImageTransparency = 0.5,
-                        ThemeTag = {ImageColor3 = "ToggleSlider"}
-                    }
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                        ZIndex = 2,
+                    },
+                    {ai("UICorner", {CornerRadius = UDim.new(1, 0)})}
                 ),
-                ai("UIStroke", {Transparency = 0.5, ThemeTag = {Color = "ToggleSlider"}})
+                ai("UIStroke", {Thickness = 1, Color = Color3.fromRGB(0, 160, 80)})
             local l =
                 ai(
                 "Frame",
@@ -6913,8 +6939,8 @@ local aa = {
                     AnchorPoint = Vector2.new(1, 0.5),
                     Position = UDim2.new(1, -10, 0.5, 0),
                     Parent = i.Frame,
-                    BackgroundTransparency = 1,
-                    ThemeTag = {BackgroundColor3 = "Accent"}
+                    BackgroundColor3 = Color3.fromRGB(20, 40, 28),
+                    BackgroundTransparency = 0,
                 },
                 {ai("UICorner", {CornerRadius = UDim.new(0, 9)}), k, j}
             )
@@ -6925,19 +6951,17 @@ local aa = {
             function h.SetValue(m, n)
                 n = not (not n)
                 h.Value = n
-                ah.OverrideTag(k, {Color = h.Value and "Accent" or "ToggleSlider"})
-                ah.OverrideTag(j, {ImageColor3 = h.Value and "ToggleToggled" or "ToggleSlider"})
+                k.Color = h.Value and Color3.fromRGB(0, 255, 140) or Color3.fromRGB(0, 160, 80)
                 af:Create(
                     j,
                     TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-                    {Position = UDim2.new(0, h.Value and 19 or 2, 0.5, 0)}
+                    {Position = UDim2.new(0, h.Value and 20 or 2, 0.5, 0)}
                 ):Play()
                 af:Create(
                     l,
                     TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-                    {BackgroundTransparency = h.Value and 0 or 1}
+                    {BackgroundColor3 = h.Value and Color3.fromRGB(0, 230, 118) or Color3.fromRGB(20, 40, 28)}
                 ):Play()
-                j.ImageTransparency = h.Value and 0 or 0.5
                 g:SafeCallback(h.Callback, h.Value)
                 g:SafeCallback(h.Changed, h.Value)
             end
