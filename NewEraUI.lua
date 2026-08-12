@@ -4382,7 +4382,7 @@ local aa = {
             )
             v.TitleBar = e(d.Parent.TitleBar) {Title = t.Title, SubTitle = t.SubTitle, Parent = v.Root, Window = v, Icon = t.TitleIcon}
             v.MinimizeIcon = t.MinimizeIcon or t.FloatingIcon or t.TitleIcon or "rbxassetid://10723415903"
-            local floatGui = d.GUI or d.PopupGUI or t.Parent
+            local floatGui = (u and (u.GUI or u.PopupGUI)) or t.Parent
             local floatBtn = s("TextButton", {
                 Size = UDim2.fromOffset(50, 50),
                 Position = UDim2.new(0.9, -60, 0.15, 0),
