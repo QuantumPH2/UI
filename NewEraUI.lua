@@ -3785,9 +3785,9 @@ local aa = {
                                             l("UIGradient", {
                                                 Rotation = 0,
                                                 Color = ColorSequence.new({
-                                                    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 120)),
-                                                    ColorSequenceKeypoint.new(0.55, Color3.fromRGB(0, 160, 75)),
-                                                    ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 25, 20))
+                                                    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 180)),
+                                                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 200, 255)),
+                                                    ColorSequenceKeypoint.new(1, Color3.fromRGB(170, 110, 255))
                                                 })
                                             })
                                         }
@@ -3815,9 +3815,9 @@ local aa = {
                                             l("UIGradient", {
                                                 Rotation = 0,
                                                 Color = ColorSequence.new({
-                                                    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 220, 255)),
-                                                    ColorSequenceKeypoint.new(0.55, Color3.fromRGB(0, 130, 190)),
-                                                    ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 30, 40))
+                                                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 140, 220)),
+                                                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(190, 130, 255)),
+                                                    ColorSequenceKeypoint.new(1, Color3.fromRGB(110, 210, 255))
                                                 })
                                             })
                                         }
@@ -4528,36 +4528,27 @@ local aa = {
                 {v.AcrylicPaint.Frame, v.TabDisplay, v.ContainerHolder, F, E}
             )
             v.TitleBar = e(d.Parent.TitleBar) {Title = t.Title, SubTitle = t.SubTitle, Parent = v.Root, Window = v, Icon = t.TitleIcon}
-            v.MinimizeIcon = t.MinimizeIcon or t.FloatingIcon or t.TitleIcon or "rbxassetid://10723415903"
+            v.MinimizeIcon = t.MinimizeIcon or t.FloatingIcon or "rbxassetid://109818941157555"
             local floatGui = (u and (u.GUI or u.PopupGUI)) or t.Parent
             local floatBtn = s("TextButton", {
-                Size = UDim2.fromOffset(50, 50),
-                Position = UDim2.new(0.9, -60, 0.15, 0),
-                BackgroundColor3 = Color3.fromRGB(24, 24, 28),
-                BackgroundTransparency = 0.15,
+                Size = UDim2.fromOffset(55, 55),
+                Position = UDim2.new(0.9, -65, 0.15, 0),
+                BackgroundTransparency = 1,
                 AutoButtonColor = false,
                 Text = "",
-                ZIndex = 100,
+                ZIndex = 1000,
                 Visible = true,
                 Parent = floatGui,
-            }, {
-                s("UICorner", { CornerRadius = UDim.new(0, 14) }),
-                s("UIStroke", {
-                    Color = Color3.fromRGB(80, 80, 100),
-                    Thickness = 1.5,
-                    ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-                    ThemeTag = { Color = "Accent" }
-                })
             })
 
             local floatIconImg = s("ImageLabel", {
-                Size = UDim2.fromOffset(28, 28),
+                Size = UDim2.fromScale(1, 1),
                 Position = UDim2.fromScale(0.5, 0.5),
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 BackgroundTransparency = 1,
                 Image = v.MinimizeIcon,
                 ImageColor3 = Color3.fromRGB(255, 255, 255),
-                ZIndex = 101,
+                ZIndex = 1001,
                 Parent = floatBtn
             })
 
@@ -5018,11 +5009,21 @@ local aa = {
                         if not bgImg then
                             bgImg = Instance.new("ImageLabel")
                             bgImg.Name = "__ThemeBG"
-                            bgImg.Size = UDim2.fromScale(1,1)
+                            bgImg.Size = UDim2.new(1, -12, 1, -12)
+                            bgImg.Position = UDim2.new(0.5, 0, 0.5, 0)
+                            bgImg.AnchorPoint = Vector2.new(0.5, 0.5)
                             bgImg.BackgroundTransparency = 1
                             bgImg.ScaleType = Enum.ScaleType.Crop
+                            bgImg.ClipsDescendants = true
                             bgImg.ZIndex = 0
+                            local corner = Instance.new("UICorner")
+                            corner.CornerRadius = UDim.new(0, 8)
+                            corner.Parent = bgImg
                             bgImg.Parent = bgParent
+                        else
+                            bgImg.Size = UDim2.new(1, -12, 1, -12)
+                            bgImg.Position = UDim2.new(0.5, 0, 0.5, 0)
+                            bgImg.AnchorPoint = Vector2.new(0.5, 0.5)
                         end
                         bgImg.Image = tostring(bgVal)
                         bgImg.ImageTransparency = thm.BackgroundTransparency or 0
@@ -9312,7 +9313,7 @@ local aa = {
         local aa, ab, ac, ad, ae = b(47)
         local af = {
             Names = {
-                "Emerald", "AMOLED", "Ash Gray", "Blood Red", "Cyanic", "Amber Glow", "Deep Violet", "Neon Cyber", "Neon Purple", "Royal Blue", "Deep Ocean", "RGB", "Orange", "Charcoal", "Pearl White", "Midnight Blue", "Galaxy Purple", "Cosmic Violet", "Cotton Candy", "Arctic Frost"
+                "Emerald", "Dark", "Darker", "Light", "Blood Red", "Neon", "Amethyst", "Ocean", "Midnight", "Sapphire", "Galaxy", "Cosmic", "AMOLED", "Ash Gray", "Cyanic", "Amber Glow", "Deep Violet", "Neon Cyber", "Neon Purple", "Royal Blue", "Deep Ocean", "RGB", "Orange", "Charcoal", "Pearl White", "Midnight Blue", "Galaxy Purple", "Cosmic Violet", "Cotton Candy", "Arctic Frost"
             }
         }
         for ag, ah in next, ab:GetChildren() do
@@ -9323,6 +9324,34 @@ local aa = {
             end
             if aj.Background == nil then aj.Background = nil end
             if aj.BackgroundTransparency == nil then aj.BackgroundTransparency = 0 end
+        end
+
+        local themeModules = {
+            [48] = { "Amethyst", "Deep Violet" },
+            [49] = { "Dark", "Ash Gray" },
+            [50] = { "Darker", "Charcoal" },
+            [51] = { "Light", "Pearl White" },
+            [52] = { "Blood Red", "BloodRed" },
+            [53] = { "Neon", "Neon Cyber" },
+            [54] = { "Ocean", "Deep Ocean" },
+            [55] = { "Midnight", "Midnight Blue" },
+            [56] = { "Sapphire", "Royal Blue" },
+            [57] = { "Galaxy", "Galaxy Purple" },
+            [58] = { "Cosmic", "Cosmic Violet" }
+        }
+        for modId, aliases in pairs(themeModules) do
+            pcall(function()
+                local tData = b(modId)
+                if type(tData) == "table" then
+                    if tData.Name then af[tData.Name] = tData end
+                    for _, alias in ipairs(aliases) do
+                        af[alias] = tData
+                        if not table.find(af.Names, alias) then
+                            table.insert(af.Names, alias)
+                        end
+                    end
+                end
+            end)
         end
 
         af["Emerald"] = {
