@@ -1246,11 +1246,23 @@ local aa = {
                 if x.Theme ~= "RGB" then rgbConn:Disconnect(); rgbConn = nil; return end
                 hue = (hue + dt * 0.10) % 1
                 local col = Color3.fromHSV(hue, 1, 1)
+                local col2 = Color3.fromHSV((hue + 0.15) % 1, 1, 1)
+                local col3 = Color3.fromHSV((hue + 0.30) % 1, 1, 1)
                 local thm = e(o.Themes)["RGB"]
                 if thm then
                     thm.Accent=col; thm.AcrylicBorder=col; thm.InElementBorder=col
                     thm.DropdownBorder=col; thm.DropdownFrame=col; thm.DropdownOption=col
                     thm.Tab=col; thm.TitleBarLine=col
+                    thm.TitleGradient = ColorSequence.new({
+                        ColorSequenceKeypoint.new(0, col),
+                        ColorSequenceKeypoint.new(0.5, col2),
+                        ColorSequenceKeypoint.new(1, col3)
+                    })
+                    thm.SubTitleGradient = ColorSequence.new({
+                        ColorSequenceKeypoint.new(0, col3),
+                        ColorSequenceKeypoint.new(0.5, col2),
+                        ColorSequenceKeypoint.new(1, col)
+                    })
                     p.UpdateTheme()
                 end
             end)
@@ -3854,7 +3866,8 @@ local aa = {
                                                     ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 180)),
                                                     ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 200, 255)),
                                                     ColorSequenceKeypoint.new(1, Color3.fromRGB(170, 110, 255))
-                                                })
+                                                }),
+                                                ThemeTag = { Color = "TitleGradient" }
                                             })
                                         }
                                     ),
@@ -3884,7 +3897,8 @@ local aa = {
                                                     ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 140, 220)),
                                                     ColorSequenceKeypoint.new(0.5, Color3.fromRGB(190, 130, 255)),
                                                     ColorSequenceKeypoint.new(1, Color3.fromRGB(110, 210, 255))
-                                                })
+                                                }),
+                                                ThemeTag = { Color = "SubTitleGradient" }
                                             })
                                         }
                                     )
@@ -5043,6 +5057,24 @@ local aa = {
             local t = i[e(h).Theme]
             if t and t[m] ~= nil then
                 return t[m]
+            end
+            if m == "TitleGradient" and t then
+                if t.TitleGradient then return t.TitleGradient end
+                if t.Accent then
+                    return ColorSequence.new({
+                        ColorSequenceKeypoint.new(0, t.Accent),
+                        ColorSequenceKeypoint.new(0.5, t.Accent:Lerp(Color3.new(1, 1, 1), 0.4)),
+                        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+                    })
+                end
+            elseif m == "SubTitleGradient" and t then
+                if t.SubTitleGradient then return t.SubTitleGradient end
+                if t.Accent then
+                    return ColorSequence.new({
+                        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+                        ColorSequenceKeypoint.new(1, t.Accent)
+                    })
+                end
             end
             if _noInheritFallbackKeys[m] then
                 return false
@@ -9468,6 +9500,16 @@ local aa = {
                 })
             },
             ThemeAccentColors = { Color3.fromRGB(220, 20, 30), Color3.fromRGB(255, 255, 255) },
+            TitleGradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(230, 25, 35)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 140, 150)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+            }),
+            SubTitleGradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 180, 185)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(230, 40, 50))
+            }),
         }
 
         af["Emerald"] = {
@@ -9518,6 +9560,16 @@ local aa = {
             StrokeDark = Color3.fromRGB(10, 90, 50),
             ButtonGradient = { Background = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 200, 100)), ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 30, 16)) }), Stroke = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 230, 118)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 150)), ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 200, 100)) }) },
             ThemeAccentColors = { Color3.fromRGB(0, 230, 118) },
+            TitleGradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 240, 140)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 220, 210)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(160, 255, 235))
+            }),
+            SubTitleGradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(180, 255, 220)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 210, 180)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 180, 220))
+            }),
         }
 
         af["Blood Red"] = {
@@ -9568,6 +9620,16 @@ local aa = {
             StrokeDark = Color3.fromRGB(100, 10, 15),
             ButtonGradient = { Background = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(180, 15, 25)), ColorSequenceKeypoint.new(1, Color3.fromRGB(28, 5, 8)) }), Stroke = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(200, 20, 30)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 50, 60)), ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 20, 30)) }) },
             ThemeAccentColors = { Color3.fromRGB(200, 20, 30) },
+            TitleGradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 40, 55)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(220, 30, 45)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 160, 170))
+            }),
+            SubTitleGradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 130, 140)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(220, 50, 65)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(160, 20, 30))
+            }),
         }
         af["BloodRed"] = af["Blood Red"]
 
