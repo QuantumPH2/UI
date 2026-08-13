@@ -3065,14 +3065,15 @@ local aa = {
             )
             do
                 local sf = x.ContainerFrame
-                local scrollGui = (e(h).ScrollGUI) or (e(h).PopupGUI)
+                local parentClip = u.ContainerClip or sf.Parent
                 local sbHolder = Instance.new("Frame")
                 sbHolder.Name = "_SBOverlay"
                 sbHolder.BackgroundTransparency = 1
-                sbHolder.Size = UDim2.fromOffset(6, 0)
+                sbHolder.Position = UDim2.new(1, -6, 0, 4)
+                sbHolder.Size = UDim2.new(0, 6, 1, -8)
                 sbHolder.ClipsDescendants = true
-                sbHolder.ZIndex = 5
-                sbHolder.Parent = scrollGui
+                sbHolder.ZIndex = 10
+                sbHolder.Parent = parentClip
                 local sbBar = Instance.new("Frame")
                 sbBar.Name = "_SBBar"
                 sbBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -3094,7 +3095,6 @@ local aa = {
                             task.defer(_teardown)
                             return
                         end
-                        -- Hide if window is minimized/hidden or if frame left DataModel
                         local win = _libCheck.Window
                         if win and win.Minimized then sbHolder.Visible = false; return end
                         if not sf or not sf.Parent or not sf:IsDescendantOf(game) then
@@ -3111,14 +3111,12 @@ local aa = {
                             return
                         end
                         sbHolder.Visible = true
-                        local sfAP = sf.AbsolutePosition
-                        local sfAS = sf.AbsoluteSize
-                        sbHolder.Position = UDim2.fromOffset(sfAP.X + sfAS.X - 6, sfAP.Y + 4)
-                        sbHolder.Size = UDim2.fromOffset(6, sfAS.Y - 8)
-                        local ratio = frameH / canvasH
-                        local barH = math.max(math.floor((sfAS.Y - 8) * ratio), 24)
-                        local scrollRatio = sf.CanvasPosition.Y / (canvasH - frameH)
-                        local maxY = (sfAS.Y - 8) - barH
+                        local ratio = math.clamp(frameH / canvasH, 0.05, 1)
+                        local totalTrackH = math.max(sf.AbsoluteSize.Y - 8, 1)
+                        local barH = math.max(math.floor(totalTrackH * ratio), 20)
+                        local maxScrollY = math.max(canvasH - frameH, 1)
+                        local scrollRatio = math.clamp(sf.CanvasPosition.Y / maxScrollY, 0, 1)
+                        local maxY = math.max(totalTrackH - barH, 0)
                         local barY = math.floor(scrollRatio * maxY)
                         sbBar.Size = UDim2.fromOffset(3, barH)
                         sbBar.Position = UDim2.fromOffset(1.5, barY)
@@ -3127,13 +3125,11 @@ local aa = {
                 local function _teardown()
                     if not _alive then return end
                     _alive = false
-                    -- Immediately hide first (synchronous) so it never appears after close
                     pcall(function() sbHolder.Visible = false end)
                     for _, conn in ipairs(_conns) do
                         pcall(function() conn:Disconnect() end)
                     end
                     table.clear(_conns)
-                    -- Deferred destroy to avoid issues with batch-destroy ordering
                     task.defer(function()
                         pcall(function() sbHolder:Destroy() end)
                     end)
@@ -3144,11 +3140,6 @@ local aa = {
                 table.insert(_conns, sf.Changed:Connect(function(p)
                     if p == "CanvasSize" then updateScrollbar() end
                 end))
-                -- Listen on the TOP-LEVEL GUI ScreenGui.Destroying for reliable teardown.
-                -- sf.Destroying doesn't fire for descendants (only the directly-destroyed instance).
-                -- AncestryChanged can have timing race conditions on batch-destroy.
-                -- GUI.Destroying is the authoritative event: when x.GUI:Destroy() is called,
-                -- this fires synchronously before any child is actually removed.
                 local _lib = e(h)
                 if _lib and _lib.GUI then
                     table.insert(_conns, _lib.GUI.Destroying:Connect(_teardown))
@@ -4974,22 +4965,37 @@ local aa = {
                 return t[m]
             end
             if _noInheritFallbackKeys[m] then
-                -- Capability flags like ShineEnabled must never silently inherit from the
-                -- fallback theme. A theme that doesn't define this key simply doesn't support it.
                 return false
             end
-            local fallback = i["Ash Gray"]
-            if fallback then return fallback[m] end
+            local fallbacks = { "Ash Gray", "Dark", "Darker", "Emerald" }
+            for _, fbName in ipairs(fallbacks) do
+                local fb = i[fbName]
+                if fb and fb[m] ~= nil then
+                    return fb[m]
+                end
+            end
             return nil
         end
         function k.UpdateTheme()
             for m, n in next, k.Registry do
-                for o, p in next, n.Properties do
-                    m[o] = k.GetThemeProperty(p)
+                if m and m.Parent then
+                    for o, p in next, n.Properties do
+                        local val = k.GetThemeProperty(p)
+                        if val ~= nil then
+                            pcall(function()
+                                m[o] = val
+                            end)
+                        end
+                    end
                 end
             end
             for o, p in next, k.TransparencyMotors do
-                p:setGoal(j.Instant.new(k.GetThemeProperty "ElementTransparency"))
+                local val = k.GetThemeProperty("ElementTransparency")
+                if val ~= nil then
+                    pcall(function()
+                        p:setGoal(j.Instant.new(val))
+                    end)
+                end
             end
             local thm = i[e(h).Theme]
             local x = getgenv().Fluent
