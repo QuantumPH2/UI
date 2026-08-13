@@ -9341,8 +9341,10 @@ local aa = {
         }
         for modId, aliases in pairs(themeModules) do
             pcall(function()
-                local tData = b(modId)
-                if type(tData) == "table" then
+                local rawData = b(modId)
+                if type(rawData) == "table" then
+                    local tData = {}
+                    for k, v in pairs(rawData) do tData[k] = v end
                     if tData.Name then af[tData.Name] = tData end
                     for _, alias in ipairs(aliases) do
                         af[alias] = tData
@@ -9405,14 +9407,36 @@ local aa = {
         }
 
         if af["Emerald"] then
-            af["Emerald"].Background = "rbxassetid://100391623230690"
-            af["Emerald"].BackgroundTransparency = 0.15
+            pcall(function()
+                if type(af["Emerald"]) == "table" then
+                    local t = af["Emerald"]
+                    if (table.isfrozen and table.isfrozen(t)) or (isreadonly and isreadonly(t)) then
+                        local copy = {}
+                        for k, v in pairs(t) do copy[k] = v end
+                        t = copy
+                        af["Emerald"] = t
+                    end
+                    t.Background = "rbxassetid://100391623230690"
+                    t.BackgroundTransparency = 0.15
+                end
+            end)
         end
 
         if af["Blood Red"] then
-            af["Blood Red"].Background = "rbxassetid://121343473918667"
-            af["Blood Red"].BackgroundTransparency = 0.15
-            af["Blood Red"].ThemeAccentColors = { Color3.fromRGB(180, 10, 20) }
+            pcall(function()
+                if type(af["Blood Red"]) == "table" then
+                    local t = af["Blood Red"]
+                    if (table.isfrozen and table.isfrozen(t)) or (isreadonly and isreadonly(t)) then
+                        local copy = {}
+                        for k, v in pairs(t) do copy[k] = v end
+                        t = copy
+                        af["Blood Red"] = t
+                    end
+                    t.Background = "rbxassetid://121343473918667"
+                    t.BackgroundTransparency = 0.15
+                    t.ThemeAccentColors = { Color3.fromRGB(180, 10, 20) }
+                end
+            end)
         end
 
         af["AMOLED"] = {
