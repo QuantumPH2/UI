@@ -337,26 +337,95 @@ local aa = {
             end
             return IconCache[prefix]
         end
+        local SolarFallback = {
+            ["solar/map-point-wave-bold"] = "rbxassetid://10734933966",
+            ["solar/users-group-rounded-bold"] = "rbxassetid://10747373426",
+            ["solar/settings-bold"] = "rbxassetid://10734950309",
+            ["solar/info-circle-bold"] = "rbxassetid://10709752996",
+            ["solar/server-bold"] = "rbxassetid://10709782497",
+            ["solar/camera-bold"] = "rbxassetid://10709781461",
+            ["solar/routing-2-bold"] = "rbxassetid://10734933966",
+            ["solar/bomb-bold"] = "rbxassetid://10709753149",
+            ["solar/running-bold"] = "rbxassetid://10709752035",
+            ["solar/game-console-bold"] = "rbxassetid://10723346959",
+            ["solar/shield-bold"] = "rbxassetid://10734975486",
+            ["solar/sword-bold"] = "rbxassetid://10734975486",
+            ["solar/target-bold"] = "rbxassetid://10734977012",
+            ["solar/bolt-bold"] = "rbxassetid://10709752035",
+            ["solar/user-plus-bold"] = "rbxassetid://10747372702",
+            ["solar/widget-bold"] = "rbxassetid://10734950309",
+            ["solar/ghost-bold"] = "rbxassetid://10709753149",
+            ["solar/star-shine-bold"] = "rbxassetid://10747363809",
+            ["solar/mask-bold"] = "rbxassetid://10747374003",
+            ["solar/scope-bold"] = "rbxassetid://10734977012",
+            ["solar/user-bold"] = "rbxassetid://10747373176",
+            ["solar/map-point-bold"] = "rbxassetid://10734933966",
+            ["solar/palette-bold"] = "rbxassetid://10709752906",
+            ["solar/diskette-bold"] = "rbxassetid://10747362393",
+            ["solar/eye-bold"] = "rbxassetid://10723345518",
+            ["solar/eye-closed-bold"] = "rbxassetid://10723345518",
+            ["solar/copy-bold"] = "rbxassetid://10709753808",
+            ["solar/chat-round-bold"] = "rbxassetid://10709752996",
+            ["solar/fire-bold"] = "rbxassetid://10709752035",
+            ["home"] = "rbxassetid://10723346959",
+            ["eye"] = "rbxassetid://10723345518",
+            ["user"] = "rbxassetid://10747373176",
+            ["shield"] = "rbxassetid://10734975486",
+            ["sword"] = "rbxassetid://10734975486",
+            ["map-pin"] = "rbxassetid://10734933966",
+            ["crosshair"] = "rbxassetid://10723376114",
+            ["settings"] = "rbxassetid://10734950309",
+            ["lucide/chevron-down"] = "rbxassetid://10709790948",
+            ["lucide/bookmark-check"] = "rbxassetid://10709752405",
+            ["lucide/bookmark"] = "rbxassetid://10709752405"
+        }
         function x.GetIcon(z, A)
             if A == nil or A == "" then return nil end
+            if type(A) == "table" then return A end
+            if type(A) == "string" then
+                if A:match("^rbxassetid://") or A:match("^rbxasset://") or A:match("^https?://") then
+                    return A
+                end
+                if A:match("^%d+$") then
+                    return "rbxassetid://" .. A
+                end
+            end
             local prefix, name = A:match("^(.-)%/(.+)$")
             if prefix then
                 local src = LoadIconSource(prefix)
-                if not src then return nil end
-                if src._icons then
-                    local entry = src._icons[name]
-                    if not entry then return nil end
-                    local sheetId = src._sprites[tostring(entry.Image)]
-                    return { Image = sheetId, ImageRectOffset = entry.ImageRectPosition, ImageRectSize = entry.ImageRectSize }
-                else
-                    return src[name]
+                if src then
+                    if src._icons then
+                        local entry = src._icons[name]
+                        if entry then
+                            local sheetId = src._sprites[tostring(entry.Image)]
+                            if sheetId then
+                                return { Image = sheetId, ImageRectOffset = entry.ImageRectPosition, ImageRectSize = entry.ImageRectSize }
+                            end
+                        end
+                    elseif src[name] then
+                        return src[name]
+                    end
                 end
+                if SolarFallback[A] then return SolarFallback[A] end
+                if SolarFallback[name] then return SolarFallback[name] end
+                local legacy = e(o.Icons).assets
+                if legacy then
+                    if legacy["lucide-" .. name] then return legacy["lucide-" .. name] end
+                    if legacy[name] then return legacy[name] end
+                end
+                return nil
             else
                 local lucide = LoadIconSource("lucide")
-                if lucide and lucide[A] then return lucide[A] end
-                if lucide and lucide["lucide-" .. A] then return lucide["lucide-" .. A] end
+                if lucide then
+                    if lucide[A] then return lucide[A] end
+                    if lucide["lucide-" .. A] then return lucide["lucide-" .. A] end
+                end
                 local legacy = e(o.Icons).assets
-                if legacy and legacy["lucide-" .. A] then return legacy["lucide-" .. A] end
+                if legacy then
+                    if legacy["lucide-" .. A] then return legacy["lucide-" .. A] end
+                    if legacy[A] then return legacy[A] end
+                end
+                if SolarFallback[A] then return SolarFallback[A] end
                 return nil
             end
         end
@@ -2902,10 +2971,14 @@ local aa = {
             local v = t.Elements
             o.TabCount = o.TabCount + 1
             local w, x = o.TabCount, {Selected = false, Name = q, Type = "Tab", _origOrder = o.TabCount}
-            if t:GetIcon(r) then
-                r = t:GetIcon(r)
-            end
-            if r == "" or nil then
+            local icResolved = t:GetIcon(r)
+            if icResolved then
+                r = icResolved
+            elseif type(r) == "string" then
+                if not (r:find("rbxassetid://") or r:find("rbxasset://") or r:find("http://") or r:find("https://")) then
+                    r = nil
+                end
+            else
                 r = nil
             end
             x.Frame =
@@ -3243,7 +3316,7 @@ local aa = {
                 local tabLib = t
                 local title2     = tostring(cfg.Title or "Section")
                 local iconKey2   = cfg.Icon
-                local startOpen2 = cfg.Open ~= false
+                local startOpen2 = cfg.Open == true
                 local pad2 = 5
                 local sectionMargin = 12
                 local ts2 = game:GetService("TweenService")
