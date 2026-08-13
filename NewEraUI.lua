@@ -2933,12 +2933,32 @@ local aa = {
             o.Window = q
             return o
         end
+        function o.GetTab(p, q)
+            if type(q) == "number" then
+                if o.Tabs[q] then return o.Tabs[q], q end
+            elseif type(q) == "string" then
+                for idx, tab in ipairs(o.Tabs) do
+                    if tab.Name == q or tab.Name:lower() == q:lower() then
+                        return tab, idx
+                    end
+                end
+            elseif type(q) == "table" then
+                for idx, tab in ipairs(o.Tabs) do
+                    if tab == q then
+                        return tab, idx
+                    end
+                end
+            end
+            return o.Tabs[1], 1
+        end
         function o.GetCurrentTabPos(p)
             local sel = o.Tabs[o.SelectedTab]
             if not sel or not sel.Frame then return nil end
             local tlc = o.Window and o.Window.TabListContainer
             if not tlc then return nil end
-            return sel.Frame.AbsolutePosition.Y - tlc.AbsolutePosition.Y
+            local tabY = sel.Frame.AbsolutePosition.Y - tlc.AbsolutePosition.Y
+            local tabH = sel.Frame.AbsoluteSize.Y
+            return tabY + (tabH > 0 and (tabH / 2) or 17)
         end
         function o.ReapplyFavoriteOrder(p)
             local im = e(h).InterfaceManager
@@ -3475,19 +3495,20 @@ local aa = {
         function o.SelectTab(p, q)
             local r = o.Window
             if not r then return end
-            if not o.Tabs[q] then return end
-            o.SelectedTab = q
+            local tabObj, tabIdx = o:GetTab(q)
+            if not tabObj then return end
+            o.SelectedTab = tabIdx
             for s, t in next, o.Tabs do
                 t.SetTransparency(1)
                 t.Selected = false
             end
-            o.Tabs[q].SetTransparency(0.89)
-            o.Tabs[q].Selected = true
-            r.TabDisplay.Text = o.Tabs[q].Name
+            tabObj.SetTransparency(0.89)
+            tabObj.Selected = true
+            r.TabDisplay.Text = tabObj.Name
             local tabPos = o:GetCurrentTabPos()
-            if tabPos then
+            if tabPos and r.SelectorPosMotor then
                 if r.SelectorFrame then r.SelectorFrame.Visible = true end
-                r.SelectorPosMotor:setGoal(l(tabPos, {frequency = 6}))
+                r.SelectorPosMotor:setGoal(l(tabPos, {frequency = 8}))
             end
             task.spawn(
                 function()
@@ -3504,10 +3525,12 @@ local aa = {
                             end
                         end
                     end
-                    o.Containers[q].Visible = true
-                    for _, _vf in ipairs(o.Containers[q]:GetDescendants()) do
-                        if _vf:IsA("VideoFrame") then
-                            pcall(function() _vf.Volume = _vf:GetAttribute("BFVolume") or 0 end)
+                    if o.Containers[tabIdx] then
+                        o.Containers[tabIdx].Visible = true
+                        for _, _vf in ipairs(o.Containers[tabIdx]:GetDescendants()) do
+                            if _vf:IsA("VideoFrame") then
+                                pcall(function() _vf.Volume = _vf:GetAttribute("BFVolume") or 0 end)
+                            end
                         end
                     end
                     r.ContainerPosMotor:setGoal(l(90, {frequency = 7}))
@@ -4599,7 +4622,7 @@ local aa = {
             local I, J = 0, 0
             v.SelectorPosMotor:onStep(
                 function(K)
-                    D.Position = UDim2.new(0, 0, 0, K + 5)
+                    D.Position = UDim2.new(0, 0, 0, K)
                     local L = tick()
                     local M = L - J
                     if I ~= nil then
@@ -4836,10 +4859,14 @@ local aa = {
                         if tabY + sel.Frame.AbsoluteSize.Y < holderY or tabY > holderY + holderH then
                             shouldBeVisible = false
                         end
+                        local pos = N:GetCurrentTabPos()
+                        if pos and v.SelectorPosMotor then
+                            pcall(function() v.SelectorPosMotor:setGoal(l(pos, {frequency = 8})) end)
+                        end
                     end
                     if shouldBeVisible ~= _lastSelState then
                         _lastSelState = shouldBeVisible
-                        D.Visible = shouldBeVisible
+                        if D then D.Visible = shouldBeVisible end
                     end
                 end)
             end
@@ -4854,12 +4881,13 @@ local aa = {
                 return _tab
             end
             function v.SelectTab(O, P)
-                local idx = tonumber(P) or 1
-                if N.Tabs[idx] then
-                    N:SelectTab(idx)
+                local tabObj, tabIdx = N:GetTab(P)
+                if tabObj then
+                    N:SelectTab(tabIdx)
                 else
                     task.defer(function()
-                        if N.Tabs[idx] then N:SelectTab(idx) end
+                        local tObj, tIdx = N:GetTab(P)
+                        if tObj then N:SelectTab(tIdx) end
                     end)
                 end
             end
