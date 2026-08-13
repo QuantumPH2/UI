@@ -529,6 +529,9 @@ local aa = {
             end
         end
 
+        z["AddTextBox"] = function(C, D, E)
+            return C:AddInput(D, E)
+        end
         local function _addElementToSection(C, result)
             if result and result.Frame then
                 C._elementCount = (C._elementCount or 0) + 1
@@ -962,6 +965,7 @@ local aa = {
             return vp
         end
         function x.CreateWindow(C, D)
+            if type(C) == "table" and not D then D = C end
             assert(D.Title, "Window - Missing Title")
             if x.Window then
                 print "You cannot create more than one window."
@@ -1963,7 +1967,7 @@ local aa = {
                             ImageTransparency = 0.7
                         }
                     ),
-                    j("UICorner", {CornerRadius = UDim.new(0, 10)}),
+                    j("UICorner", {CornerRadius = UDim.new(0, 12)}),
                     j(
                         "Frame",
                         {
@@ -1972,7 +1976,7 @@ local aa = {
                             Name = "Background",
                             ThemeTag = {BackgroundColor3 = "AcrylicMain"}
                         },
-                        {j("UICorner", {CornerRadius = UDim.new(0, 10)})}
+                        {j("UICorner", {CornerRadius = UDim.new(0, 12)})}
                     ),
                     j(
                         "Frame",
@@ -1996,7 +2000,7 @@ local aa = {
                             Size = UDim2.fromScale(1, 1),
                             BackgroundTransparency = 1
                         },
-                        {j("UICorner", {CornerRadius = UDim.new(0, 10)})}
+                        {j("UICorner", {CornerRadius = UDim.new(0, 12)})}
                     ),
                     j(
                         "ImageLabel",
@@ -2009,7 +2013,7 @@ local aa = {
                             BackgroundTransparency = 1,
                             ThemeTag = {ImageTransparency = "AcrylicNoise"}
                         },
-                        {j("UICorner", {CornerRadius = UDim.new(0, 10)})}
+                        {j("UICorner", {CornerRadius = UDim.new(0, 12)})}
                     ),
                     j(
                         "Frame",
@@ -2863,8 +2867,9 @@ local aa = {
         function o.GetCurrentTabPos(p)
             local sel = o.Tabs[o.SelectedTab]
             if not sel or not sel.Frame then return nil end
-            local q, r = o.Window.TabHolder.AbsolutePosition.Y, sel.Frame.AbsolutePosition.Y
-            return r - q
+            local tlc = o.Window and o.Window.TabListContainer
+            if not tlc then return nil end
+            return sel.Frame.AbsolutePosition.Y - tlc.AbsolutePosition.Y
         end
         function o.ReapplyFavoriteOrder(p)
             local im = e(h).InterfaceManager
@@ -3215,14 +3220,8 @@ local aa = {
             x.Container = x.ContainerFrame
             x.ScrollFrame = x.Container
             function x.AddSection(z, A, iconKey)
-                x._elementCount = (x._elementCount or 0) + 1
-                local _order = x._elementCount
-                local B, C = {Type = "Section"}, e(n.Section)(A, iconKey, x.Container)
-                B.Container = C.Container
-                B.ScrollFrame = x.Container
-                C.Root.LayoutOrder = _order
-                setmetatable(B, v)
-                return B
+                if not iconKey or iconKey == "" then iconKey = "solar/fire-bold" end
+                return z:AddCollapsibleSection(A, iconKey)
             end
             function x.AddCollapsibleSection(z, A, iconKey, openState)
                 -- Accept the same calling convention as AddSection: (Title, Icon).
@@ -3320,9 +3319,11 @@ local aa = {
                 do
                     local arIc = tabLib.GetIcon and tabLib:GetIcon("lucide/chevron-down")
                     if arIc and type(arIc) == "table" then
-                        arrowIco2.Image = arIc.Image or ""
+                        arrowIco2.Image = arIc.Image or "rbxassetid://10709790948"
                         arrowIco2.ImageRectOffset = arIc.ImageRectOffset or Vector2.new()
                         arrowIco2.ImageRectSize = arIc.ImageRectSize or Vector2.new()
+                    else
+                        arrowIco2.Image = "rbxassetid://10709790948"
                     end
                 end
 
@@ -3401,6 +3402,7 @@ local aa = {
                 function colMod2:IsOpen()     return isOpen2 end
                 function colMod2:SetTitle(s)  titleLbl2.Text = tostring(s or "") end
                 setmetatable(colMod2, v)
+                z._currentSection = colMod2
                 return colMod2
             end
             setmetatable(x, v)
@@ -3947,7 +3949,7 @@ local aa = {
                         ZIndex = 1,
                         ThemeTag = {BackgroundColor3 = "Accent"}
                     },
-                    {s("UICorner", {CornerRadius = UDim.new(0, 2)})}
+                    {s("UICorner", {CornerRadius = UDim.new(0, 6)})}
                 ),
                 s(
                     "Frame",
@@ -4275,7 +4277,7 @@ local aa = {
                     AutomaticSize = Enum.AutomaticSize.Y,
                     BackgroundTransparency = 1,
                 },
-                {_tabListLayout}
+                {_tabListLayout, D}
             )
             v.TabHolder =
                 s(
@@ -4293,7 +4295,7 @@ local aa = {
                     ScrollingDirection = Enum.ScrollingDirection.Y,
                     ClipsDescendants = true,
                 },
-                {v.TabListContainer, D, s("UICorner", {CornerRadius = UDim.new(0, 10)})}
+                {v.TabListContainer, s("UICorner", {CornerRadius = UDim.new(0, 12)})}
             )
             table.insert(sidebarChildren, v.TabHolder)
 
@@ -4542,8 +4544,7 @@ local aa = {
             local I, J = 0, 0
             v.SelectorPosMotor:onStep(
                 function(K)
-                    local canvasY = (v.TabHolder and v.TabHolder.CanvasPosition.Y) or 0
-                    D.Position = UDim2.new(0, 0, 0, K + 17 + canvasY)
+                    D.Position = UDim2.new(0, 0, 0, K + 5)
                     local L = tick()
                     local M = L - J
                     if I ~= nil then
@@ -4773,6 +4774,14 @@ local aa = {
                     end
                     local sel = N.Tabs[N.SelectedTab]
                     local shouldBeVisible = sel and sel.Frame and sel.Frame.Visible and sel.Frame.Parent ~= nil
+                    if shouldBeVisible and sel and sel.Frame and v.TabHolder then
+                        local tabY = sel.Frame.AbsolutePosition.Y
+                        local holderY = v.TabHolder.AbsolutePosition.Y
+                        local holderH = v.TabHolder.AbsoluteSize.Y
+                        if tabY + sel.Frame.AbsoluteSize.Y < holderY or tabY > holderY + holderH then
+                            shouldBeVisible = false
+                        end
+                    end
                     if shouldBeVisible ~= _lastSelState then
                         _lastSelState = shouldBeVisible
                         D.Visible = shouldBeVisible
