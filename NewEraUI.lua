@@ -1913,9 +1913,14 @@ local aa = {
             n.SetVisibility = function(r)
                 p.Transparency = r and 0.98 or 1
             end
+            local _lastPos, _lastSize
             local _hbConn = game:GetService("RunService").Heartbeat:Connect(function()
-                if q and q.Parent then
-                    o(q)
+                if q and q.Parent and q.Visible then
+                    local curPos, curSize = q.AbsolutePosition, q.AbsoluteSize
+                    if curPos ~= _lastPos or curSize ~= _lastSize then
+                        _lastPos, _lastSize = curPos, curSize
+                        o(q)
+                    end
                 end
             end)
             q.AncestryChanged:Connect(function()
@@ -3703,11 +3708,11 @@ local aa = {
                                         },
                                         {
                                             l("UIGradient", {
-                                                Rotation = 90,
+                                                Rotation = 0,
                                                 Color = ColorSequence.new({
-                                                    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 140)),
-                                                    ColorSequenceKeypoint.new(0.65, Color3.fromRGB(0, 210, 100)),
-                                                    ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 45, 25))
+                                                    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 120)),
+                                                    ColorSequenceKeypoint.new(0.55, Color3.fromRGB(0, 160, 75)),
+                                                    ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 25, 20))
                                                 })
                                             })
                                         }
@@ -3733,10 +3738,11 @@ local aa = {
                                         },
                                         {
                                             l("UIGradient", {
-                                                Rotation = 90,
+                                                Rotation = 0,
                                                 Color = ColorSequence.new({
-                                                    ColorSequenceKeypoint.new(0, Color3.fromRGB(190, 255, 220)),
-                                                    ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 140, 75))
+                                                    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 220, 255)),
+                                                    ColorSequenceKeypoint.new(0.55, Color3.fromRGB(0, 130, 190)),
+                                                    ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 30, 40))
                                                 })
                                             })
                                         }
@@ -4759,16 +4765,17 @@ local aa = {
             do
                 local _rs3 = game:GetService("RunService")
                 local _selConn
+                local _lastSelState = nil
                 _selConn = _rs3.Heartbeat:Connect(function()
                     if not v.Root or not v.Root.Parent then
                         _selConn:Disconnect()
                         return
                     end
                     local sel = N.Tabs[N.SelectedTab]
-                    if sel and sel.Frame and sel.Frame.Visible and sel.Frame.Parent then
-                        D.Visible = true
-                    else
-                        D.Visible = false
+                    local shouldBeVisible = sel and sel.Frame and sel.Frame.Visible and sel.Frame.Parent ~= nil
+                    if shouldBeVisible ~= _lastSelState then
+                        _lastSelState = shouldBeVisible
+                        D.Visible = shouldBeVisible
                     end
                 end)
             end
@@ -6678,9 +6685,9 @@ local aa = {
                 ai(
                 "Frame",
                 {
-                    AnchorPoint = Vector2.new(0, 0.5),
-                    Position = UDim2.new(0, -6, 0.5, 0),
-                    Size = UDim2.fromOffset(12, 12),
+                    AnchorPoint = Vector2.new(0.5, 0.5),
+                    Position = UDim2.new(0, 0, 0.5, 0),
+                    Size = UDim2.fromOffset(16, 16),
                     BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                     ZIndex = 3,
                 },
@@ -6784,7 +6791,7 @@ local aa = {
             end
             function h.SetValue(p, s)
                 p.Value = g:Round(math.clamp(s, h.Min, h.Max), h.Rounding)
-                k.Position = UDim2.new((p.Value - h.Min) / (h.Max - h.Min), -10, 0.5, 0)
+                k.Position = UDim2.new((p.Value - h.Min) / (h.Max - h.Min), 0, 0.5, 0)
                 m.Size = UDim2.fromScale((p.Value - h.Min) / (h.Max - h.Min), 1)
                 n.Text = tostring(p.Value)
                 g:SafeCallback(h.Callback, p.Value)
