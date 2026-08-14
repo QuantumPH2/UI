@@ -2996,12 +2996,20 @@ local aa = {
         end
         function o.GetCurrentTabPos(p)
             local sel = o.Tabs[o.SelectedTab]
-            if not sel or not sel.Frame then return nil end
+            if not sel or not sel.Frame then return 17 end
             local tlc = o.Window and o.Window.TabListContainer
-            if not tlc then return nil end
-            local tabY = sel.Frame.AbsolutePosition.Y - tlc.AbsolutePosition.Y
+            if not tlc then return 17 end
             local tabH = sel.Frame.AbsoluteSize.Y
-            return tabY + (tabH > 0 and (tabH / 2) or 17)
+            if tabH <= 0 then tabH = 34 end
+            if sel.Frame.AbsolutePosition.Y > 0 and tlc.AbsolutePosition.Y > 0 then
+                local tabY = sel.Frame.AbsolutePosition.Y - tlc.AbsolutePosition.Y
+                return tabY + (tabH / 2)
+            end
+            local ord = sel.Frame.LayoutOrder
+            if ord and ord < 0 then
+                return (math.abs(ord) - 1000000) * 38 + 17
+            end
+            return (o.SelectedTab - 1) * 38 + 17
         end
         function o.ReapplyFavoriteOrder(p)
             local im = e(h).InterfaceManager
@@ -3580,33 +3588,49 @@ local aa = {
                 if r.SelectorFrame then r.SelectorFrame.Visible = true end
                 r.SelectorPosMotor:setGoal(l(tabPos, {frequency = 8}))
             end
-            task.spawn(
-                function()
-                    r.ContainerBackMotor:setGoal(l(1, {frequency = 12}))
-                    r.ContainerPosMotor:setGoal(l(104, {frequency = 12}))
-                    task.wait(0.12)
+            if r.UpdateSelector then
+                r.UpdateSelector(false)
+            end
+            local curCont = o.Containers[tabIdx]
+            local twSvc = game:GetService("TweenService")
+            task.spawn(function()
+                if r.ContainerHolder and r.ContainerHolder:IsA("CanvasGroup") then
+                    local tOut = TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+                    local tIn = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+                    local tabW = r.TabWidth or 160
+                    local tw1 = twSvc:Create(r.ContainerHolder, tOut, {
+                        GroupTransparency = 0.85,
+                        Position = UDim2.fromOffset(tabW + 26, 95)
+                    })
+                    tw1:Play()
+                    task.wait(0.08)
+
                     for u, v in next, o.Containers do
                         v.Visible = false
                     end
-                    for _, _con in next, o.Containers do
-                        for _, _vf in ipairs(_con:GetDescendants()) do
-                            if _vf:IsA("VideoFrame") then
-                                pcall(function() _vf.Volume = 0 end)
-                            end
-                        end
+                    if curCont then
+                        curCont.Visible = true
+                        curCont.CanvasPosition = Vector2.new(0, 0)
                     end
-                    if o.Containers[tabIdx] then
-                        o.Containers[tabIdx].Visible = true
-                        for _, _vf in ipairs(o.Containers[tabIdx]:GetDescendants()) do
-                            if _vf:IsA("VideoFrame") then
-                                pcall(function() _vf.Volume = _vf:GetAttribute("BFVolume") or 0 end)
-                            end
-                        end
+
+                    r.ContainerHolder.Position = UDim2.fromOffset(tabW + 26, 95)
+                    local tw2 = twSvc:Create(r.ContainerHolder, tIn, {
+                        GroupTransparency = 0,
+                        Position = UDim2.fromOffset(tabW + 26, 90)
+                    })
+                    tw2:Play()
+                else
+                    for u, v in next, o.Containers do
+                        v.Visible = false
                     end
-                    r.ContainerPosMotor:setGoal(l(90, {frequency = 7}))
-                    r.ContainerBackMotor:setGoal(l(0, {frequency = 9}))
+                    if curCont then
+                        curCont.Visible = true
+                        curCont.CanvasPosition = Vector2.new(0, 0)
+                    end
+                    r.ContainerPosMotor:setGoal(l(90, {frequency = 10}))
+                    r.ContainerBackMotor:setGoal(l(0, {frequency = 10}))
                 end
-            )
+            end)
         end
         return o
     end,
@@ -4101,11 +4125,11 @@ local aa = {
                 s(
                     "Frame",
                     {
-                        Size = UDim2.fromOffset(4, 0),
+                        Size = UDim2.fromOffset(4, 16),
                         BackgroundColor3 = Color3.fromRGB(76, 194, 255),
                         Position = UDim2.fromOffset(0, 17),
                         AnchorPoint = Vector2.new(0, 0.5),
-                        ZIndex = 1,
+                        ZIndex = 5,
                         ThemeTag = {BackgroundColor3 = "Accent"}
                     },
                     {s("UICorner", {CornerRadius = UDim.new(0, 6)})}
@@ -4436,7 +4460,7 @@ local aa = {
                     AutomaticSize = Enum.AutomaticSize.Y,
                     BackgroundTransparency = 1,
                 },
-                {_tabListLayout, D}
+                {_tabListLayout}
             )
             v.TabHolder =
                 s(
@@ -4454,7 +4478,7 @@ local aa = {
                     ScrollingDirection = Enum.ScrollingDirection.Y,
                     ClipsDescendants = true,
                 },
-                {v.TabListContainer, s("UICorner", {CornerRadius = UDim.new(0, 12)})}
+                {D, v.TabListContainer, s("UICorner", {CornerRadius = UDim.new(0, 12)})}
             )
             table.insert(sidebarChildren, v.TabHolder)
 
@@ -4586,14 +4610,16 @@ local aa = {
                     ThemeTag = {TextColor3 = "Text"}
                 }
             )
+            v.TabWidth = t.TabWidth
             v.ContainerHolder =
                 s(
-                "Frame",
+                "CanvasGroup",
                 {
                     Size = UDim2.new(1, -t.TabWidth - 32, 1, -102),
                     Position = UDim2.fromOffset(t.TabWidth + 26, 90),
                     BackgroundTransparency = 1,
-                    ClipsDescendants = true,
+                    GroupTransparency = 0,
+                    BorderSizePixel = 0,
                 }
             )
             v.ContainerClip =
@@ -4678,9 +4704,9 @@ local aa = {
                 l.GroupMotor.new {X = v.Size.X.Offset, Y = v.Size.Y.Offset},
                 l.GroupMotor.new {X = v.Position.X.Offset, Y = v.Position.Y.Offset}
             v.SelectorPosMotor = l.SingleMotor.new(17)
-            v.SelectorSizeMotor = l.SingleMotor.new(0)
+            v.SelectorSizeMotor = l.SingleMotor.new(16)
             v.ContainerBackMotor = l.SingleMotor.new(0)
-            v.ContainerPosMotor = l.SingleMotor.new(94)
+            v.ContainerPosMotor = l.SingleMotor.new(90)
             G:onStep(
                 function(I)
                     v.Root.Size = UDim2.new(0, I.X, 0, I.Y)
@@ -4691,14 +4717,16 @@ local aa = {
                     v.Root.Position = UDim2.new(0, I.X, 0, I.Y)
                 end
             )
-            local I, J = 0, 0
+            local I, J = 17, tick()
             v.SelectorPosMotor:onStep(
                 function(K)
                     D.Position = UDim2.new(0, 0, 0, K)
                     local L = tick()
-                    local M = L - J
+                    local M = math.max(L - J, 0.001)
                     if I ~= nil then
-                        v.SelectorSizeMotor:setGoal(q((math.abs(K - I) / (M * 60)) + 16))
+                        local spd = math.abs(K - I) / (M * 60)
+                        local sz = math.clamp(spd + 16, 16, 28)
+                        v.SelectorSizeMotor:setGoal(q(sz, {frequency = 8}))
                         I = K
                     end
                     J = L
@@ -4706,7 +4734,7 @@ local aa = {
             )
             v.SelectorSizeMotor:onStep(
                 function(K)
-                    D.Size = UDim2.new(0, 4, 0, K)
+                    D.Size = UDim2.new(0, 4, 0, math.max(K, 4))
                 end
             )
             v.ContainerBackMotor:onStep(
@@ -4915,27 +4943,37 @@ local aa = {
             v.TabsAPI = N
             v.SelectorFrame = D
             D.Visible = false
-            local function updateSelector()
+            local function updateSelector(instant)
                 if not v.Root or not v.Root.Parent then return end
                 local sel = N.Tabs[N.SelectedTab]
-                local shouldBeVisible = sel and sel.Frame and sel.Frame.Visible and sel.Frame.Parent ~= nil
-                if shouldBeVisible and sel and sel.Frame and v.TabHolder then
-                    local tabY = sel.Frame.AbsolutePosition.Y
-                    local holderY = v.TabHolder.AbsolutePosition.Y
-                    local holderH = v.TabHolder.AbsoluteSize.Y
+                if not sel or not sel.Frame or not sel.Frame.Parent then
+                    D.Visible = false
+                    return
+                end
+                local tabY = sel.Frame.AbsolutePosition.Y
+                local holderY = v.TabHolder.AbsolutePosition.Y
+                local holderH = v.TabHolder.AbsoluteSize.Y
+                local shouldBeVisible = true
+                if holderH > 0 and holderY > 0 and tabY > 0 then
                     if tabY + sel.Frame.AbsoluteSize.Y < holderY or tabY > holderY + holderH then
                         shouldBeVisible = false
                     end
-                    local pos = N:GetCurrentTabPos()
-                    if pos and v.SelectorPosMotor then
-                        pcall(function() v.SelectorPosMotor:setGoal(l(pos, {frequency = 8})) end)
+                end
+                D.Visible = shouldBeVisible
+                local pos = N:GetCurrentTabPos()
+                if pos and v.SelectorPosMotor then
+                    if instant then
+                        pcall(function() v.SelectorPosMotor:setGoal(r(pos)) end)
+                    else
+                        pcall(function() v.SelectorPosMotor:setGoal(q(pos, {frequency = 8})) end)
                     end
                 end
-                if D then D.Visible = shouldBeVisible end
             end
             v.UpdateSelector = updateSelector
             if v.TabHolder then
-                v.TabHolder:GetPropertyChangedSignal("CanvasPosition"):Connect(updateSelector)
+                v.TabHolder:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
+                    updateSelector(false)
+                end)
             end
             function v.AddTab(O, P)
                 local _tab = N:New(P.Title, P.Icon, v.TabListContainer)
@@ -4943,6 +4981,7 @@ local aa = {
                 if N.TabCount == 1 then
                     task.defer(function()
                         N:SelectTab(1)
+                        if v.UpdateSelector then v.UpdateSelector(true) end
                     end)
                 end
                 return _tab
