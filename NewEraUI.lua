@@ -14,6 +14,7 @@ local a, b = {
                     {50, "ModuleScript", {"Emerald"}},
                     {49, "ModuleScript", {"HUT RI 81"}},
                     {52, "ModuleScript", {"Blood Red"}},
+                    {53, "ModuleScript", {"Rimuru Tempest"}},
                 }
             },
             {
@@ -1125,8 +1126,10 @@ local aa = {
                     thmKey = "Emerald"
                 elseif lower:find("blood") or lower:find("red") then
                     thmKey = "Blood Red"
+                elseif lower:find("rimuru") or lower:find("tempest") then
+                    thmKey = "Rimuru Tempest"
                 else
-                    thmKey = "HUT RI 81"
+                    thmKey = "Emerald"
                 end
             end
             if x.Window and (thms[thmKey] or type(thmKey) == "table") then
@@ -5097,6 +5100,8 @@ local aa = {
                     t = i["Emerald"]
                 elseif lower:find("blood") or lower:find("red") then
                     t = i["Blood Red"]
+                elseif lower:find("rimuru") or lower:find("tempest") then
+                    t = i["Rimuru Tempest"]
                 end
             end
             if t and t[m] ~= nil then
@@ -5123,7 +5128,7 @@ local aa = {
             if _noInheritFallbackKeys[m] then
                 return false
             end
-            local fallbacks = { "Emerald", "HUT RI 81", "Blood Red" }
+            local fallbacks = { "Emerald", "HUT RI 81", "Blood Red", "Rimuru Tempest" }
             for _, fbName in ipairs(fallbacks) do
                 local fb = i[fbName]
                 if fb and fb[m] ~= nil then
@@ -9155,7 +9160,7 @@ local aa = {
     [47] = function() --[[ Themes ]]
         local af = {
             Names = {
-                "Emerald", "HUT RI 81", "Blood Red"
+                "Emerald", "HUT RI 81", "Blood Red", "Rimuru Tempest"
             }
         }
 
@@ -9356,6 +9361,84 @@ local aa = {
                 ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 10, 20))
             }),
         }
+
+        af["Rimuru Tempest"] = {
+            Name = "Rimuru Tempest",
+            Accent = Color3.fromRGB(0, 195, 255),
+            Background = "rbxassetid://133652514200333",
+            BackgroundTransparency = 0.15,
+            AcrylicMain = Color3.fromRGB(8, 18, 32),
+            AcrylicBorder = Color3.fromRGB(0, 140, 230),
+            AcrylicGradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 210, 255)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 50, 130))
+            }),
+            AcrylicNoise = 1,
+            TitleBarLine = Color3.fromRGB(0, 140, 230),
+            Tab = Color3.fromRGB(10, 24, 42),
+            Element = Color3.fromRGB(12, 28, 48),
+            ElementBorder = Color3.fromRGB(0, 120, 210),
+            InElementBorder = Color3.fromRGB(0, 160, 255),
+            ElementTransparency = 0.4,
+            ToggleSlider = Color3.fromRGB(16, 36, 60),
+            ToggleToggled = Color3.fromRGB(0, 195, 255),
+            SliderRail = Color3.fromRGB(16, 36, 60),
+            DropdownFrame = Color3.fromRGB(10, 24, 42),
+            DropdownHolder = Color3.fromRGB(8, 18, 32),
+            DropdownBorder = Color3.fromRGB(0, 140, 230),
+            DropdownOption = Color3.fromRGB(14, 32, 54),
+            Keybind = Color3.fromRGB(14, 32, 54),
+            Input = Color3.fromRGB(10, 24, 42),
+            InputFocused = Color3.fromRGB(4, 12, 22),
+            InputIndicator = Color3.fromRGB(0, 195, 255),
+            InputIndicatorFocus = Color3.fromRGB(60, 225, 255),
+            Dialog = Color3.fromRGB(10, 24, 42),
+            DialogHolder = Color3.fromRGB(8, 18, 32),
+            DialogHolderLine = Color3.fromRGB(0, 140, 230),
+            DialogButton = Color3.fromRGB(12, 28, 48),
+            DialogButtonBorder = Color3.fromRGB(0, 160, 255),
+            DialogBorder = Color3.fromRGB(0, 140, 230),
+            DialogInput = Color3.fromRGB(14, 32, 54),
+            DialogInputLine = Color3.fromRGB(0, 195, 255),
+            Text = Color3.fromRGB(255, 255, 255),
+            SubText = Color3.fromRGB(200, 230, 255),
+            Hover = Color3.fromRGB(0, 140, 230),
+            HoverChange = 0.05,
+            ShineEnabled = true,
+            Shine = {
+                Speed = 0.5,
+                RotationSpeed = 25,
+                ColorSequence = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 210, 255)),
+                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(10, 60, 150)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 210, 255))
+                })
+            },
+            StrokeShine = true,
+            StrokeDark = Color3.fromRGB(0, 110, 200),
+            ButtonGradient = {
+                Background = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 210, 255)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 60, 150))
+                }),
+                Stroke = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 230, 255)),
+                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 140, 230))
+                })
+            },
+            ThemeAccentColors = { Color3.fromRGB(0, 195, 255) },
+            TitleGradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 235, 255)),
+                ColorSequenceKeypoint.new(0.45, Color3.fromRGB(35, 160, 255)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 80, 200))
+            }),
+            SubTitleGradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(175, 240, 255)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 170, 255)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(5, 60, 160))
+            }),
+        }
         -- Aliases
         af["BloodRed"] = af["Blood Red"]
         af["blood red"] = af["Blood Red"]
@@ -9364,6 +9447,10 @@ local aa = {
         af["Hut RI 81"] = af["HUT RI 81"]
         af["hut ri 81"] = af["HUT RI 81"]
         af["emerald"] = af["Emerald"]
+        af["Rimuru"] = af["Rimuru Tempest"]
+        af["rimuru"] = af["Rimuru Tempest"]
+        af["rimuru tempest"] = af["Rimuru Tempest"]
+        af["rimurutempest"] = af["Rimuru Tempest"]
 
         return af
     end,
