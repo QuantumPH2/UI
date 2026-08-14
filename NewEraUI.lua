@@ -495,16 +495,6 @@ local aa = {
             pcall(function() w = label.TextBounds.X end)
             if w <= 0 then
                 pcall(function()
-                    local params = Instance.new("GetTextBoundsParams")
-                    params.Text = label.Text
-                    params.Size = label.TextSize
-                    params.Font = label.FontFace
-                    params.Width = math.huge
-                    w = _TS_svc:GetTextBoundsAsync(params).X
-                end)
-            end
-            if w <= 0 then
-                pcall(function()
                     local p2 = _TS_svc:GetTextSize(
                         label.Text, label.TextSize, label.Font, Vector2.new(9999, 9999))
                     w = p2.X
@@ -522,8 +512,8 @@ local aa = {
             local function tryStart(attempt)
                 attempt = attempt or 0
                 if not label or not label.Parent then
-                    if attempt < 30 then
-                        task.delay(0.2, function() tryStart(attempt + 1) end)
+                    if attempt < 10 then
+                        task.delay(0.3, function() tryStart(attempt + 1) end)
                     end
                     return
                 end
@@ -533,12 +523,12 @@ local aa = {
                     avail = label.AbsoluteSize.X
                     if avail <= 0 then avail = parent and parent.AbsoluteSize.X or 0 end
                 end
-                if avail <= 2 and attempt < 30 then
-                    task.delay(0.2, function() tryStart(attempt + 1) end); return
+                if avail <= 2 and attempt < 10 then
+                    task.delay(0.3, function() tryStart(attempt + 1) end); return
                 end
                 local fullW = _measureText(label)
-                if fullW <= 0 and attempt < 30 then
-                    task.delay(0.2, function() tryStart(attempt + 1) end); return
+                if fullW <= 0 and attempt < 10 then
+                    task.delay(0.3, function() tryStart(attempt + 1) end); return
                 end
                 if fullW <= avail + 2 then
                     label.TextTruncate = Enum.TextTruncate.AtEnd
@@ -576,12 +566,15 @@ local aa = {
                 _marqueeConns[animKey] = conn
             end
             task.delay(0.5, function() tryStart(0) end)
-            local _resizeConn
+            local _debounceTimer = nil
             pcall(function()
-                _resizeConn = label:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-                    if not _marqueeConns[animKey] then
-                        tryStart(0)
-                    end
+                label:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+                    if _debounceTimer then task.cancel(_debounceTimer) end
+                    _debounceTimer = task.delay(0.25, function()
+                        if not _marqueeConns[animKey] then
+                            tryStart(0)
+                        end
+                    end)
                 end)
             end)
         end
@@ -1999,7 +1992,7 @@ local aa = {
                     local s = k()
                     local t, u = r.AbsoluteSize - Vector2.new(s, s), r.AbsolutePosition + Vector2.new(s / 2, s / 2)
                     p(t, u)
-                    task.spawn(q)
+                    q()
                 end, function()
                     local r = game:GetService "Workspace".CurrentCamera
                     if not r then
@@ -2008,7 +2001,7 @@ local aa = {
                     table.insert(m, r:GetPropertyChangedSignal "CFrame":Connect(q))
                     table.insert(m, r:GetPropertyChangedSignal "ViewportSize":Connect(q))
                     table.insert(m, r:GetPropertyChangedSignal "FieldOfView":Connect(q))
-                    task.spawn(q)
+                    q()
                 end
             o.Destroying:Connect(
                 function()
@@ -2050,21 +2043,6 @@ local aa = {
             n.SetVisibility = function(r)
                 p.Transparency = r and 0.98 or 1
             end
-            local _lastPos, _lastSize
-            local _hbConn = game:GetService("RunService").Heartbeat:Connect(function()
-                if q and q.Parent and q.Visible then
-                    local curPos, curSize = q.AbsolutePosition, q.AbsoluteSize
-                    if curPos ~= _lastPos or curSize ~= _lastSize then
-                        _lastPos, _lastSize = curPos, curSize
-                        o(q)
-                    end
-                end
-            end)
-            q.AncestryChanged:Connect(function()
-                if not q.Parent and _hbConn then
-                    _hbConn:Disconnect()
-                end
-            end)
             n.Frame = q
             n.Model = p
             return n
@@ -2455,16 +2433,13 @@ local aa = {
         local _marqueeResizeConns = setmetatable({}, {__mode = "k"})
         local function _measureText(label)
             local w = 0
-            pcall(function()
-                local params = Instance.new("GetTextBoundsParams")
-                params.Text = label.Text
-                params.Size = label.TextSize
-                params.Font = label.FontFace
-                params.Width = math.huge
-                w = _TS_svc:GetTextBoundsAsync(params).X
-            end)
+            pcall(function() w = label.TextBounds.X end)
             if w <= 0 then
-                pcall(function() w = label.TextBounds.X end)
+                pcall(function()
+                    local p2 = _TS_svc:GetTextSize(
+                        label.Text, label.TextSize, label.Font, Vector2.new(9999, 9999))
+                    w = p2.X
+                end)
             end
             return w
         end
@@ -2479,15 +2454,15 @@ local aa = {
                 if not label or not label.Parent then return end
                 local avail = label.AbsoluteSize.X
                 if avail <= 2 then
-                    if attempt < 30 then
-                        task.delay(0.2, function() tryStart(attempt + 1) end)
+                    if attempt < 10 then
+                        task.delay(0.3, function() tryStart(attempt + 1) end)
                     end
                     return
                 end
                 local fullW = _measureText(label)
                 if fullW <= 0 then
-                    if attempt < 30 then
-                        task.delay(0.2, function() tryStart(attempt + 1) end)
+                    if attempt < 10 then
+                        task.delay(0.3, function() tryStart(attempt + 1) end)
                     end
                     return
                 end
@@ -2534,13 +2509,17 @@ local aa = {
             task.delay(0.3, function() tryStart(0) end)
             if not _marqueeResizeConns[label] then
                 local rconn
+                local _dbTimer = nil
                 rconn = label:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
                     if not label or not label.Parent then
                         rconn:Disconnect()
                         _marqueeResizeConns[label] = nil
                         return
                     end
-                    _startMarquee(label)
+                    if _dbTimer then task.cancel(_dbTimer) end
+                    _dbTimer = task.delay(0.25, function()
+                        _startMarquee(label)
+                    end)
                 end)
                 _marqueeResizeConns[label] = rconn
             end
@@ -3499,43 +3478,70 @@ local aa = {
 
                 local isOpen2 = false
                 local innerH2 = 0
-                local dur2 = 0.2
-                local ti2 = TweenInfo.new(dur2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+                local dur2 = 0.16
+                local ti2 = TweenInfo.new(dur2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+                local _animating = false
+                local _curTween1, _curTween2 = nil, nil
+
                 local function applyArrow2(open, anim)
                     local rot = open and 180 or 0
                     if anim then
-                        ts2:Create(arrowIco2, TweenInfo.new(dur2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Rotation = rot}):Play()
+                        ts2:Create(arrowIco2, TweenInfo.new(dur2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Rotation = rot}):Play()
                     else
                         arrowIco2.Rotation = rot
                     end
                 end
+
                 local function setOpen2(open, anim)
                     isOpen2 = open
                     applyArrow2(open, anim)
+                    if _curTween1 then pcall(function() _curTween1:Cancel() end) end
+                    if _curTween2 then pcall(function() _curTween2:Cancel() end) end
+                    
+                    local curContentH = innerLayout2.AbsoluteContentSize.Y
+                    if curContentH > 0 then innerH2 = curContentH end
                     local ch = open and (innerH2 + pad2 * 2) or 0
                     local oh = 26 + ch + sectionMargin
+
+                    if open then
+                        contentBg2.Visible = true
+                    end
+
                     if anim then
-                        ts2:Create(contentBg2, ti2, {Size = UDim2.new(1, 0, 0, ch)}):Play()
-                        ts2:Create(outerWrap2, ti2, {Size = UDim2.new(1, 0, 0, oh)}):Play()
+                        _animating = true
+                        _curTween1 = ts2:Create(contentBg2, ti2, {Size = UDim2.new(1, 0, 0, ch)})
+                        _curTween2 = ts2:Create(outerWrap2, ti2, {Size = UDim2.new(1, 0, 0, oh)})
+                        _curTween1:Play()
+                        _curTween2:Play()
+                        task.delay(dur2 + 0.02, function()
+                            _animating = false
+                            if not isOpen2 then
+                                contentBg2.Visible = false
+                            end
+                        end)
                     else
                         contentBg2.Size = UDim2.new(1, 0, 0, ch)
                         outerWrap2.Size = UDim2.new(1, 0, 0, oh)
+                        contentBg2.Visible = open
                     end
                 end
+
                 innerLayout2:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
                     local newH = innerLayout2.AbsoluteContentSize.Y
-                    innerH2 = newH
-                    if isOpen2 then
+                    if newH > 0 then innerH2 = newH end
+                    if isOpen2 and not _animating then
                         local ch = newH + pad2 * 2
                         contentBg2.Size = UDim2.new(1, 0, 0, ch)
                         outerWrap2.Size = UDim2.new(1, 0, 0, 26 + ch + sectionMargin)
                     end
                 end)
+
                 header2.MouseButton1Click:Connect(function()
                     setOpen2(not isOpen2, true)
                 end)
                 task.defer(function()
-                    innerH2 = innerLayout2.AbsoluteContentSize.Y
+                    local initH = innerLayout2.AbsoluteContentSize.Y
+                    if initH > 0 then innerH2 = initH end
                     setOpen2(startOpen2, false)
                 end)
                 local colMod2 = {
@@ -4781,6 +4787,7 @@ local aa = {
                         local N, O = M.Position - B, v.Size
                         local P = Vector3.new(O.X.Offset, O.Y.Offset, 0) + Vector3.new(1, 1, 0) * N
                         local Q = Vector2.new(math.clamp(P.X, 470, 2048), math.clamp(P.Y, 380, 2048))
+                        v.Root.Size = UDim2.fromOffset(Q.X, Q.Y)
                         G:setGoal {X = l.Instant.new(Q.X), Y = l.Instant.new(Q.Y)}
                     end
                 end
@@ -4795,7 +4802,8 @@ local aa = {
                         end
                         if A then
                             A = false
-                            v.Size = UDim2.fromOffset(G:getValue().X, G:getValue().Y)
+                            v.Size = v.Root.Size
+                            G:setGoal {X = l.Instant.new(v.Size.X.Offset), Y = l.Instant.new(v.Size.Y.Offset)}
                         end
                     end
                 end
@@ -4907,34 +4915,27 @@ local aa = {
             v.TabsAPI = N
             v.SelectorFrame = D
             D.Visible = false
-            do
-                local _rs3 = game:GetService("RunService")
-                local _selConn
-                local _lastSelState = nil
-                _selConn = _rs3.Heartbeat:Connect(function()
-                    if not v.Root or not v.Root.Parent then
-                        _selConn:Disconnect()
-                        return
+            local function updateSelector()
+                if not v.Root or not v.Root.Parent then return end
+                local sel = N.Tabs[N.SelectedTab]
+                local shouldBeVisible = sel and sel.Frame and sel.Frame.Visible and sel.Frame.Parent ~= nil
+                if shouldBeVisible and sel and sel.Frame and v.TabHolder then
+                    local tabY = sel.Frame.AbsolutePosition.Y
+                    local holderY = v.TabHolder.AbsolutePosition.Y
+                    local holderH = v.TabHolder.AbsoluteSize.Y
+                    if tabY + sel.Frame.AbsoluteSize.Y < holderY or tabY > holderY + holderH then
+                        shouldBeVisible = false
                     end
-                    local sel = N.Tabs[N.SelectedTab]
-                    local shouldBeVisible = sel and sel.Frame and sel.Frame.Visible and sel.Frame.Parent ~= nil
-                    if shouldBeVisible and sel and sel.Frame and v.TabHolder then
-                        local tabY = sel.Frame.AbsolutePosition.Y
-                        local holderY = v.TabHolder.AbsolutePosition.Y
-                        local holderH = v.TabHolder.AbsoluteSize.Y
-                        if tabY + sel.Frame.AbsoluteSize.Y < holderY or tabY > holderY + holderH then
-                            shouldBeVisible = false
-                        end
-                        local pos = N:GetCurrentTabPos()
-                        if pos and v.SelectorPosMotor then
-                            pcall(function() v.SelectorPosMotor:setGoal(l(pos, {frequency = 8})) end)
-                        end
+                    local pos = N:GetCurrentTabPos()
+                    if pos and v.SelectorPosMotor then
+                        pcall(function() v.SelectorPosMotor:setGoal(l(pos, {frequency = 8})) end)
                     end
-                    if shouldBeVisible ~= _lastSelState then
-                        _lastSelState = shouldBeVisible
-                        if D then D.Visible = shouldBeVisible end
-                    end
-                end)
+                end
+                if D then D.Visible = shouldBeVisible end
+            end
+            v.UpdateSelector = updateSelector
+            if v.TabHolder then
+                v.TabHolder:GetPropertyChangedSignal("CanvasPosition"):Connect(updateSelector)
             end
             function v.AddTab(O, P)
                 local _tab = N:New(P.Title, P.Icon, v.TabListContainer)
@@ -9632,6 +9633,7 @@ local aa = {
             }),
         }
         af["BloodRed"] = af["Blood Red"]
+        af["HUT RI"] = af["HUT RI 81"]
 
         return af
     end,
