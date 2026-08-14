@@ -2859,12 +2859,8 @@ local aa = {
             end
             r.Holder =
                 n("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 200), Parent = o.Holder}, {r.Root})
-            local s = i.GroupMotor.new {Scale = 1, Offset = 60}
-            s:onStep(
-                function(t)
-                    r.Root.Position = UDim2.new(t.Scale, t.Offset, 0, 0)
-                end
-            )
+            local twSvc = game:GetService("TweenService")
+            r.Root.Position = UDim2.new(1, 40, 0, 0)
             j.AddSignal(
                 r.CloseButton.MouseButton1Click,
                 function()
@@ -2872,23 +2868,29 @@ local aa = {
                 end
             )
             function r.Open(t)
-                local u = r.LabelHolder.AbsoluteSize.Y
-                r.Holder.Size = UDim2.new(1, 0, 0, 58 + u)
-                s:setGoal {Scale = l(0, {frequency = 5}), Offset = l(0, {frequency = 5})}
+                task.defer(function()
+                    local u = r.LabelHolder.AbsoluteSize.Y
+                    if u <= 0 then u = 24 end
+                    r.Holder.Size = UDim2.new(1, 0, 0, 58 + u)
+                    local tw = twSvc:Create(r.Root, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                        Position = UDim2.new(0, 0, 0, 0)
+                    })
+                    tw:Play()
+                end)
             end
             function r.Close(t)
                 if not r.Closed then
                     r.Closed = true
-                    task.spawn(
-                        function()
-                            s:setGoal {Scale = l(1, {frequency = 5}), Offset = l(60, {frequency = 5})}
-                            task.wait(0.4)
-                            if e(h).UseAcrylic then
-                                r.AcrylicPaint.Model:Destroy()
-                            end
-                            r.Holder:Destroy()
+                    local tw = twSvc:Create(r.Root, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+                        Position = UDim2.new(1, 40, 0, 0)
+                    })
+                    tw:Play()
+                    task.delay(0.28, function()
+                        if e(h).UseAcrylic then
+                            pcall(function() r.AcrylicPaint.Model:Destroy() end)
                         end
-                    )
+                        pcall(function() r.Holder:Destroy() end)
+                    end)
                 end
             end
             r:Open()
@@ -2945,7 +2947,7 @@ local aa = {
                 end)
             end
             local titleOffX = iconKey and 22 or 0
-            table.insert(secHeaderChildren, j("TextLabel", {RichText=true,Text=k,TextTransparency=0,FontFace=Font.new("rbxassetid://12187365364",Enum.FontWeight.SemiBold,Enum.FontStyle.Normal),TextSize=18,TextXAlignment="Left",TextYAlignment="Center",Size=UDim2.new(1,-16,0,18),Position=UDim2.fromOffset(titleOffX,2),ThemeTag={TextColor3="Text"}}))
+            table.insert(secHeaderChildren, j("TextLabel", {RichText=true,Text=k,TextTransparency=0,FontFace=Font.new("rbxasset://fonts/families/GothamSSm.json",Enum.FontWeight.SemiBold,Enum.FontStyle.Normal),TextSize=18,TextXAlignment="Left",TextYAlignment="Center",Size=UDim2.new(1,-16,0,18),Position=UDim2.fromOffset(titleOffX,2),ThemeTag={TextColor3="Text"}}))
             table.insert(secHeaderChildren, m.Container)
             m.Root =
                 j(
@@ -3429,7 +3431,7 @@ local aa = {
                     RichText = true,
                     Text = title2,
                     TextTransparency = 0,
-                    FontFace = Font.fromEnum(Enum.Font.GothamBold),
+                    FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
                     TextSize = 15,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Center,
@@ -3487,15 +3489,15 @@ local aa = {
 
                 local isOpen2 = false
                 local innerH2 = 0
-                local dur2 = 0.16
-                local ti2 = TweenInfo.new(dur2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+                local dur2 = 0.22
+                local ti2 = TweenInfo.new(dur2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
                 local _animating = false
                 local _curTween1, _curTween2 = nil, nil
 
                 local function applyArrow2(open, anim)
                     local rot = open and 180 or 0
                     if anim then
-                        ts2:Create(arrowIco2, TweenInfo.new(dur2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Rotation = rot}):Play()
+                        ts2:Create(arrowIco2, TweenInfo.new(dur2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Rotation = rot}):Play()
                     else
                         arrowIco2.Rotation = rot
                     end
@@ -3595,41 +3597,20 @@ local aa = {
             local curCont = o.Containers[tabIdx]
             local twSvc = game:GetService("TweenService")
             task.spawn(function()
-                if r.ContainerHolder and r.ContainerHolder:IsA("CanvasGroup") then
-                    local tOut = TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-                    local tIn = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+                for u, v in next, o.Containers do
+                    v.Visible = false
+                end
+                if curCont then
+                    curCont.Visible = true
+                    curCont.CanvasPosition = Vector2.new(0, 0)
+                end
+                if r.ContainerHolder then
                     local tabW = r.TabWidth or 160
-                    local tw1 = twSvc:Create(r.ContainerHolder, tOut, {
-                        GroupTransparency = 0.85,
-                        Position = UDim2.fromOffset(tabW + 26, 95)
-                    })
-                    tw1:Play()
-                    task.wait(0.08)
-
-                    for u, v in next, o.Containers do
-                        v.Visible = false
-                    end
-                    if curCont then
-                        curCont.Visible = true
-                        curCont.CanvasPosition = Vector2.new(0, 0)
-                    end
-
-                    r.ContainerHolder.Position = UDim2.fromOffset(tabW + 26, 95)
-                    local tw2 = twSvc:Create(r.ContainerHolder, tIn, {
-                        GroupTransparency = 0,
+                    r.ContainerHolder.Position = UDim2.fromOffset(tabW + 26, 94)
+                    local tw = twSvc:Create(r.ContainerHolder, TweenInfo.new(0.18, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                         Position = UDim2.fromOffset(tabW + 26, 90)
                     })
-                    tw2:Play()
-                else
-                    for u, v in next, o.Containers do
-                        v.Visible = false
-                    end
-                    if curCont then
-                        curCont.Visible = true
-                        curCont.CanvasPosition = Vector2.new(0, 0)
-                    end
-                    r.ContainerPosMotor:setGoal(l(90, {frequency = 10}))
-                    r.ContainerBackMotor:setGoal(l(0, {frequency = 10}))
+                    tw:Play()
                 end
             end)
         end
@@ -4612,7 +4593,7 @@ local aa = {
                     RichText = true,
                     Text = "Tab",
                     TextTransparency = 0,
-                    FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
+                    FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
                     TextSize = 28,
                     TextXAlignment = "Left",
                     TextYAlignment = "Center",
@@ -4625,13 +4606,13 @@ local aa = {
             v.TabWidth = t.TabWidth
             v.ContainerHolder =
                 s(
-                "CanvasGroup",
+                "Frame",
                 {
                     Size = UDim2.new(1, -t.TabWidth - 32, 1, -102),
                     Position = UDim2.fromOffset(t.TabWidth + 26, 90),
                     BackgroundTransparency = 1,
-                    GroupTransparency = 0,
                     BorderSizePixel = 0,
+                    ClipsDescendants = true,
                 }
             )
             v.ContainerClip =
