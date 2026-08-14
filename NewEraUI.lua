@@ -15,6 +15,8 @@ local a, b = {
                     {49, "ModuleScript", {"HUT RI 81"}},
                     {52, "ModuleScript", {"Blood Red"}},
                     {53, "ModuleScript", {"Rimuru Tempest"}},
+                    {54, "ModuleScript", {"Solar"}},
+                    {55, "ModuleScript", {"Neko"}},
                 }
             },
             {
@@ -1128,6 +1130,10 @@ local aa = {
                     thmKey = "Blood Red"
                 elseif lower:find("rimuru") or lower:find("tempest") then
                     thmKey = "Rimuru Tempest"
+                elseif lower:find("solar") then
+                    thmKey = "Solar"
+                elseif lower:find("neko") or lower:find("pink") then
+                    thmKey = "Neko"
                 else
                     thmKey = "Emerald"
                 end
@@ -5102,6 +5108,10 @@ local aa = {
                     t = i["Blood Red"]
                 elseif lower:find("rimuru") or lower:find("tempest") then
                     t = i["Rimuru Tempest"]
+                elseif lower:find("solar") then
+                    t = i["Solar"]
+                elseif lower:find("neko") or lower:find("pink") then
+                    t = i["Neko"]
                 end
             end
             if t and t[m] ~= nil then
@@ -5128,7 +5138,7 @@ local aa = {
             if _noInheritFallbackKeys[m] then
                 return false
             end
-            local fallbacks = { "Emerald", "HUT RI 81", "Blood Red", "Rimuru Tempest" }
+            local fallbacks = { "Emerald", "HUT RI 81", "Blood Red", "Rimuru Tempest", "Solar", "Neko" }
             for _, fbName in ipairs(fallbacks) do
                 local fb = i[fbName]
                 if fb and fb[m] ~= nil then
@@ -9160,7 +9170,7 @@ local aa = {
     [47] = function() --[[ Themes ]]
         local af = {
             Names = {
-                "Emerald", "HUT RI 81", "Blood Red", "Rimuru Tempest"
+                "Emerald", "HUT RI 81", "Blood Red", "Rimuru Tempest", "Solar", "Neko"
             }
         }
 
@@ -9439,6 +9449,162 @@ local aa = {
                 ColorSequenceKeypoint.new(1, Color3.fromRGB(5, 60, 160))
             }),
         }
+
+        af["Solar"] = {
+            Name = "Solar",
+            Accent = Color3.fromRGB(255, 200, 20),
+            Background = "rbxassetid://83078153431765",
+            BackgroundTransparency = 0.15,
+            AcrylicMain = Color3.fromRGB(24, 18, 6),
+            AcrylicBorder = Color3.fromRGB(180, 130, 20),
+            AcrylicGradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 215, 30)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 50, 5))
+            }),
+            AcrylicNoise = 1,
+            TitleBarLine = Color3.fromRGB(180, 130, 20),
+            Tab = Color3.fromRGB(32, 24, 8),
+            Element = Color3.fromRGB(26, 20, 7),
+            ElementBorder = Color3.fromRGB(150, 110, 15),
+            InElementBorder = Color3.fromRGB(200, 150, 25),
+            ElementTransparency = 0.4,
+            ToggleSlider = Color3.fromRGB(45, 34, 10),
+            ToggleToggled = Color3.fromRGB(255, 200, 20),
+            SliderRail = Color3.fromRGB(45, 34, 10),
+            DropdownFrame = Color3.fromRGB(32, 24, 8),
+            DropdownHolder = Color3.fromRGB(20, 15, 5),
+            DropdownBorder = Color3.fromRGB(180, 130, 20),
+            DropdownOption = Color3.fromRGB(38, 28, 9),
+            Keybind = Color3.fromRGB(38, 28, 9),
+            Input = Color3.fromRGB(30, 22, 7),
+            InputFocused = Color3.fromRGB(16, 12, 4),
+            InputIndicator = Color3.fromRGB(255, 200, 20),
+            InputIndicatorFocus = Color3.fromRGB(255, 235, 80),
+            Dialog = Color3.fromRGB(32, 24, 8),
+            DialogHolder = Color3.fromRGB(20, 15, 5),
+            DialogHolderLine = Color3.fromRGB(180, 130, 20),
+            DialogButton = Color3.fromRGB(26, 20, 7),
+            DialogButtonBorder = Color3.fromRGB(200, 150, 25),
+            DialogBorder = Color3.fromRGB(180, 130, 20),
+            DialogInput = Color3.fromRGB(38, 28, 9),
+            DialogInputLine = Color3.fromRGB(255, 200, 20),
+            Text = Color3.fromRGB(255, 255, 255),
+            SubText = Color3.fromRGB(245, 230, 195),
+            Hover = Color3.fromRGB(180, 130, 20),
+            HoverChange = 0.05,
+            ShineEnabled = true,
+            Shine = {
+                Speed = 0.5,
+                RotationSpeed = 25,
+                ColorSequence = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 230, 50)),
+                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(120, 80, 10)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 230, 50))
+                })
+            },
+            StrokeShine = true,
+            StrokeDark = Color3.fromRGB(150, 110, 15),
+            ButtonGradient = {
+                Background = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 215, 40)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 40, 5))
+                }),
+                Stroke = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 240, 80)),
+                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 150, 25))
+                })
+            },
+            ThemeAccentColors = { Color3.fromRGB(255, 200, 20) },
+            TitleGradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 245, 60)),
+                ColorSequenceKeypoint.new(0.45, Color3.fromRGB(255, 185, 25)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(190, 125, 10))
+            }),
+            SubTitleGradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 180)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 210, 40)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(160, 95, 5))
+            }),
+        }
+
+        af["Neko"] = {
+            Name = "Neko",
+            Accent = Color3.fromRGB(255, 105, 180),
+            Background = "rbxassetid://111901135222937",
+            BackgroundTransparency = 0.15,
+            AcrylicMain = Color3.fromRGB(28, 12, 22),
+            AcrylicBorder = Color3.fromRGB(230, 90, 165),
+            AcrylicGradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 110, 185)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(70, 20, 50))
+            }),
+            AcrylicNoise = 1,
+            TitleBarLine = Color3.fromRGB(230, 90, 165),
+            Tab = Color3.fromRGB(36, 15, 28),
+            Element = Color3.fromRGB(30, 14, 24),
+            ElementBorder = Color3.fromRGB(190, 70, 135),
+            InElementBorder = Color3.fromRGB(240, 110, 180),
+            ElementTransparency = 0.4,
+            ToggleSlider = Color3.fromRGB(50, 22, 40),
+            ToggleToggled = Color3.fromRGB(255, 105, 180),
+            SliderRail = Color3.fromRGB(50, 22, 40),
+            DropdownFrame = Color3.fromRGB(36, 15, 28),
+            DropdownHolder = Color3.fromRGB(24, 10, 18),
+            DropdownBorder = Color3.fromRGB(230, 90, 165),
+            DropdownOption = Color3.fromRGB(44, 18, 34),
+            Keybind = Color3.fromRGB(44, 18, 34),
+            Input = Color3.fromRGB(34, 14, 26),
+            InputFocused = Color3.fromRGB(18, 6, 14),
+            InputIndicator = Color3.fromRGB(255, 105, 180),
+            InputIndicatorFocus = Color3.fromRGB(255, 160, 215),
+            Dialog = Color3.fromRGB(36, 15, 28),
+            DialogHolder = Color3.fromRGB(24, 10, 18),
+            DialogHolderLine = Color3.fromRGB(230, 90, 165),
+            DialogButton = Color3.fromRGB(30, 14, 24),
+            DialogButtonBorder = Color3.fromRGB(240, 110, 180),
+            DialogBorder = Color3.fromRGB(230, 90, 165),
+            DialogInput = Color3.fromRGB(44, 18, 34),
+            DialogInputLine = Color3.fromRGB(255, 105, 180),
+            Text = Color3.fromRGB(255, 255, 255),
+            SubText = Color3.fromRGB(250, 215, 235),
+            Hover = Color3.fromRGB(230, 90, 165),
+            HoverChange = 0.05,
+            ShineEnabled = true,
+            Shine = {
+                Speed = 0.5,
+                RotationSpeed = 25,
+                ColorSequence = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 110, 185)),
+                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 235, 245)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 110, 185))
+                })
+            },
+            StrokeShine = true,
+            StrokeDark = Color3.fromRGB(190, 70, 135),
+            ButtonGradient = {
+                Background = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 110, 185)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(70, 20, 50))
+                }),
+                Stroke = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 140, 200)),
+                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(240, 110, 180))
+                })
+            },
+            ThemeAccentColors = { Color3.fromRGB(255, 105, 180) },
+            TitleGradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 90, 175)),
+                ColorSequenceKeypoint.new(0.45, Color3.fromRGB(255, 160, 215)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 235, 245))
+            }),
+            SubTitleGradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 240, 250)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 140, 200)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(225, 60, 145))
+            }),
+        }
         -- Aliases
         af["BloodRed"] = af["Blood Red"]
         af["blood red"] = af["Blood Red"]
@@ -9451,6 +9617,10 @@ local aa = {
         af["rimuru"] = af["Rimuru Tempest"]
         af["rimuru tempest"] = af["Rimuru Tempest"]
         af["rimurutempest"] = af["Rimuru Tempest"]
+        af["solar"] = af["Solar"]
+        af["neko"] = af["Neko"]
+        af["Pink"] = af["Neko"]
+        af["pink"] = af["Neko"]
 
         return af
     end,
