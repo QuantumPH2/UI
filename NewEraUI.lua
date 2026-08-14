@@ -11,17 +11,9 @@ local a, b = {
                 "ModuleScript",
                 {"Themes"},
                 {
-                    {49, "ModuleScript", {"Dark"}},
-                    {51, "ModuleScript", {"Light"}},
-                    {50, "ModuleScript", {"Darker"}},
+                    {50, "ModuleScript", {"Emerald"}},
+                    {49, "ModuleScript", {"HUT RI 81"}},
                     {52, "ModuleScript", {"Blood Red"}},
-                    {53, "ModuleScript", {"Neon"}},
-                    {48, "ModuleScript", {"Amethyst"}},
-                    {54, "ModuleScript", {"Ocean"}},
-                    {55, "ModuleScript", {"Midnight"}},
-                    {56, "ModuleScript", {"Sapphire"}},
-                    {57, "ModuleScript", {"Galaxy"}},
-                    {58, "ModuleScript", {"Cosmic"}},
                 }
             },
             {
@@ -57,21 +49,13 @@ local a, b = {
                         {"Flipper"},
                         {
                             {33, "ModuleScript", {"GroupMotor"}},
-                            {46, "ModuleScript", {"isMotor.spec"}},
                             {39, "ModuleScript", {"Signal"}},
-                            {40, "ModuleScript", {"Signal.spec"}},
                             {45, "ModuleScript", {"isMotor"}},
-                            {36, "ModuleScript", {"Instant.spec"}},
-                            {44, "ModuleScript", {"Spring.spec"}},
-                            {42, "ModuleScript", {"SingleMotor.spec"}},
-                            {38, "ModuleScript", {"Linear.spec"}},
                             {31, "ModuleScript", {"BaseMotor"}},
                             {43, "ModuleScript", {"Spring"}},
                             {35, "ModuleScript", {"Instant"}},
                             {37, "ModuleScript", {"Linear"}},
                             {41, "ModuleScript", {"SingleMotor"}},
-                            {34, "ModuleScript", {"GroupMotor.spec"}},
-                            {32, "ModuleScript", {"BaseMotor.spec"}}
                         }
                     }
                 }
@@ -123,27 +107,29 @@ do
         table.clear(_shineObjs)
         table.clear(_strokeObjs)
 
-        if not theme or not root or not getgenv().ShineEnabled or not theme.ShineEnabled or not theme.Shine then return end
+        if not theme or not root or getgenv().ShineEnabled ~= true or not theme.ShineEnabled or not theme.Shine then return end
         local ShineConfig   = theme.Shine
         local Speed         = ShineConfig.Speed         or 0.5
         local RotationSpeed = ShineConfig.RotationSpeed or 25
         local ColorSeq      = ShineConfig.ColorSequence
 
-        for _, obj in ipairs(root:GetDescendants()) do
-            if obj:IsA("UIGradient") then
-                table.insert(_shineObjs, obj)
-            elseif obj:IsA("UIStroke") and theme.StrokeShine then
-                table.insert(_strokeObjs, obj)
+        pcall(function()
+            for _, obj in ipairs(root:GetDescendants()) do
+                if obj:IsA("UIGradient") then
+                    table.insert(_shineObjs, obj)
+                elseif obj:IsA("UIStroke") and theme.StrokeShine then
+                    table.insert(_strokeObjs, obj)
+                end
             end
-        end
+        end)
 
         local from  = theme.StrokeDark or theme.AcrylicBorder
         local shine = theme.Accent
 
-        local conn = _RunService.RenderStepped:Connect(function(dt)
-            if not getgenv().ShineEnabled or (#_shineObjs == 0 and #_strokeObjs == 0) then return end
+        local conn = _RunService.Heartbeat:Connect(function(dt)
+            if getgenv().ShineEnabled ~= true or (#_shineObjs == 0 and #_strokeObjs == 0) then return end
             _accum = _accum + dt
-            if _accum < 0.033 then return end
+            if _accum < 0.05 then return end
             local step = _accum
             _accum = 0
 
@@ -177,19 +163,18 @@ do
     end
 end
 if not Animation then Animation = {Apply = function() end} end
-getgenv().ShineEnabled = getgenv().ShineEnabled == true and true or false
+getgenv().ShineEnabled = false
 getgenv().WindowTransparent = getgenv().WindowTransparent or false
 getgenv()._FluentProRefreshOpenDropdownShine = nil
 getgenv()._FluentProManagerDropdowns = {}
 getgenv().ButtonGradients = {
     Background = ColorSequence.new {
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(7, 42, 82)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(12, 76, 142)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(21, 97, 181))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(220, 20, 30)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(160, 16, 24))
     },
     Stroke = ColorSequence.new {
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 120, 200)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 40, 80))
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 40, 50)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 20, 30))
     }
 }
 
@@ -203,16 +188,35 @@ local aa = {
             game:GetService "UserInputService",
             game:GetService "TweenService",
             game:GetService "Workspace".CurrentCamera
-        local n, o = j:GetMouse(), d
+        local n, o = j and j:GetMouse() or nil, d
         local p, q, r, s = e(o.Creator), e(o.Elements), e(o.Acrylic), o.Components
-        local t, u, v = e(s.Notification), p.New, protectgui or (syn and syn.protect_gui) or function()
+        local t, u = e(s.Notification), p.New
+        local function safeProtect(gui)
+            pcall(function()
+                if protectgui then
+                    protectgui(gui)
+                elseif syn and syn.protect_gui then
+                    syn.protect_gui(gui)
                 end
-        local w = u("ScreenGui", {Parent = i:IsStudio() and j.PlayerGui or game:GetService "CoreGui"})
-        v(w)
-        local sw = u("ScreenGui", {Parent = i:IsStudio() and j.PlayerGui or game:GetService "CoreGui", DisplayOrder = 50, ZIndexBehavior = Enum.ZIndexBehavior.Sibling})
-        v(sw)
-        local nw = u("ScreenGui", {Parent = i:IsStudio() and j.PlayerGui or game:GetService "CoreGui", DisplayOrder = 999, ZIndexBehavior = Enum.ZIndexBehavior.Sibling})
-        v(nw)
+            end)
+        end
+        local function getGuiContainer()
+            local success, core = pcall(function() return game:GetService("CoreGui") end)
+            if success and core and not i:IsStudio() then
+                local ok, hui = pcall(gethui)
+                if ok and hui then return hui end
+                return core
+            end
+            local lp = j or game:GetService("Players").LocalPlayer
+            return (lp and lp:FindFirstChildOfClass("PlayerGui")) or (lp and lp:WaitForChild("PlayerGui", 3)) or core
+        end
+        local targetParent = getGuiContainer()
+        local w = u("ScreenGui", {Parent = targetParent, ResetOnSpawn = false})
+        safeProtect(w)
+        local sw = u("ScreenGui", {Parent = targetParent, ResetOnSpawn = false, DisplayOrder = 50, ZIndexBehavior = Enum.ZIndexBehavior.Sibling})
+        safeProtect(sw)
+        local nw = u("ScreenGui", {Parent = targetParent, ResetOnSpawn = false, DisplayOrder = 999, ZIndexBehavior = Enum.ZIndexBehavior.Sibling})
+        safeProtect(nw)
         t:Init(nw)
         local x = {
             Version = "1.4.0 Overhaul",
@@ -550,13 +554,13 @@ local aa = {
                         conn:Disconnect(); _marqueeConns[animKey] = nil; return
                     end
                     if phase == 0 then
-                        timer += dt; if timer >= pause then timer = 0; phase = 1 end
+                        timer = timer + dt; if timer >= pause then timer = 0; phase = 1 end
                     elseif phase == 1 then
                         local nxt = math.max(label.Position.X.Offset - speed * dt, -scrollDist)
                         label.Position = UDim2.new(baseXS, nxt, baseY.Scale, baseY.Offset)
                         if nxt <= -scrollDist then phase = 2; timer = 0 end
                     elseif phase == 2 then
-                        timer += dt; if timer >= pause then timer = 0; phase = 3 end
+                        timer = timer + dt; if timer >= pause then timer = 0; phase = 3 end
                     else
                         local nxt = math.min(label.Position.X.Offset + speed * dt, 0)
                         label.Position = UDim2.new(baseXS, nxt, baseY.Scale, baseY.Offset)
@@ -1013,7 +1017,7 @@ local aa = {
                     if inp.UserInputType == Enum.UserInputType.MouseWheel then
                         if not _posInViewport(_UIS:GetMouseLocation()) then return end
                         local zoom = inp.Position.Z * 2
-                        vp.Camera.CFrame += vp.Camera.CFrame.LookVector * zoom
+                        vp.Camera.CFrame = vp.Camera.CFrame + vp.Camera.CFrame.LookVector * zoom
                     end
                 end
             end)
@@ -1029,7 +1033,7 @@ local aa = {
                         local cur = (touches[1]-touches[2]).Magnitude
                         local d = (cur - _LastPinchDist)*0.03
                         _LastPinchDist = cur
-                        vp.Camera.CFrame += vp.Camera.CFrame.LookVector * d
+                        vp.Camera.CFrame = vp.Camera.CFrame + vp.Camera.CFrame.LookVector * d
                     elseif state == Enum.UserInputState.End or state == Enum.UserInputState.Cancel then
                         _Pinching = false
                     end
@@ -1088,7 +1092,7 @@ local aa = {
             x.MinimizeKey = D.MinimizeKey
             x.UseAcrylic = D.Acrylic
             if D.Acrylic then
-                r.init()
+                pcall(function() r.init() end)
             end
             local E =
                 e(s.Window) {
@@ -1110,10 +1114,25 @@ local aa = {
             return E
         end
         function x.SetTheme(C, D)
-            if x.Window and (table.find(x.Themes, D) or (type(D)=="string" and type(e(o.Themes)[D])=="table")) then
-                x.Theme = D
+            if not D then return end
+            local thmKey = D
+            local thms = e(o.Themes)
+            if not thms[thmKey] then
+                local lower = tostring(D):lower():gsub("[%s_%-]+", "")
+                if lower:find("hut") or lower:find("81") or lower:find("ri") then
+                    thmKey = "HUT RI 81"
+                elseif lower:find("emerald") then
+                    thmKey = "Emerald"
+                elseif lower:find("blood") or lower:find("red") then
+                    thmKey = "Blood Red"
+                else
+                    thmKey = "HUT RI 81"
+                end
+            end
+            if x.Window and (thms[thmKey] or type(thmKey) == "table") then
+                x.Theme = thmKey
                 p.UpdateTheme()
-                local thm = e(o.Themes)[D]
+                local thm = thms[thmKey]
                 if thm then
                     if thm.IconColor then
                         pcall(function()
@@ -1139,8 +1158,8 @@ local aa = {
         function x.Destroy(C)
             if x.Window then
                 x.Unloaded = true
-                if x.UseAcrylic then
-                    x.Window.AcrylicPaint.Model:Destroy()
+                if x.UseAcrylic and x.Window.AcrylicPaint and x.Window.AcrylicPaint.Model then
+                    pcall(function() x.Window.AcrylicPaint.Model:Destroy() end)
                 end
                 p.Disconnect()
                 if x._SBOverlayTeardowns then
@@ -1159,26 +1178,36 @@ local aa = {
                     pcall(function() x.ScrollGUI:Destroy() end)
                     x.ScrollGUI = nil
                 end
-                x.GUI:Destroy()
-                x.GUI = nil
+                if x.PopupGUI then
+                    pcall(function() x.PopupGUI:Destroy() end)
+                    x.PopupGUI = nil
+                end
+                if x.GUI then
+                    pcall(function() x.GUI:Destroy() end)
+                    x.GUI = nil
+                end
             end
         end
         function x.ToggleAcrylic(C, D)
             if x.Window then
                 if x.UseAcrylic then
                     x.Acrylic = D
-                    x.Window.AcrylicPaint.Model.Transparency = D and 0.98 or 1
+                    if x.Window.AcrylicPaint and x.Window.AcrylicPaint.Model then
+                        pcall(function() x.Window.AcrylicPaint.Model.Transparency = D and 0.98 or 1 end)
+                    end
                     if D then
-                        r.Enable()
+                        pcall(function() r.Enable() end)
                     else
-                        r.Disable()
+                        pcall(function() r.Disable() end)
                     end
                 end
             end
         end
         function x.ToggleTransparency(C, D)
-            if x.Window then
-                x.Window.AcrylicPaint.Frame.Background.BackgroundTransparency = D and 0.35 or 0
+            if x.Window and x.Window.AcrylicPaint and x.Window.AcrylicPaint.Frame and x.Window.AcrylicPaint.Frame.Background then
+                pcall(function()
+                    x.Window.AcrylicPaint.Frame.Background.BackgroundTransparency = D and 0.35 or 0
+                end)
             end
             getgenv().WindowTransparent = D and true or false
         end
@@ -1228,48 +1257,6 @@ local aa = {
         end
         function x.Notify(C, D)
             return t:New(parseNotifyError(D))
-        end
-
-
-        local rgbConn = nil
-        function x.StartRGBMode()
-            if rgbConn then rgbConn:Disconnect(); rgbConn = nil end
-            local hue = 0
-            rgbConn = game:GetService("RunService").RenderStepped:Connect(function(dt)
-                if x.Theme ~= "RGB" then rgbConn:Disconnect(); rgbConn = nil; return end
-                hue = (hue + dt * 0.10) % 1
-                local col = Color3.fromHSV(hue, 1, 1)
-                local col2 = Color3.fromHSV((hue + 0.15) % 1, 1, 1)
-                local col3 = Color3.fromHSV((hue + 0.30) % 1, 1, 1)
-                local thm = e(o.Themes)["RGB"]
-                if thm then
-                    thm.Accent=col; thm.AcrylicBorder=col; thm.InElementBorder=col
-                    thm.DropdownBorder=col; thm.DropdownFrame=col; thm.DropdownOption=col
-                    thm.Tab=col; thm.TitleBarLine=col
-                    thm.TitleGradient = ColorSequence.new({
-                        ColorSequenceKeypoint.new(0, col),
-                        ColorSequenceKeypoint.new(0.5, col2),
-                        ColorSequenceKeypoint.new(1, col3)
-                    })
-                    thm.SubTitleGradient = ColorSequence.new({
-                        ColorSequenceKeypoint.new(0, col3),
-                        ColorSequenceKeypoint.new(0.5, col2),
-                        ColorSequenceKeypoint.new(1, col)
-                    })
-                    p.UpdateTheme()
-                end
-            end)
-        end
-        function x.StopRGBMode()
-            if rgbConn then rgbConn:Disconnect(); rgbConn = nil end
-        end
-        local baseST = x.SetTheme
-        function x.SetTheme(C, D)
-            x.StopRGBMode()
-            baseST(C, D)
-            if D == "RGB" and x.Window and table.find(x.Themes, D) then
-                x:StartRGBMode()
-            end
         end
 
 
@@ -1397,7 +1384,7 @@ local aa = {
 
         local InterfaceManager = {}
         InterfaceManager.Folder = "FluentSettings"
-        InterfaceManager.Settings = { Theme="Blood Red", Acrylic=true, Transparency=true, Animated=true, MenuKeybind="LeftControl", Font="GothamSSm", DisableBG=false, Favorites={} }
+        InterfaceManager.Settings = { Theme="Emerald", Acrylic=false, Transparency=true, Animated=false, MenuKeybind="LeftControl", Font="GothamSSm", DisableBG=false, Favorites={} }
         function InterfaceManager:SetFolder(folder) self.Folder=folder; self:BuildFolderTree() end
         function InterfaceManager:SetLibrary(lib) self.Library=lib end
         function InterfaceManager:BuildFolderTree()
@@ -1923,41 +1910,51 @@ local aa = {
     function()
         local c, d, e, f, g = b(2)
         local h = {AcrylicBlur = e(d.AcrylicBlur), CreateAcrylic = e(d.CreateAcrylic), AcrylicPaint = e(d.AcrylicPaint)}
+        local i = nil
+        local j = {}
         function h.init()
-            local i = Instance.new "DepthOfFieldEffect"
-            i.FarIntensity = 0
-            i.InFocusRadius = 0.1
-            i.NearIntensity = 1
-            local j = {}
-            function h.Enable()
-                for k, l in pairs(j) do
-                    l.Enabled = false
+            pcall(function()
+                if not i then
+                    i = Instance.new "DepthOfFieldEffect"
+                    i.FarIntensity = 0
+                    i.InFocusRadius = 0.1
+                    i.NearIntensity = 1
                 end
-                i.Parent = game:GetService "Lighting"
-            end
-            function h.Disable()
-                for k, l in pairs(j) do
-                    l.Enabled = l.enabled
-                end
-                i.Parent = nil
-            end
-            local k = function()
                 local k = function(k)
-                    if k:IsA "DepthOfFieldEffect" then
+                    if k:IsA "DepthOfFieldEffect" and k ~= i then
                         j[k] = {enabled = k.Enabled}
                     end
                 end
-                for l, m in pairs(game:GetService "Lighting":GetChildren()) do
-                    k(m)
+                local lighting = game:GetService "Lighting"
+                if lighting then
+                    for _, m in pairs(lighting:GetChildren()) do
+                        k(m)
+                    end
                 end
-                if game:GetService "Workspace".CurrentCamera then
-                    for n, o in pairs(game:GetService "Workspace".CurrentCamera:GetChildren()) do
+                local cam = game:GetService "Workspace".CurrentCamera
+                if cam then
+                    for _, o in pairs(cam:GetChildren()) do
                         k(o)
                     end
                 end
-            end
-            k()
-            h.Enable()
+                h.Enable()
+            end)
+        end
+        function h.Enable()
+            pcall(function()
+                for k, l in pairs(j) do
+                    if k and k.Parent then l.Enabled = false end
+                end
+                if i then i.Parent = game:GetService "Lighting" end
+            end)
+        end
+        function h.Disable()
+            pcall(function()
+                for k, l in pairs(j) do
+                    if k and k.Parent then l.Enabled = l.enabled end
+                end
+                if i then i.Parent = nil end
+            end)
         end
         return h
     end,
@@ -1967,26 +1964,29 @@ local aa = {
         local l = function(l)
             local m = {}
             l = l or 0.001
-            local n, o = {topLeft = Vector2.new(), topRight = Vector2.new(), bottomRight = Vector2.new()}, i()
-            o.Parent = workspace
+            local n = {topLeft = Vector2.new(), topRight = Vector2.new(), bottomRight = Vector2.new()}
+            local o = nil
+            pcall(function()
+                o = i()
+                o.Parent = workspace
+            end)
             local p, q = function(p, q)
                     n.topLeft = q
                     n.topRight = q + Vector2.new(p.X, 0)
                     n.bottomRight = q + p
                 end, function()
-                    local p = game:GetService "Workspace".CurrentCamera
-                    if p then
-                        p = p.CFrame
-                    end
-                    local q = p
-                    if not q then
-                        q = CFrame.new()
-                    end
-                    local r, s, t, u = q, n.topLeft, n.topRight, n.bottomRight
-                    local v, w, x = j(s, l), j(t, l), j(u, l)
-                    local y, z = (w - v).Magnitude, (w - x).Magnitude
-                    o.CFrame = CFrame.fromMatrix((v + x) / 2, r.XVector, r.YVector, r.ZVector)
-                    o.Mesh.Scale = Vector3.new(y, z, 0)
+                    if not o or not o.Parent then return end
+                    pcall(function()
+                        local p = game:GetService "Workspace".CurrentCamera
+                        local q = p and p.CFrame or CFrame.new()
+                        local r, s, t, u = q, n.topLeft, n.topRight, n.bottomRight
+                        local v, w, x = j(s, l), j(t, l), j(u, l)
+                        local y, z = (w - v).Magnitude, (w - x).Magnitude
+                        o.CFrame = CFrame.fromMatrix((v + x) / 2, r.XVector, r.YVector, r.ZVector)
+                        if o:FindFirstChildOfClass("SpecialMesh") then
+                            o.Mesh.Scale = Vector3.new(y, z, 0)
+                        end
+                    end)
                 end
             local r, s = function(r)
                     local s = k()
@@ -1995,25 +1995,24 @@ local aa = {
                     q()
                 end, function()
                     local r = game:GetService "Workspace".CurrentCamera
-                    if not r then
-                        return
-                    end
-                    table.insert(m, r:GetPropertyChangedSignal "CFrame":Connect(q))
-                    table.insert(m, r:GetPropertyChangedSignal "ViewportSize":Connect(q))
-                    table.insert(m, r:GetPropertyChangedSignal "FieldOfView":Connect(q))
-                    q()
+                    if not r then return end
+                    pcall(function()
+                        table.insert(m, r:GetPropertyChangedSignal "CFrame":Connect(q))
+                        table.insert(m, r:GetPropertyChangedSignal "ViewportSize":Connect(q))
+                        table.insert(m, r:GetPropertyChangedSignal "FieldOfView":Connect(q))
+                        q()
+                    end)
                 end
-            o.Destroying:Connect(
-                function()
-                    for t, u in m do
-                        pcall(
-                            function()
-                                u:Disconnect()
-                            end
-                        )
+            if o then
+                o.Destroying:Connect(
+                    function()
+                        for _, u in ipairs(m) do
+                            pcall(function() u:Disconnect() end)
+                        end
+                        table.clear(m)
                     end
-                end
-            )
+                )
+            end
             s()
             return r, o
         end
@@ -2023,13 +2022,13 @@ local aa = {
             h.AddSignal(
                 q:GetPropertyChangedSignal "AbsolutePosition",
                 function()
-                    o(q)
+                    if o then o(q) end
                 end
             )
             h.AddSignal(
                 q:GetPropertyChangedSignal "AbsoluteSize",
                 function()
-                    o(q)
+                    if o then o(q) end
                 end
             )
             n.AddParent = function(r)
@@ -2041,7 +2040,9 @@ local aa = {
                 )
             end
             n.SetVisibility = function(r)
-                p.Transparency = r and 0.98 or 1
+                if p then
+                    pcall(function() p.Transparency = r and 0.98 or 1 end)
+                end
             end
             n.Frame = q
             n.Model = p
@@ -2486,14 +2487,14 @@ local aa = {
                         return
                     end
                     if phase == 0 then
-                        timer += dt
+                        timer = timer + dt
                         if timer >= pause then timer = 0; phase = 1 end
                     elseif phase == 1 then
                         local nxt = math.max(label.Position.X.Offset - speed * dt, -scrollDist)
                         label.Position = UDim2.new(baseXS, nxt, baseY.Scale, baseY.Offset)
                         if nxt <= -scrollDist then phase = 2; timer = 0 end
                     elseif phase == 2 then
-                        timer += dt
+                        timer = timer + dt
                         if timer >= pause then timer = 0; phase = 3 end
                     else
                         local nxt = math.min(label.Position.X.Offset + speed * dt, 0)
@@ -3884,7 +3885,8 @@ local aa = {
                                             TextSize = 16,
                                             TextXAlignment = "Left",
                                             TextYAlignment = "Center",
-                                            Size = UDim2.new(1, 0, 0, 20),
+                                            AutomaticSize = Enum.AutomaticSize.X,
+                                            Size = UDim2.new(0, 0, 0, 20),
                                             BackgroundTransparency = 1,
                                             LayoutOrder = 1,
                                             TextColor3 = Color3.fromRGB(255, 255, 255),
@@ -3892,11 +3894,6 @@ local aa = {
                                         {
                                             l("UIGradient", {
                                                 Rotation = 0,
-                                                Color = ColorSequence.new({
-                                                    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 180)),
-                                                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 200, 255)),
-                                                    ColorSequenceKeypoint.new(1, Color3.fromRGB(170, 110, 255))
-                                                }),
                                                 ThemeTag = { Color = "TitleGradient" }
                                             })
                                         }
@@ -3915,7 +3912,8 @@ local aa = {
                                             TextSize = 11,
                                             TextXAlignment = "Left",
                                             TextYAlignment = "Center",
-                                            Size = UDim2.new(1, 0, 0, 14),
+                                            AutomaticSize = Enum.AutomaticSize.X,
+                                            Size = UDim2.new(0, 0, 0, 14),
                                             BackgroundTransparency = 1,
                                             LayoutOrder = 2,
                                             TextColor3 = Color3.fromRGB(255, 255, 255),
@@ -3923,11 +3921,6 @@ local aa = {
                                         {
                                             l("UIGradient", {
                                                 Rotation = 0,
-                                                Color = ColorSequence.new({
-                                                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 140, 220)),
-                                                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(190, 130, 255)),
-                                                    ColorSequenceKeypoint.new(1, Color3.fromRGB(110, 210, 255))
-                                                }),
                                                 ThemeTag = { Color = "SubTitleGradient" }
                                             })
                                         }
@@ -4189,15 +4182,29 @@ local aa = {
 
             if t.UserInfoTop then
                 local lp = game:GetService("Players").LocalPlayer
-                local av = ""
-                pcall(function()
-                    av = game:GetService("Players"):GetUserThumbnailAsync(
-                        lp.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
-                end)
                 local h = 58
-                local realDisplayName = t.UserInfoTitle or lp.DisplayName
-                local realUsername    = t.UserInfoSubtitle or ("@"..lp.Name)
+                local realDisplayName = t.UserInfoTitle or (lp and lp.DisplayName) or "Player"
+                local realUsername    = t.UserInfoSubtitle or (lp and ("@"..lp.Name)) or "@Player"
                 local anonActive = false
+
+                local avatarImgTop = s("ImageLabel",{
+                    Size=UDim2.fromOffset(36,36),
+                    Position=UDim2.new(0,7,0.5,0), AnchorPoint=Vector2.new(0,0.5),
+                    BackgroundTransparency=0.5, Image="",
+                    ThemeTag={BackgroundColor3="Tab"},
+                },{mkCorner(18)})
+
+                if lp then
+                    task.spawn(function()
+                        pcall(function()
+                            local av = game:GetService("Players"):GetUserThumbnailAsync(
+                                lp.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+                            if avatarImgTop and avatarImgTop.Parent then
+                                avatarImgTop.Image = av
+                            end
+                        end)
+                    end)
+                end
 
                 local panel = s("Frame",{
                     Name="UserInfoTop",
@@ -4208,12 +4215,7 @@ local aa = {
                     ThemeTag={BackgroundColor3="Element"},
                 },{
                     mkCorner(8), mkStroke(0.55),
-                    s("ImageLabel",{
-                        Size=UDim2.fromOffset(36,36),
-                        Position=UDim2.new(0,7,0.5,0), AnchorPoint=Vector2.new(0,0.5),
-                        BackgroundTransparency=0.5, Image=av,
-                        ThemeTag={BackgroundColor3="Tab"},
-                    },{mkCorner(18)}),
+                    avatarImgTop,
                     s("TextLabel",{
                         Name="DisplayName",
                         FontFace=Font.new("rbxasset://fonts/families/GothamSSm.json",Enum.FontWeight.SemiBold),
@@ -4342,16 +4344,31 @@ local aa = {
 
             if t.UserInfo then
                 local lp2 = game:GetService("Players").LocalPlayer
-                local av2 = ""
-                pcall(function()
-                    av2 = game:GetService("Players"):GetUserThumbnailAsync(
-                        lp2.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
-                end)
                 local h2 = 54
                 botOffset = h2 + 4
-                local realDN2 = t.UserInfoTitle or t.UserInfoTitleBottom or lp2.DisplayName
-                local realUN2 = t.UserInfoSubtitle or t.UserInfoSubtitleBottom or ("@"..lp2.Name)
+                local realDN2 = t.UserInfoTitle or t.UserInfoTitleBottom or (lp2 and lp2.DisplayName) or "Player"
+                local realUN2 = t.UserInfoSubtitle or t.UserInfoSubtitleBottom or (lp2 and ("@"..lp2.Name)) or "@Player"
                 local anonActive2 = false
+
+                local avatarImgBot = s("ImageLabel",{
+                    Size=UDim2.fromOffset(34,34),
+                    Position=UDim2.new(0,7,0.5,0), AnchorPoint=Vector2.new(0,0.5),
+                    BackgroundTransparency=0.5, Image="",
+                    ThemeTag={BackgroundColor3="Tab"},
+                },{mkCorner(17)})
+
+                if lp2 then
+                    task.spawn(function()
+                        pcall(function()
+                            local av2 = game:GetService("Players"):GetUserThumbnailAsync(
+                                lp2.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+                            if avatarImgBot and avatarImgBot.Parent then
+                                avatarImgBot.Image = av2
+                            end
+                        end)
+                    end)
+                end
+
                 local bot = s("Frame",{
                     Name="UserInfo",
                     Size=UDim2.new(1,0,0,h2),
@@ -4363,12 +4380,7 @@ local aa = {
                     mkCorner(8), mkStroke(0.55),
                     s("Frame",{Size=UDim2.new(1,-10,0,1),Position=UDim2.new(0,5,0,0),
                         BackgroundTransparency=0.7,ThemeTag={BackgroundColor3="TitleBarLine"}}),
-                    s("ImageLabel",{
-                        Size=UDim2.fromOffset(34,34),
-                        Position=UDim2.new(0,7,0.5,0), AnchorPoint=Vector2.new(0,0.5),
-                        BackgroundTransparency=0.5, Image=av2,
-                        ThemeTag={BackgroundColor3="Tab"},
-                    },{mkCorner(17)}),
+                    avatarImgBot,
                     s("TextLabel",{
                         Name="DisplayName",
                         FontFace=Font.new("rbxasset://fonts/families/GothamSSm.json",Enum.FontWeight.SemiBold),
@@ -5094,7 +5106,18 @@ local aa = {
         end
         local _noInheritFallbackKeys = {ShineEnabled = true, StrokeShine = true}
         function k.GetThemeProperty(m)
-            local t = i[e(h).Theme]
+            local currentThemeName = e(h).Theme
+            local t = i[currentThemeName]
+            if not t then
+                local lower = tostring(currentThemeName):lower():gsub("[%s_%-]+", "")
+                if lower:find("hut") or lower:find("81") or lower:find("ri") then
+                    t = i["HUT RI 81"]
+                elseif lower:find("emerald") then
+                    t = i["Emerald"]
+                elseif lower:find("blood") or lower:find("red") then
+                    t = i["Blood Red"]
+                end
+            end
             if t and t[m] ~= nil then
                 return t[m]
             end
@@ -5119,7 +5142,7 @@ local aa = {
             if _noInheritFallbackKeys[m] then
                 return false
             end
-            local fallbacks = { "HUT RI 81", "Emerald", "Blood Red" }
+            local fallbacks = { "Emerald", "HUT RI 81", "Blood Red" }
             for _, fbName in ipairs(fallbacks) do
                 local fb = i[fbName]
                 if fb and fb[m] ~= nil then
@@ -5139,6 +5162,8 @@ local aa = {
                             end)
                         end
                     end
+                else
+                    k.Registry[m] = nil
                 end
             end
             for o, p in next, k.TransparencyMotors do
@@ -5152,7 +5177,9 @@ local aa = {
             local thm = i[e(h).Theme]
             local x = getgenv().Fluent
             if x and x.Window and x.Window.AcrylicPaint then
-                if Animation and Animation.Apply then Animation.Apply(thm, x.Window.AcrylicPaint.Frame) end
+                if getgenv().ShineEnabled == true and Animation and Animation.Apply then
+                    Animation.Apply(thm, x.Window.AcrylicPaint.Frame)
+                end
                 task.defer(function()
                     if getgenv()._FluentProRefreshOpenDropdownShine then
                         getgenv()._FluentProRefreshOpenDropdownShine()
@@ -5194,15 +5221,27 @@ local aa = {
             end
         end
         function k.AddThemeObject(m, n)
-            local o = #k.Registry + 1
-            local p = {Object = m, Properties = n, Idx = o}
-            k.Registry[m] = p
-            k.UpdateTheme()
+            k.Registry[m] = {Object = m, Properties = n}
+            for propName, themeKey in next, n do
+                local val = k.GetThemeProperty(themeKey)
+                if val ~= nil then
+                    pcall(function() m[propName] = val end)
+                end
+            end
             return m
         end
         function k.OverrideTag(m, n)
-            k.Registry[m].Properties = n
-            k.UpdateTheme()
+            if k.Registry[m] then
+                k.Registry[m].Properties = n
+            else
+                k.Registry[m] = {Object = m, Properties = n}
+            end
+            for propName, themeKey in next, n do
+                local val = k.GetThemeProperty(themeKey)
+                if val ~= nil then
+                    pcall(function() m[propName] = val end)
+                end
+            end
         end
         function k.New(m, n, o)
             local p = Instance.new(m)
@@ -5823,41 +5862,64 @@ local aa = {
         local function _applyDropShine(state, root, elementAnimated)
             _clearDropShine(state)
             state._shineConns = {}
-            if not theme or not root or not getgenv().ShineEnabled or not theme.ShineEnabled or not theme.Shine then return end
-            local objs = root:GetDescendants()
-            for _, obj in ipairs(objs) do
-                if obj:IsA("UIGradient") then
-                    local conn
-                    conn = _RS_dd.RenderStepped:Connect(function(dt)
-                        local shineCfg = c.GetThemeProperty("Shine")
-                        if not shineCfg then return end
-                        local Speed = shineCfg.Speed or 0.5
-                        local RotationSpeed = shineCfg.RotationSpeed or 25
-                        local ColorSeq = shineCfg.ColorSequence
-                        local t = (obj:GetAttribute("_t") or 0) + dt * Speed
+            if getgenv().ShineEnabled ~= true or not root then return end
+            local shineCfg = c.GetThemeProperty("Shine")
+            if not shineCfg then return end
+            local Speed = shineCfg.Speed or 0.5
+            local RotationSpeed = shineCfg.RotationSpeed or 25
+            local ColorSeq = shineCfg.ColorSequence
+            local strokeDark = c.GetThemeProperty("StrokeDark") or c.GetThemeProperty("AcrylicBorder")
+            local accent = c.GetThemeProperty("Accent")
+            local strokeShine = c.GetThemeProperty("StrokeShine")
+
+            local grads = {}
+            local strokes = {}
+            pcall(function()
+                for _, obj in ipairs(root:GetDescendants()) do
+                    if obj:IsA("UIGradient") then
+                        table.insert(grads, obj)
+                    elseif obj:IsA("UIStroke") and strokeShine then
+                        table.insert(strokes, obj)
+                    end
+                end
+            end)
+
+            if #grads == 0 and #strokes == 0 then return end
+            local accum = 0
+            local conn = _RS_dd.Heartbeat:Connect(function(dt)
+                if getgenv().ShineEnabled ~= true or (#grads == 0 and #strokes == 0) then return end
+                accum = accum + dt
+                if accum < 0.05 then return end
+                local step = accum
+                accum = 0
+
+                for i = #grads, 1, -1 do
+                    local obj = grads[i]
+                    if obj and obj.Parent then
+                        local t = (obj:GetAttribute("_t") or 0) + step * Speed
                         obj:SetAttribute("_t", t)
                         obj.Rotation = (t * RotationSpeed) % 360
                         if ColorSeq then obj.Color = ColorSeq end
-                    end)
-                    table.insert(state._shineConns, conn)
+                    else
+                        table.remove(grads, i)
+                    end
                 end
-                if obj:IsA("UIStroke") then
-                    local conn
-                    conn = _RS_dd.RenderStepped:Connect(function(dt)
-                        local shineCfg = c.GetThemeProperty("Shine")
-                        local Speed = (shineCfg and shineCfg.Speed) or 0.5
-                        local strokeDark = c.GetThemeProperty("StrokeDark") or c.GetThemeProperty("AcrylicBorder")
-                        local accent = c.GetThemeProperty("Accent")
-                        local t = (obj:GetAttribute("_t") or 0) + dt * Speed
+
+                for i = #strokes, 1, -1 do
+                    local obj = strokes[i]
+                    if obj and obj.Parent then
+                        local t = (obj:GetAttribute("_t") or 0) + step * Speed
                         obj:SetAttribute("_t", t)
+                        obj.Thickness = 2
                         if strokeDark and accent then
-                            obj.Thickness = 2
                             obj.Color = strokeDark:Lerp(accent, (math.sin(t) + 1) / 2)
                         end
-                    end)
-                    table.insert(state._shineConns, conn)
+                    else
+                        table.remove(strokes, i)
+                    end
                 end
-            end
+            end)
+            table.insert(state._shineConns, conn)
         end
         g.__index = g
         g.__type = "Dropdown"
@@ -8836,46 +8898,8 @@ local aa = {
         end
         return ai
     end,
-    [32] = function() --[[ Module32 ]]
-        local aa, ab, ac, ad, ae = b(32)
-        return function()
-            local af, ag = game:GetService "RunService", ac(ab.Parent.BaseMotor)
-            describe(
-                "connection management",
-                function()
-                    local ah = ag.new()
-                    it(
-                        "should hook up connections on :start()",
-                        function()
-                            ah:start()
-                            expect(typeof(ah._connection)).to.equal "RBXScriptConnection"
-                        end
-                    )
-                    it(
-                        "should remove connections on :stop() or :destroy()",
-                        function()
-                            ah:stop()
-                            expect(ah._connection).to.equal(nil)
-                        end
-                    )
-                end
-            )
-            it(
-                "should call :step() with deltaTime",
-                function()
-                    local ah, ai = (ag.new())
-                    function ah.step(aj, ...)
-                        ai = {...}
-                        ah:stop()
-                    end
-                    ah:start()
-                    local aj = af.RenderStepped:Wait()
-                    af.RenderStepped:Wait()
-                    expect(ai).to.be.ok()
-                    expect(ai[1]).to.equal(aj)
-                end
-            )
-        end
+    [32] = function()
+        return function() end
     end,
     [33] = function() --[[ GroupMotor ]]
         local aa, ab, ac, ad, ae = b(33)
@@ -8962,74 +8986,8 @@ local aa = {
         end
         return ai
     end,
-    [34] = function() --[[ Module34 ]]
-        local aa, ab, ac, ad, ae = b(34)
-        return function()
-            local af, ag, ah = ac(ab.Parent.GroupMotor), ac(ab.Parent.Instant), ac(ab.Parent.Spring)
-            it(
-                "should complete when all child motors are complete",
-                function()
-                    local ai = af.new({A = 1, B = 2}, false)
-                    expect(ai._complete).to.equal(true)
-                    ai:setGoal {A = ag.new(3), B = ah.new(4, {frequency = 7.5, dampingRatio = 1})}
-                    expect(ai._complete).to.equal(false)
-                    ai:step(1.6666666666666665E-2)
-                    expect(ai._complete).to.equal(false)
-                    for aj = 1, 30 do
-                        ai:step(1.6666666666666665E-2)
-                    end
-                    expect(ai._complete).to.equal(true)
-                end
-            )
-            it(
-                "should start when the goal is set",
-                function()
-                    local ai, aj = af.new({A = 0}, false), false
-                    ai:onStart(
-                        function()
-                            aj = not aj
-                        end
-                    )
-                    ai:setGoal {A = ag.new(1)}
-                    expect(aj).to.equal(true)
-                    ai:setGoal {A = ag.new(1)}
-                    expect(aj).to.equal(false)
-                end
-            )
-            it(
-                "should properly return all values",
-                function()
-                    local ai = af.new({A = 1, B = 2}, false)
-                    local aj = ai:getValue()
-                    expect(aj.A).to.equal(1)
-                    expect(aj.B).to.equal(2)
-                end
-            )
-            it(
-                "should error when a goal is given to GroupMotor.new",
-                function()
-                    local ai =
-                        pcall(
-                        function()
-                            af.new(ag.new(0))
-                        end
-                    )
-                    expect(ai).to.equal(false)
-                end
-            )
-            it(
-                [[should error when a single goal is provided to GroupMotor:step]],
-                function()
-                    local ai =
-                        pcall(
-                        function()
-                            af.new {a = 1}:setGoal(ag.new(0))
-                        end
-                    )
-                    expect(ai).to.equal(false)
-                end
-            )
-        end
+    [34] = function()
+        return function() end
     end,
     [35] = function() --[[ Instant ]]
         local aa, ab, ac, ad, ae = b(35)
@@ -9043,20 +9001,8 @@ local aa = {
         end
         return af
     end,
-    [36] = function() --[[ Module36 ]]
-        local aa, ab, ac, ad, ae = b(36)
-        return function()
-            local af = ac(ab.Parent.Instant)
-            it(
-                "should return a completed state with the provided value",
-                function()
-                    local ag = af.new(1.23)
-                    local ah = ag:step(0.1, {value = 0, complete = false})
-                    expect(ah.complete).to.equal(true)
-                    expect(ah.value).to.equal(1.23)
-                end
-            )
-        end
+    [36] = function()
+        return function() end
     end,
     [37] = function() --[[ Linear ]]
         local aa, ab, ac, ad, ae = b(37)
@@ -9080,71 +9026,8 @@ local aa = {
         end
         return af
     end,
-    [38] = function() --[[ Module38 ]]
-        local aa, ab, ac, ad, ae = b(38)
-        return function()
-            local af, ag = ac(ab.Parent.SingleMotor), ac(ab.Parent.Linear)
-            describe(
-                "completed state",
-                function()
-                    local ah, ai = af.new(0, false), ag.new(1, {velocity = 1})
-                    ah:setGoal(ai)
-                    for aj = 1, 60 do
-                        ah:step(1.6666666666666665E-2)
-                    end
-                    it(
-                        "should complete",
-                        function()
-                            expect(ah._state.complete).to.equal(true)
-                        end
-                    )
-                    it(
-                        "should be exactly the goal value when completed",
-                        function()
-                            expect(ah._state.value).to.equal(1)
-                        end
-                    )
-                end
-            )
-            describe(
-                "uncompleted state",
-                function()
-                    local ah, ai = af.new(0, false), ag.new(1, {velocity = 1})
-                    ah:setGoal(ai)
-                    for aj = 1, 59 do
-                        ah:step(1.6666666666666665E-2)
-                    end
-                    it(
-                        "should be uncomplete",
-                        function()
-                            expect(ah._state.complete).to.equal(false)
-                        end
-                    )
-                end
-            )
-            describe(
-                "negative velocity",
-                function()
-                    local ah, ai = af.new(1, false), ag.new(0, {velocity = 1})
-                    ah:setGoal(ai)
-                    for aj = 1, 60 do
-                        ah:step(1.6666666666666665E-2)
-                    end
-                    it(
-                        "should complete",
-                        function()
-                            expect(ah._state.complete).to.equal(true)
-                        end
-                    )
-                    it(
-                        "should be exactly the goal value when completed",
-                        function()
-                            expect(ah._state.value).to.equal(0)
-                        end
-                    )
-                end
-            )
-        end
+    [38] = function()
+        return function() end
     end,
     [39] = function() --[[ Signal ]]
         local aa, ab, ac, ad, ae = b(39)
@@ -9189,59 +9072,8 @@ local aa = {
         end
         return ag
     end,
-    [40] = function() --[[ Module40 ]]
-        local aa, ab, ac, ad, ae = b(40)
-        return function()
-            local af = ac(ab.Parent.Signal)
-            it(
-                "should invoke all connections, instantly",
-                function()
-                    local ag, ah, aj = (af.new())
-                    ag:connect(
-                        function(c)
-                            ah = c
-                        end
-                    )
-                    ag:connect(
-                        function(c)
-                            aj = c
-                        end
-                    )
-                    ag:fire "hello"
-                    expect(ah).to.equal "hello"
-                    expect(aj).to.equal "hello"
-                end
-            )
-            it(
-                "should return values when :wait() is called",
-                function()
-                    local ag = af.new()
-                    spawn(
-                        function()
-                            ag:fire(123, "hello")
-                        end
-                    )
-                    local ah, aj = ag:wait()
-                    expect(ah).to.equal(123)
-                    expect(aj).to.equal "hello"
-                end
-            )
-            it(
-                "should properly handle disconnections",
-                function()
-                    local ag, ah = af.new(), false
-                    local aj =
-                        ag:connect(
-                        function()
-                            ah = true
-                        end
-                    )
-                    aj:disconnect()
-                    ag:fire()
-                    expect(ah).to.equal(false)
-                end
-            )
-        end
+    [40] = function()
+        return function() end
     end,
     [41] = function() --[[ SingleMotor ]]
         local aa, ab, ac, ad, ae = b(41)
@@ -9292,50 +9124,8 @@ local aa = {
         end
         return ag
     end,
-    [42] = function() --[[ Module42 ]]
-        local aa, ab, ac, ad, ae = b(42)
-        return function()
-            local af, ag = ac(ab.Parent.SingleMotor), ac(ab.Parent.Instant)
-            it(
-                "should assign new state on step",
-                function()
-                    local ah = af.new(0, false)
-                    ah:setGoal(ag.new(5))
-                    ah:step(1.6666666666666665E-2)
-                    expect(ah._state.complete).to.equal(true)
-                    expect(ah._state.value).to.equal(5)
-                end
-            )
-            it(
-                [[should invoke onComplete listeners when the goal is completed]],
-                function()
-                    local ah, aj = af.new(0, false), false
-                    ah:onComplete(
-                        function()
-                            aj = true
-                        end
-                    )
-                    ah:setGoal(ag.new(5))
-                    ah:step(1.6666666666666665E-2)
-                    expect(aj).to.equal(true)
-                end
-            )
-            it(
-                "should start when the goal is set",
-                function()
-                    local ah, aj = af.new(0, false), false
-                    ah:onStart(
-                        function()
-                            aj = not aj
-                        end
-                    )
-                    ah:setGoal(ag.new(5))
-                    expect(aj).to.equal(true)
-                    ah:setGoal(ag.new(5))
-                    expect(aj).to.equal(false)
-                end
-            )
-        end
+    [42] = function()
+        return function() end
     end,
     [43] = function() --[[ Spring ]]
         local aa, ab, ac, ad, ae = b(43)
@@ -9387,44 +9177,8 @@ local aa = {
         end
         return aj
     end,
-    [44] = function() --[[ Module44 ]]
-        local aa, ab, ac, ad, ae = b(44)
-        return function()
-            local af, ag = ac(ab.Parent.SingleMotor), ac(ab.Parent.Spring)
-            describe(
-                "completed state",
-                function()
-                    local ah, aj = af.new(0, false), ag.new(1, {frequency = 2, dampingRatio = 0.75})
-                    ah:setGoal(aj)
-                    for c = 1, 100 do
-                        ah:step(1.6666666666666665E-2)
-                    end
-                    it(
-                        "should complete",
-                        function()
-                            expect(ah._state.complete).to.equal(true)
-                        end
-                    )
-                    it(
-                        "should be exactly the goal value when completed",
-                        function()
-                            expect(ah._state.value).to.equal(1)
-                        end
-                    )
-                end
-            )
-            it(
-                "should inherit velocity",
-                function()
-                    local ah = af.new(0, false)
-                    ah._state = {complete = false, value = 0, velocity = -5}
-                    local aj = ag.new(1, {frequency = 2, dampingRatio = 1})
-                    ah:setGoal(aj)
-                    ah:step(1.6666666666666665E-2)
-                    expect(ah._state.velocity < 0).to.equal(true)
-                end
-            )
-        end
+    [44] = function()
+        return function() end
     end,
     [45] = function() --[[ isMotor ]]
         local aa, ab, ac, ad, ae = b(45)
@@ -9438,40 +9192,74 @@ local aa = {
         end
         return af
     end,
-    [46] = function() --[[ Module46 ]]
-        local aa, ab, ac, ad, ae = b(46)
-        return function()
-            local af, ag, ah = ac(ab.Parent.isMotor), ac(ab.Parent.SingleMotor), ac(ab.Parent.GroupMotor)
-            local aj, c = ag.new(0), ah.new {}
-            it(
-                "should properly detect motors",
-                function()
-                    expect(af(aj)).to.equal(true)
-                    expect(af(c)).to.equal(true)
-                end
-            )
-            it(
-                "shouldn't detect things that aren't motors",
-                function()
-                    expect(af {}).to.equal(false)
-                end
-            )
-            it(
-                "should return the proper motor type",
-                function()
-                    local d, e = af(aj)
-                    local f, g = af(c)
-                    expect(e).to.equal "Single"
-                    expect(g).to.equal "Group"
-                end
-            )
-        end
+    [46] = function()
+        return function() end
     end,
-    [47] = function() --[[ isMotor_spec ]]
+    [47] = function() --[[ Themes ]]
         local af = {
             Names = {
-                "HUT RI 81", "Emerald", "Blood Red"
+                "Emerald", "HUT RI 81", "Blood Red"
             }
+        }
+
+        af["Emerald"] = {
+            Name = "Emerald",
+            Accent = Color3.fromRGB(16, 160, 95),
+            Background = "rbxassetid://100391623230690",
+            BackgroundTransparency = 0.15,
+            AcrylicMain = Color3.fromRGB(8, 16, 11),
+            AcrylicBorder = Color3.fromRGB(14, 120, 70),
+            AcrylicGradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(6, 16, 11)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 115, 65))
+            }),
+            AcrylicNoise = 1,
+            TitleBarLine = Color3.fromRGB(12, 100, 55),
+            Tab = Color3.fromRGB(10, 22, 14),
+            Element = Color3.fromRGB(12, 24, 16),
+            ElementBorder = Color3.fromRGB(10, 90, 50),
+            InElementBorder = Color3.fromRGB(14, 120, 70),
+            ElementTransparency = 0.4,
+            ToggleSlider = Color3.fromRGB(18, 36, 24),
+            ToggleToggled = Color3.fromRGB(16, 160, 95),
+            SliderRail = Color3.fromRGB(18, 36, 24),
+            DropdownFrame = Color3.fromRGB(10, 22, 14),
+            DropdownHolder = Color3.fromRGB(8, 16, 11),
+            DropdownBorder = Color3.fromRGB(12, 100, 55),
+            DropdownOption = Color3.fromRGB(14, 28, 18),
+            Keybind = Color3.fromRGB(14, 28, 18),
+            Input = Color3.fromRGB(10, 22, 14),
+            InputFocused = Color3.fromRGB(4, 12, 8),
+            InputIndicator = Color3.fromRGB(16, 160, 95),
+            InputIndicatorFocus = Color3.fromRGB(20, 180, 105),
+            Dialog = Color3.fromRGB(10, 22, 14),
+            DialogHolder = Color3.fromRGB(8, 16, 11),
+            DialogHolderLine = Color3.fromRGB(12, 100, 55),
+            DialogButton = Color3.fromRGB(12, 24, 16),
+            DialogButtonBorder = Color3.fromRGB(14, 120, 70),
+            DialogBorder = Color3.fromRGB(12, 100, 55),
+            DialogInput = Color3.fromRGB(14, 28, 18),
+            DialogInputLine = Color3.fromRGB(16, 160, 95),
+            Text = Color3.fromRGB(255, 255, 255),
+            SubText = Color3.fromRGB(200, 225, 210),
+            Hover = Color3.fromRGB(12, 100, 55),
+            HoverChange = 0.05,
+            ShineEnabled = true,
+            Shine = { Speed = 0.5, RotationSpeed = 25, ColorSequence = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 30, 18)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(16, 160, 95)), ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 30, 18)) }) },
+            StrokeShine = true,
+            StrokeDark = Color3.fromRGB(10, 90, 50),
+            ButtonGradient = { Background = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 200, 100)), ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 30, 16)) }), Stroke = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 230, 118)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 150)), ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 200, 100)) }) },
+            ThemeAccentColors = { Color3.fromRGB(0, 230, 118) },
+            TitleGradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 136)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(77, 238, 255)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+            }),
+            SubTitleGradient = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(64, 224, 155)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 180, 100))
+            }),
         }
 
         af["HUT RI 81"] = {
@@ -9541,74 +9329,14 @@ local aa = {
             },
             ThemeAccentColors = { Color3.fromRGB(220, 20, 30), Color3.fromRGB(255, 255, 255) },
             TitleGradient = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(230, 25, 35)),
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 30, 45)),
                 ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 140, 150)),
                 ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
             }),
             SubTitleGradient = ColorSequence.new({
                 ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 180, 185)),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(230, 40, 50))
-            }),
-        }
-
-        af["Emerald"] = {
-            Name = "Emerald",
-            Accent = Color3.fromRGB(16, 160, 95),
-            Background = "rbxassetid://100391623230690",
-            BackgroundTransparency = 0.15,
-            AcrylicMain = Color3.fromRGB(8, 16, 11),
-            AcrylicBorder = Color3.fromRGB(14, 120, 70),
-            AcrylicGradient = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(6, 16, 11)),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 115, 65))
-            }),
-            AcrylicNoise = 1,
-            TitleBarLine = Color3.fromRGB(12, 100, 55),
-            Tab = Color3.fromRGB(10, 22, 14),
-            Element = Color3.fromRGB(12, 24, 16),
-            ElementBorder = Color3.fromRGB(10, 90, 50),
-            InElementBorder = Color3.fromRGB(14, 120, 70),
-            ElementTransparency = 0.4,
-            ToggleSlider = Color3.fromRGB(18, 36, 24),
-            ToggleToggled = Color3.fromRGB(16, 160, 95),
-            SliderRail = Color3.fromRGB(18, 36, 24),
-            DropdownFrame = Color3.fromRGB(10, 22, 14),
-            DropdownHolder = Color3.fromRGB(8, 16, 11),
-            DropdownBorder = Color3.fromRGB(12, 100, 55),
-            DropdownOption = Color3.fromRGB(14, 28, 18),
-            Keybind = Color3.fromRGB(14, 28, 18),
-            Input = Color3.fromRGB(10, 22, 14),
-            InputFocused = Color3.fromRGB(4, 12, 8),
-            InputIndicator = Color3.fromRGB(16, 160, 95),
-            InputIndicatorFocus = Color3.fromRGB(20, 180, 105),
-            Dialog = Color3.fromRGB(10, 22, 14),
-            DialogHolder = Color3.fromRGB(8, 16, 11),
-            DialogHolderLine = Color3.fromRGB(12, 100, 55),
-            DialogButton = Color3.fromRGB(12, 24, 16),
-            DialogButtonBorder = Color3.fromRGB(14, 120, 70),
-            DialogBorder = Color3.fromRGB(12, 100, 55),
-            DialogInput = Color3.fromRGB(14, 28, 18),
-            DialogInputLine = Color3.fromRGB(16, 160, 95),
-            Text = Color3.fromRGB(255, 255, 255),
-            SubText = Color3.fromRGB(200, 225, 210),
-            Hover = Color3.fromRGB(12, 100, 55),
-            HoverChange = 0.05,
-            ShineEnabled = true,
-            Shine = { Speed = 0.5, RotationSpeed = 25, ColorSequence = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 30, 18)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(16, 160, 95)), ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 30, 18)) }) },
-            StrokeShine = true,
-            StrokeDark = Color3.fromRGB(10, 90, 50),
-            ButtonGradient = { Background = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 200, 100)), ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 30, 16)) }), Stroke = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 230, 118)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 150)), ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 200, 100)) }) },
-            ThemeAccentColors = { Color3.fromRGB(0, 230, 118) },
-            TitleGradient = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 240, 140)),
-                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 220, 210)),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(160, 255, 235))
-            }),
-            SubTitleGradient = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(180, 255, 220)),
-                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 210, 180)),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 180, 220))
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 170, 175)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(230, 30, 45))
             }),
         }
 
@@ -9661,23 +9389,27 @@ local aa = {
             ButtonGradient = { Background = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(180, 15, 25)), ColorSequenceKeypoint.new(1, Color3.fromRGB(28, 5, 8)) }), Stroke = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(200, 20, 30)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 50, 60)), ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 20, 30)) }) },
             ThemeAccentColors = { Color3.fromRGB(200, 20, 30) },
             TitleGradient = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 40, 55)),
-                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(220, 30, 45)),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 160, 170))
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 35, 50)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 110, 80)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 215, 215))
             }),
             SubTitleGradient = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 130, 140)),
-                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(220, 50, 65)),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(160, 20, 30))
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 210, 210)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(240, 50, 65)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 10, 20))
             }),
         }
+        -- Aliases
         af["BloodRed"] = af["Blood Red"]
+        af["blood red"] = af["Blood Red"]
+        af["bloodred"] = af["Blood Red"]
         af["HUT RI"] = af["HUT RI 81"]
+        af["Hut RI 81"] = af["HUT RI 81"]
+        af["hut ri 81"] = af["HUT RI 81"]
+        af["emerald"] = af["Emerald"]
 
         return af
     end,
-    [57] = function() return {} end,
-    [58] = function() return {} end,
 }
 
 do local ab,ac,ad,ae,af,ag,ah,aj,c,e,f,g,h,i,j,k=task,setmetatable,error,newproxy,getmetatable,next,table,unpack,coroutine,script,type,require,pcall,getfenv,setfenv,rawget local l,m,n,o,p,s,t,u,v,w,x=ah.insert,ah.remove,ah.freeze or function(l)return l end,ab and ab.defer or function(l,...)local m=c.create(l)c.resume(m,...)return m end,'0.0.0-venv',{},{},{},{},{},{}local y,z={GetChildren=function(y)local z,A=x[y],{}for B in ag,z do l(A,B)end return A end,FindFirstChild=function(y,z)if not z then ad('Argument 1 missing or nil',2)end for A in ag,x[y]do if A.Name==z then return A end end return end,GetFullName=function(y)local z,A=y.Name,y.Parent while A do z=A.Name..'.'..z A=A.Parent end return'VirtualEnv.'..z end},{}for A,B in ag,y do z[A]=function(C,...)if not x[C]then ad("Expected ':' not '.' calling member function "..A,1)end return B(C,...)end end local C=function(C,D,E)local F,G,H,I,J=ac({},{__mode='k'}),function(F)ad(F..' is not a valid (virtual) member of '..C..' "'..D..'"',1)end,function(F)ad('Unable to assign (virtual) property '..F..'. Property is read only',1)end,(ae(true))local K=af(I)K.__index=function(L,M)if M=='ClassName'then return C elseif M=='Name'then return D elseif M=='Parent'then return E elseif C=='StringValue'and M=='Value'then return J else local N=z[M]if N then return N end end for N in ag,F do if N.Name==M then return N end end G(M)end K.__newindex=function(L,M,N)if M=='ClassName'then H(M)elseif M=='Name'then D=N elseif M=='Parent'then if N==I then return end if E~=nil then x[E][I]=nil end E=N if N~=nil then x[N][I]=true end elseif C=='StringValue'and M=='Value'then J=N else G(M)end end K.__tostring=function()return D end x[I]=F if E~=nil then x[E][I]=true end return I end local function D(E,F)local G,H,I,J=E[1],E[2],E[3],E[4]local K=m(I,1)local L=C(H,K,F)s[G]=L if I then for M,N in ag,I do L[M]=N end end if J then for M,N in ag,J do D(N,L)end end return L end local E={}for F,G in ag,a do l(E,D(G))end for H,I in ag,aa do local J=s[H]t[J]=I local K=J.ClassName if K=='LocalScript'or K=='Script'then l(v,J)end end local J=function(J)local K,L=J.ClassName,u[J]if L and K=='ModuleScript'then return aj(L)end local M=t[J]if not M then return end if K=='LocalScript'or K=='Script'then M()return else local N={M()}u[J]=N return aj(N)end end function b(K)local L=s[K]local M=t[L]if not M then return end local N,O,P,Q,R,S,T=false,n{Version=p,Script=e,Shared=w,GetScript=function()return e end,GetShared=function()return w end},L,function(N,...)if x[N]and N.ClassName=='ModuleScript'and t[N]then return J(N)end return g(N,...)end local U,V=function(U,...)if not N then T()end if f(U)=='number'and U>=0 then if U==0 then return S else U=U+1 local V,W=h(i,U)if V and W==R then return S end end end return i(U,...)end,function(U,V,...)if not N then T()end if f(U)=='number'and U>=0 then if U==0 then return j(S,V)else U=U+1 local W,X=h(i,U)if W and X==R then return j(S,V)end end end return j(U,V,...)end function T()R=i(0)local W={maui=O,script=P,require=Q,getfenv=U,setfenv=V}S=ac({},{__index=function(X,Y)local Z=k(S,Y)if Z~=nil then return Z end local _=W[Y]if _~=nil then return _ end return R[Y]end})j(M,S)N=true end return O,P,Q,U,V end for K,L in ag,v do o(J,L)end do local M for N,O in ag,E do if O.ClassName=='ModuleScript'and O.Name=='MainModule'then M=O break end end if M then return J(M)end end end
