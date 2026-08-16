@@ -129,8 +129,12 @@ do
         local from  = theme.StrokeDark or theme.AcrylicBorder
         local shine = theme.Accent
 
-        local conn = _RunService.Heartbeat:Connect(function(dt)
-            if getgenv().ShineEnabled ~= true or (#_shineObjs == 0 and #_strokeObjs == 0) then return end
+        local conn
+        conn = _RunService.Heartbeat:Connect(function(dt)
+            if getgenv().ShineEnabled ~= true or (#_shineObjs == 0 and #_strokeObjs == 0) then
+                if conn then conn:Disconnect() end
+                return
+            end
             _accum = _accum + dt
             if _accum < 0.05 then return end
             local step = _accum
@@ -556,6 +560,7 @@ local aa = {
                     if not label or not label.Parent then
                         conn:Disconnect(); _marqueeConns[animKey] = nil; return
                     end
+                    if not label.Visible or getgenv()._FluentWindowInteracting then return end
                     if phase == 0 then
                         timer = timer + dt; if timer >= pause then timer = 0; phase = 1 end
                     elseif phase == 1 then
@@ -577,8 +582,9 @@ local aa = {
             pcall(function()
                 label:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
                     if _debounceTimer then task.cancel(_debounceTimer) end
-                    _debounceTimer = task.delay(0.25, function()
-                        if not _marqueeConns[animKey] then
+                    local delayTime = getgenv()._FluentWindowInteracting and 0.45 or 0.25
+                    _debounceTimer = task.delay(delayTime, function()
+                        if not _marqueeConns[animKey] and not getgenv()._FluentWindowInteracting then
                             tryStart(0)
                         end
                     end)
@@ -1979,39 +1985,65 @@ local aa = {
                 o = i()
                 o.Parent = workspace
             end)
-            local p, q = function(p, q)
-                    n.topLeft = q
-                    n.topRight = q + Vector2.new(p.X, 0)
-                    n.bottomRight = q + p
-                end, function()
-                    if not o or not o.Parent then return end
+            local _acrylicVisible = true
+            local _dirty = false
+            local _cachedFrame = nil
+
+            local p = function(p, q)
+                n.topLeft = q
+                n.topRight = q + Vector2.new(p.X, 0)
+                n.bottomRight = q + p
+            end
+
+            local q = function()
+                if not _acrylicVisible or not o or not o.Parent then return end
+                pcall(function()
+                    local cam = game:GetService "Workspace".CurrentCamera
+                    if not cam then return end
+                    local cframe = cam.CFrame
+                    local s, t, u = n.topLeft, n.topRight, n.bottomRight
+                    local v, w, x = j(s, l), j(t, l), j(u, l)
+                    local y, z = (w - v).Magnitude, (w - x).Magnitude
+                    o.CFrame = CFrame.fromMatrix((v + x) / 2, cframe.XVector, cframe.YVector, cframe.ZVector)
+                    local mesh = o:FindFirstChildOfClass("SpecialMesh")
+                    if mesh then
+                        mesh.Scale = Vector3.new(y, z, 0)
+                    end
+                end)
+            end
+
+            local markDirty = function(frame)
+                if frame then _cachedFrame = frame end
+                _dirty = true
+            end
+
+            local syncStep = function()
+                if not _dirty or not _acrylicVisible then return end
+                _dirty = false
+                if _cachedFrame and _cachedFrame.Parent then
                     pcall(function()
-                        local p = game:GetService "Workspace".CurrentCamera
-                        local q = p and p.CFrame or CFrame.new()
-                        local r, s, t, u = q, n.topLeft, n.topRight, n.bottomRight
-                        local v, w, x = j(s, l), j(t, l), j(u, l)
-                        local y, z = (w - v).Magnitude, (w - x).Magnitude
-                        o.CFrame = CFrame.fromMatrix((v + x) / 2, r.XVector, r.YVector, r.ZVector)
-                        if o:FindFirstChildOfClass("SpecialMesh") then
-                            o.Mesh.Scale = Vector3.new(y, z, 0)
-                        end
-                    end)
-                end
-            local r, s = function(r)
-                    local s = k()
-                    local t, u = r.AbsoluteSize - Vector2.new(s, s), r.AbsolutePosition + Vector2.new(s / 2, s / 2)
-                    p(t, u)
-                    q()
-                end, function()
-                    local r = game:GetService "Workspace".CurrentCamera
-                    if not r then return end
-                    pcall(function()
-                        table.insert(m, r:GetPropertyChangedSignal "CFrame":Connect(q))
-                        table.insert(m, r:GetPropertyChangedSignal "ViewportSize":Connect(q))
-                        table.insert(m, r:GetPropertyChangedSignal "FieldOfView":Connect(q))
+                        local s = k()
+                        local t, u = _cachedFrame.AbsoluteSize - Vector2.new(s, s), _cachedFrame.AbsolutePosition + Vector2.new(s / 2, s / 2)
+                        p(t, u)
                         q()
                     end)
                 end
+            end
+
+            local rsConn = game:GetService("RunService").RenderStepped:Connect(syncStep)
+            table.insert(m, rsConn)
+
+            local s = function()
+                local r = game:GetService "Workspace".CurrentCamera
+                if not r then return end
+                pcall(function()
+                    table.insert(m, r:GetPropertyChangedSignal "CFrame":Connect(function() _dirty = true end))
+                    table.insert(m, r:GetPropertyChangedSignal "ViewportSize":Connect(function() _dirty = true end))
+                    table.insert(m, r:GetPropertyChangedSignal "FieldOfView":Connect(function() _dirty = true end))
+                    _dirty = true
+                end)
+            end
+
             if o then
                 o.Destroying:Connect(
                     function()
@@ -2023,21 +2055,25 @@ local aa = {
                 )
             end
             s()
-            return r, o
+            return markDirty, o, function(vis)
+                _acrylicVisible = vis
+                if vis then _dirty = true end
+            end
         end
         return function(m)
-            local n, o, p = {}, l(m)
+            local n = {}
+            local markDirty, o, setInternalVis = l(m)
             local q = h.New("Frame", {BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1)})
             h.AddSignal(
                 q:GetPropertyChangedSignal "AbsolutePosition",
                 function()
-                    if o then o(q) end
+                    if markDirty then markDirty(q) end
                 end
             )
             h.AddSignal(
                 q:GetPropertyChangedSignal "AbsoluteSize",
                 function()
-                    if o then o(q) end
+                    if markDirty then markDirty(q) end
                 end
             )
             n.AddParent = function(r)
@@ -2049,12 +2085,13 @@ local aa = {
                 )
             end
             n.SetVisibility = function(r)
-                if p then
-                    pcall(function() p.Transparency = r and 0.98 or 1 end)
+                if setInternalVis then setInternalVis(r) end
+                if o then
+                    pcall(function() o.Transparency = r and 0.98 or 1 end)
                 end
             end
             n.Frame = q
-            n.Model = p
+            n.Model = o
             return n
         end
     end,
@@ -2495,6 +2532,7 @@ local aa = {
                         if _marqueeConns[label] == conn then _marqueeConns[label] = nil end
                         return
                     end
+                    if not label.Visible or getgenv()._FluentWindowInteracting then return end
                     if phase == 0 then
                         timer = timer + dt
                         if timer >= pause then timer = 0; phase = 1 end
@@ -2527,8 +2565,11 @@ local aa = {
                         return
                     end
                     if _dbTimer then task.cancel(_dbTimer) end
-                    _dbTimer = task.delay(0.25, function()
-                        _startMarquee(label)
+                    local delayTime = getgenv()._FluentWindowInteracting and 0.45 or 0.25
+                    _dbTimer = task.delay(delayTime, function()
+                        if not getgenv()._FluentWindowInteracting then
+                            _startMarquee(label)
+                        end
                     end)
                 end)
                 _marqueeResizeConns[label] = rconn
@@ -3171,6 +3212,10 @@ local aa = {
                 local _conns = {}
                 local function updateScrollbar()
                     if not _alive then return end
+                    if not sf or not sf.Parent or not sf.Visible then
+                        if sbHolder then sbHolder.Visible = false end
+                        return
+                    end
                     pcall(function()
                         local _libCheck = e(h)
                         if not _libCheck or _libCheck.Unloaded then
@@ -3180,12 +3225,6 @@ local aa = {
                         end
                         local win = _libCheck.Window
                         if win and win.Minimized then sbHolder.Visible = false; return end
-                        if not sf or not sf.Parent or not sf:IsDescendantOf(game) then
-                            sbHolder.Visible = false
-                            task.defer(_teardown)
-                            return
-                        end
-                        if not sf.Visible then sbHolder.Visible = false; return end
                         if _libCheck.DialogOpen then sbHolder.Visible = false; return end
                         local canvasH = sf.CanvasSize.Y.Offset
                         local frameH = sf.AbsoluteSize.Y
@@ -3195,7 +3234,7 @@ local aa = {
                         end
                         sbHolder.Visible = true
                         local ratio = math.clamp(frameH / canvasH, 0.05, 1)
-                        local totalTrackH = math.max(sf.AbsoluteSize.Y - 8, 1)
+                        local totalTrackH = math.max(frameH - 8, 1)
                         local barH = math.max(math.floor(totalTrackH * ratio), 20)
                         local maxScrollY = math.max(canvasH - frameH, 1)
                         local scrollRatio = math.clamp(sf.CanvasPosition.Y / maxScrollY, 0, 1)
@@ -4709,16 +4748,51 @@ local aa = {
             v.SelectorSizeMotor = l.SingleMotor.new(16)
             v.ContainerBackMotor = l.SingleMotor.new(0)
             v.ContainerPosMotor = l.SingleMotor.new(90)
+
+            local _isDragging = false
+            local _dragStartMouse = Vector3.new()
+            local _dragStartPos = UDim2.new()
+            local _targetPos = nil
+
+            local _isResizing = false
+            local _resizeStartMouse = Vector3.new()
+            local _resizeStartSize = UDim2.new()
+            local _targetSize = nil
+
+            v._isInteracting = false
+            getgenv()._FluentWindowInteracting = false
+
             G:onStep(
                 function(I)
-                    v.Root.Size = UDim2.new(0, I.X, 0, I.Y)
+                    if not _isResizing then
+                        v.Root.Size = UDim2.new(0, I.X, 0, I.Y)
+                    end
                 end
             )
             H:onStep(
                 function(I)
-                    v.Root.Position = UDim2.new(0, I.X, 0, I.Y)
+                    if not _isDragging then
+                        v.Root.Position = UDim2.new(0, I.X, 0, I.Y)
+                    end
                 end
             )
+
+            local _RS_win = game:GetService("RunService")
+            local _winRenderConn = _RS_win.RenderStepped:Connect(function()
+                if _isDragging and _targetPos then
+                    v.Position = _targetPos
+                    v.Root.Position = _targetPos
+                    if v.Maximized then
+                        v.Maximize(false, true, true)
+                    end
+                end
+                if _isResizing and _targetSize then
+                    v.Size = _targetSize
+                    v.Root.Size = _targetSize
+                end
+            end)
+            m.AddSignal(_winRenderConn)
+
             local I, J = 17, tick()
             v.SelectorPosMotor:onStep(
                 function(K)
@@ -4778,15 +4852,19 @@ local aa = {
                 v.TitleBar.Frame.InputBegan,
                 function(M)
                     if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
-                        w = true
-                        y = M.Position
-                        z = v.Root.Position
+                        _isDragging = true
+                        _dragStartMouse = M.Position
+                        _dragStartPos = v.Root.Position
+                        _targetPos = _dragStartPos
+                        v._isInteracting = true
+                        getgenv()._FluentWindowInteracting = true
                         if v.Maximized then
-                            z =
+                            _dragStartPos =
                                 UDim2.fromOffset(
-                                i.X - (i.X * ((K - 100) / v.Root.AbsoluteSize.X)),
-                                i.Y - (i.Y * (L / v.Root.AbsoluteSize.Y))
+                                i.X - (i.X * ((K - 100) / math.max(v.Root.AbsoluteSize.X, 1))),
+                                i.Y - (i.Y * (L / math.max(v.Root.AbsoluteSize.Y, 1)))
                             )
+                            _targetPos = _dragStartPos
                         end
                     end
                 end
@@ -4795,30 +4873,37 @@ local aa = {
                 E.InputBegan,
                 function(M)
                     if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
-                        A = true
-                        B = M.Position
+                        _isResizing = true
+                        _resizeStartMouse = M.Position
+                        _resizeStartSize = v.Root.Size
+                        _targetSize = _resizeStartSize
+                        v._isInteracting = true
+                        getgenv()._FluentWindowInteracting = true
                     end
                 end
             )
             m.AddSignal(
                 h.InputChanged,
                 function(M)
-                    if w and (M.UserInputType == Enum.UserInputType.MouseMovement or M.UserInputType == Enum.UserInputType.Touch) then
-                        local N = M.Position - y
-                        local newPos = UDim2.fromOffset(z.X.Offset + N.X, z.Y.Offset + N.Y)
-                        v.Position = newPos
-                        v.Root.Position = newPos
-                        H:setGoal {X = l.Instant.new(newPos.X.Offset), Y = l.Instant.new(newPos.Y.Offset)}
-                        if v.Maximized then
-                            v.Maximize(false, true, true)
+                    if M.UserInputType == Enum.UserInputType.MouseMovement or M.UserInputType == Enum.UserInputType.Touch then
+                        if _isDragging then
+                            local N = M.Position - _dragStartMouse
+                            local vpX, vpY = j.ViewportSize.X, j.ViewportSize.Y
+                            local curW = v.Root.AbsoluteSize.X
+                            local newX = math.clamp(_dragStartPos.X.Offset + N.X, -curW + 100, math.max(vpX - 100, 0))
+                            local newY = math.clamp(_dragStartPos.Y.Offset + N.Y, 0, math.max(vpY - 40, 0))
+                            _targetPos = UDim2.fromOffset(newX, newY)
                         end
-                    end
-                    if A and (M.UserInputType == Enum.UserInputType.MouseMovement or M.UserInputType == Enum.UserInputType.Touch) then
-                        local N, O = M.Position - B, v.Size
-                        local P = Vector3.new(O.X.Offset, O.Y.Offset, 0) + Vector3.new(1, 1, 0) * N
-                        local Q = Vector2.new(math.clamp(P.X, 470, 2048), math.clamp(P.Y, 380, 2048))
-                        v.Root.Size = UDim2.fromOffset(Q.X, Q.Y)
-                        G:setGoal {X = l.Instant.new(Q.X), Y = l.Instant.new(Q.Y)}
+                        if _isResizing then
+                            local N = M.Position - _resizeStartMouse
+                            local vpX, vpY = j.ViewportSize.X, j.ViewportSize.Y
+                            local minW, minH = 470, 340
+                            local maxW = math.max(vpX - 20, minW)
+                            local maxH = math.max(vpY - 20, minH)
+                            local newW = math.clamp(_resizeStartSize.X.Offset + N.X, minW, maxW)
+                            local newH = math.clamp(_resizeStartSize.Y.Offset + N.Y, minH, maxH)
+                            _targetSize = UDim2.fromOffset(newW, newH)
+                        end
                     end
                 end
             )
@@ -4826,14 +4911,25 @@ local aa = {
                 h.InputEnded,
                 function(M)
                     if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
-                        if w then
-                            w = false
+                        if _isDragging then
+                            _isDragging = false
+                            if _targetPos then
+                                v.Position = _targetPos
+                                v.Root.Position = _targetPos
+                            end
                             H:setGoal {X = l.Instant.new(v.Position.X.Offset), Y = l.Instant.new(v.Position.Y.Offset)}
                         end
-                        if A then
-                            A = false
-                            v.Size = v.Root.Size
+                        if _isResizing then
+                            _isResizing = false
+                            if _targetSize then
+                                v.Size = _targetSize
+                                v.Root.Size = _targetSize
+                            end
                             G:setGoal {X = l.Instant.new(v.Size.X.Offset), Y = l.Instant.new(v.Size.Y.Offset)}
+                        end
+                        if not _isDragging and not _isResizing then
+                            v._isInteracting = false
+                            getgenv()._FluentWindowInteracting = false
                         end
                     end
                 end
@@ -4892,6 +4988,9 @@ local aa = {
                 end
             end
             function v.Destroy(M)
+                if _winRenderConn then
+                    pcall(function() _winRenderConn:Disconnect() end)
+                end
                 if e(k).UseAcrylic then
                     v.AcrylicPaint.Model:Destroy()
                 end
@@ -5880,10 +5979,13 @@ local aa = {
                 end
             end)
 
-            if #grads == 0 and #strokes == 0 then return end
             local accum = 0
-            local conn = _RS_dd.Heartbeat:Connect(function(dt)
-                if getgenv().ShineEnabled ~= true or (#grads == 0 and #strokes == 0) then return end
+            local conn
+            conn = _RS_dd.Heartbeat:Connect(function(dt)
+                if getgenv().ShineEnabled ~= true or (#grads == 0 and #strokes == 0) then
+                    if conn then conn:Disconnect() end
+                    return
+                end
                 accum = accum + dt
                 if accum < 0.05 then return end
                 local step = accum
@@ -7419,9 +7521,9 @@ local aa = {
                     vidSeek(i.Position.X)
                 end
             end)
-            local function fmtT(s) s=math.max(0,math.floor(s or 0)); return string.format("%d:%02d",math.floor(s/60),s%60) end
-            local hbConn=rs2.Heartbeat:Connect(function(dt)
-                if not wrap.Parent then return end
+            local hbConn
+            hbConn = rs2.Heartbeat:Connect(function(dt)
+                if not wrap.Parent then if hbConn then hbConn:Disconnect() end return end
                 -- Auto-hide timer
                 if ctrlVisible then
                     fadeTimer=fadeTimer-dt
@@ -7926,8 +8028,9 @@ local aa = {
                     seekTo(inp.Position.X)
                 end
             end)
-            local hbConn = rs.Heartbeat:Connect(function()
-                if not wrap.Parent then return end
+            local hbConn
+            hbConn = rs.Heartbeat:Connect(function()
+                if not wrap.Parent then if hbConn then hbConn:Disconnect() end return end
                 if not snd then return end
                 local dur = snd.TimeLength or 0
                 local pos = snd.TimePosition or 0
