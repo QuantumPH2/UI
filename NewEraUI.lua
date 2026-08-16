@@ -3328,15 +3328,15 @@ local aa = {
 
                 local isOpen2 = false
                 local innerH2 = 0
-                local dur2 = 0.22
-                local ti2 = TweenInfo.new(dur2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+                local dur2 = 0.16
+                local ti2 = TweenInfo.new(dur2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
                 local _animating = false
                 local _curTween1, _curTween2 = nil, nil
 
                 local function applyArrow2(open, anim)
                     local rot = open and 180 or 0
                     if anim then
-                        ts2:Create(arrowIco2, TweenInfo.new(dur2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Rotation = rot}):Play()
+                        ts2:Create(arrowIco2, TweenInfo.new(dur2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Rotation = rot}):Play()
                     else
                         arrowIco2.Rotation = rot
                     end
@@ -3363,10 +3363,18 @@ local aa = {
                         _curTween2 = ts2:Create(outerWrap2, ti2, {Size = UDim2.new(1, 0, 0, oh)})
                         _curTween1:Play()
                         _curTween2:Play()
-                        task.delay(dur2 + 0.02, function()
+                        task.delay(dur2 + 0.01, function()
                             _animating = false
                             if not isOpen2 then
                                 contentBg2.Visible = false
+                            else
+                                local finalH = innerLayout2.AbsoluteContentSize.Y
+                                if finalH > 0 and finalH ~= innerH2 then
+                                    innerH2 = finalH
+                                    local realCh = finalH + pad2 * 2
+                                    contentBg2.Size = UDim2.new(1, 0, 0, realCh)
+                                    outerWrap2.Size = UDim2.new(1, 0, 0, 26 + realCh + sectionMargin)
+                                end
                             end
                         end)
                     else
@@ -4575,9 +4583,6 @@ local aa = {
                     if _isDragging and _targetPos then
                         v.Position = _targetPos
                         v.Root.Position = _targetPos
-                        if v.Maximized then
-                            v.Maximize(false, true, true)
-                        end
                     end
                     if _isResizing and _targetSize then
                         v.Size = _targetSize
@@ -4652,6 +4657,7 @@ local aa = {
                         v._isInteracting = true
                         getgenv()._FluentWindowInteracting = true
                         if v.Maximized then
+                            v.Maximize(false, true, true)
                             _dragStartPos =
                                 UDim2.fromOffset(
                                 i.X - (i.X * ((K - 100) / math.max(v.Root.AbsoluteSize.X, 1))),
@@ -4686,6 +4692,8 @@ local aa = {
                             local newX = math.clamp(_dragStartPos.X.Offset + N.X, -curW + 100, math.max(vpX - 100, 0))
                             local newY = math.clamp(_dragStartPos.Y.Offset + N.Y, 0, math.max(vpY - 40, 0))
                             _targetPos = UDim2.fromOffset(newX, newY)
+                            v.Position = _targetPos
+                            v.Root.Position = _targetPos
                         end
                         if _isResizing then
                             local N = M.Position - _resizeStartMouse
@@ -4696,6 +4704,8 @@ local aa = {
                             local newW = math.clamp(_resizeStartSize.X.Offset + N.X, minW, maxW)
                             local newH = math.clamp(_resizeStartSize.Y.Offset + N.Y, minH, maxH)
                             _targetSize = UDim2.fromOffset(newW, newH)
+                            v.Size = _targetSize
+                            v.Root.Size = _targetSize
                         end
                     end
                 end
