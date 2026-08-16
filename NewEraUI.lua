@@ -4560,20 +4560,22 @@ local aa = {
             )
 
             local _RS_win = game:GetService("RunService")
-            local _winRenderConn = _RS_win.RenderStepped:Connect(function()
-                if _isDragging and _targetPos then
-                    v.Position = _targetPos
-                    v.Root.Position = _targetPos
-                    if v.Maximized then
-                        v.Maximize(false, true, true)
+            m.AddSignal(
+                _RS_win.RenderStepped,
+                function()
+                    if _isDragging and _targetPos then
+                        v.Position = _targetPos
+                        v.Root.Position = _targetPos
+                        if v.Maximized then
+                            v.Maximize(false, true, true)
+                        end
+                    end
+                    if _isResizing and _targetSize then
+                        v.Size = _targetSize
+                        v.Root.Size = _targetSize
                     end
                 end
-                if _isResizing and _targetSize then
-                    v.Size = _targetSize
-                    v.Root.Size = _targetSize
-                end
-            end)
-            m.AddSignal(_winRenderConn)
+            )
 
             local I, J = 17, tick()
             v.SelectorPosMotor:onStep(
@@ -4967,12 +4969,35 @@ local aa = {
             end
         end
         function k.AddSignal(m, n)
-            table.insert(k.Signals, m:Connect(n))
+            if n == nil then
+                if m then
+                    table.insert(k.Signals, m)
+                    return m
+                end
+                return nil
+            end
+            if m and typeof(m) == "RBXScriptConnection" then
+                table.insert(k.Signals, m)
+                return m
+            elseif m and (typeof(m) == "RBXScriptSignal" or (type(m) == "table" and m.Connect) or (type(m) == "userdata" and pcall(function() return m.Connect end))) then
+                local conn = m:Connect(n)
+                table.insert(k.Signals, conn)
+                return conn
+            elseif m and m.Connect then
+                local conn = m:Connect(n)
+                table.insert(k.Signals, conn)
+                return conn
+            elseif m and m.Disconnect then
+                table.insert(k.Signals, m)
+                return m
+            end
         end
         function k.Disconnect()
             for m = #k.Signals, 1, -1 do
                 local n = table.remove(k.Signals, m)
-                n:Disconnect()
+                if n and n.Disconnect then
+                    pcall(function() n:Disconnect() end)
+                end
             end
         end
         local _noInheritFallbackKeys = {ShineEnabled = true, StrokeShine = true}
