@@ -1099,10 +1099,8 @@ local aa = {
                 return
             end
             x.MinimizeKey = D.MinimizeKey
-            x.UseAcrylic = D.Acrylic
-            if D.Acrylic then
-                pcall(function() r.init() end)
-            end
+            x.UseAcrylic = false
+            x.Acrylic = false
             local E =
                 e(s.Window) {
                     Parent = w, Size = D.Size, Title = D.Title, SubTitle = D.SubTitle, TabWidth = D.TabWidth,
@@ -1204,19 +1202,8 @@ local aa = {
             end
         end
         function x.ToggleAcrylic(C, D)
-            if x.Window then
-                if x.UseAcrylic then
-                    x.Acrylic = D
-                    if x.Window.AcrylicPaint and x.Window.AcrylicPaint.Model then
-                        pcall(function() x.Window.AcrylicPaint.Model.Transparency = D and 0.98 or 1 end)
-                    end
-                    if D then
-                        pcall(function() r.Enable() end)
-                    else
-                        pcall(function() r.Disable() end)
-                    end
-                end
-            end
+            x.Acrylic = false
+            x.UseAcrylic = false
         end
         function x.ToggleTransparency(C, D)
             if x.Window and x.Window.AcrylicPaint and x.Window.AcrylicPaint.Frame and x.Window.AcrylicPaint.Frame.Background then
@@ -1925,179 +1912,28 @@ local aa = {
     function()
         local c, d, e, f, g = b(2)
         local h = {AcrylicBlur = e(d.AcrylicBlur), CreateAcrylic = e(d.CreateAcrylic), AcrylicPaint = e(d.AcrylicPaint)}
-        local i = nil
-        local j = {}
-        function h.init()
-            pcall(function()
-                if not i then
-                    i = Instance.new "DepthOfFieldEffect"
-                    i.FarIntensity = 0
-                    i.InFocusRadius = 0.1
-                    i.NearIntensity = 1
-                end
-                local k = function(k)
-                    if k:IsA "DepthOfFieldEffect" and k ~= i then
-                        j[k] = {enabled = k.Enabled}
-                    end
-                end
-                local lighting = game:GetService "Lighting"
-                if lighting then
-                    for _, m in pairs(lighting:GetChildren()) do
-                        k(m)
-                    end
-                end
-                local cam = game:GetService "Workspace".CurrentCamera
-                if cam then
-                    for _, o in pairs(cam:GetChildren()) do
-                        k(o)
-                    end
-                end
-                h.Enable()
-            end)
-        end
-        function h.Enable()
-            pcall(function()
-                for k, l in pairs(j) do
-                    if k and k.Parent then l.Enabled = false end
-                end
-                if i then i.Parent = game:GetService "Lighting" end
-            end)
-        end
-        function h.Disable()
-            pcall(function()
-                for k, l in pairs(j) do
-                    if k and k.Parent then l.Enabled = l.enabled end
-                end
-                if i then i.Parent = nil end
-            end)
-        end
+        function h.init() end
+        function h.Enable() end
+        function h.Disable() end
         return h
     end,
     function()
         local c, d, e, f, g = b(3)
-        local h, i, j, k = e(d.Parent.Parent.Creator), e(d.Parent.CreateAcrylic), unpack(e(d.Parent.Utils))
-        local l = function(l)
-            local m = {}
-            l = l or 0.001
-            local n = {topLeft = Vector2.new(), topRight = Vector2.new(), bottomRight = Vector2.new()}
-            local o = nil
-            pcall(function()
-                o = i()
-                o.Parent = workspace
-            end)
-            local _acrylicVisible = true
-            local _dirty = false
-            local _cachedFrame = nil
-
-            local p = function(p, q)
-                n.topLeft = q
-                n.topRight = q + Vector2.new(p.X, 0)
-                n.bottomRight = q + p
-            end
-
-            local q = function()
-                if not _acrylicVisible or not o or not o.Parent then return end
-                pcall(function()
-                    local cam = game:GetService "Workspace".CurrentCamera
-                    if not cam then return end
-                    local cframe = cam.CFrame
-                    local s, t, u = n.topLeft, n.topRight, n.bottomRight
-                    local v, w, x = j(s, l), j(t, l), j(u, l)
-                    local y, z = (w - v).Magnitude, (w - x).Magnitude
-                    o.CFrame = CFrame.fromMatrix((v + x) / 2, cframe.XVector, cframe.YVector, cframe.ZVector)
-                    local mesh = o:FindFirstChildOfClass("SpecialMesh")
-                    if mesh then
-                        mesh.Scale = Vector3.new(y, z, 0)
-                    end
-                end)
-            end
-
-            local markDirty = function(frame)
-                if frame then _cachedFrame = frame end
-                _dirty = true
-            end
-
-            local syncStep = function()
-                if not _dirty or not _acrylicVisible then return end
-                _dirty = false
-                if _cachedFrame and _cachedFrame.Parent then
-                    pcall(function()
-                        local s = k()
-                        local t, u = _cachedFrame.AbsoluteSize - Vector2.new(s, s), _cachedFrame.AbsolutePosition + Vector2.new(s / 2, s / 2)
-                        p(t, u)
-                        q()
-                    end)
-                end
-            end
-
-            local rsConn = game:GetService("RunService").RenderStepped:Connect(syncStep)
-            table.insert(m, rsConn)
-
-            local s = function()
-                local r = game:GetService "Workspace".CurrentCamera
-                if not r then return end
-                pcall(function()
-                    table.insert(m, r:GetPropertyChangedSignal "CFrame":Connect(function() _dirty = true end))
-                    table.insert(m, r:GetPropertyChangedSignal "ViewportSize":Connect(function() _dirty = true end))
-                    table.insert(m, r:GetPropertyChangedSignal "FieldOfView":Connect(function() _dirty = true end))
-                    _dirty = true
-                end)
-            end
-
-            if o then
-                o.Destroying:Connect(
-                    function()
-                        for _, u in ipairs(m) do
-                            pcall(function() u:Disconnect() end)
-                        end
-                        table.clear(m)
-                    end
-                )
-            end
-            s()
-            return markDirty, o, function(vis)
-                _acrylicVisible = vis
-                if vis then _dirty = true end
-            end
-        end
-        return function(m)
+        return function()
             local n = {}
-            local markDirty, o, setInternalVis = l(m)
-            local q = h.New("Frame", {BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1)})
-            h.AddSignal(
-                q:GetPropertyChangedSignal "AbsolutePosition",
-                function()
-                    if markDirty then markDirty(q) end
-                end
-            )
-            h.AddSignal(
-                q:GetPropertyChangedSignal "AbsoluteSize",
-                function()
-                    if markDirty then markDirty(q) end
-                end
-            )
-            n.AddParent = function(r)
-                h.AddSignal(
-                    r:GetPropertyChangedSignal "Visible",
-                    function()
-                        n.SetVisibility(r.Visible)
-                    end
-                )
-            end
-            n.SetVisibility = function(r)
-                if setInternalVis then setInternalVis(r) end
-                if o then
-                    pcall(function() o.Transparency = r and 0.98 or 1 end)
-                end
-            end
+            local q = Instance.new("Frame")
+            q.BackgroundTransparency = 1
+            q.Size = UDim2.fromScale(1, 1)
             n.Frame = q
-            n.Model = o
-            return n
+            n.Model = nil
+            n.AddParent = function() end
+            n.SetVisibility = function() end
+            return function() end, nil, function() end
         end
     end,
     function()
         local c, d, e, f, g = b(4)
-        local h, i = e(d.Parent.Parent.Creator), e(d.Parent.AcrylicBlur)
+        local h = e(d.Parent.Parent.Creator)
         local j = h.New
         return function(k)
             local l = {}
@@ -2129,7 +1965,7 @@ local aa = {
                     j(
                         "Frame",
                         {
-                            BackgroundTransparency = 0.45,
+                            BackgroundTransparency = 0.05,
                             Size = UDim2.fromScale(1, 1),
                             Name = "Background",
                             ThemeTag = {BackgroundColor3 = "AcrylicMain"}
@@ -2149,31 +1985,6 @@ local aa = {
                         }
                     ),
                     j(
-                        "ImageLabel",
-                        {
-                            Image = "rbxassetid://9968344105",
-                            ImageTransparency = 0.98,
-                            ScaleType = Enum.ScaleType.Tile,
-                            TileSize = UDim2.new(0, 128, 0, 128),
-                            Size = UDim2.fromScale(1, 1),
-                            BackgroundTransparency = 1
-                        },
-                        {j("UICorner", {CornerRadius = UDim.new(0, 12)})}
-                    ),
-                    j(
-                        "ImageLabel",
-                        {
-                            Image = "rbxassetid://9968344227",
-                            ImageTransparency = 0.9,
-                            ScaleType = Enum.ScaleType.Tile,
-                            TileSize = UDim2.new(0, 128, 0, 128),
-                            Size = UDim2.fromScale(1, 1),
-                            BackgroundTransparency = 1,
-                            ThemeTag = {ImageTransparency = "AcrylicNoise"}
-                        },
-                        {j("UICorner", {CornerRadius = UDim.new(0, 12)})}
-                    ),
-                    j(
                         "Frame",
                         {BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 2},
                         {
@@ -2183,52 +1994,23 @@ local aa = {
                     )
                 }
             )
-            local m
-            if e(d.Parent.Parent).UseAcrylic then
-                m = i()
-                m.Frame.Parent = l.Frame
-                l.Model = m.Model
-                l.AddParent = m.AddParent
-                l.SetVisibility = m.SetVisibility
-            end
+            l.Model = nil
+            l.AddParent = function() end
+            l.SetVisibility = function() end
             return l
         end
     end,
     function()
         local c, d, e, f, g = b(5)
-        local h = d.Parent.Parent
-        local i = e(h.Creator)
-        local j = function()
-            local j =
-                i.New(
-                "Part",
-                {
-                    Name = "Body",
-                    Color = Color3.new(0, 0, 0),
-                    Material = Enum.Material.Glass,
-                    Size = Vector3.new(1, 1, 0),
-                    Anchored = true,
-                    CanCollide = false,
-                    CanQuery = false,
-                    CanTouch = false,
-                    Locked = true,
-                    CastShadow = false,
-                    Transparency = 0.98
-                },
-                {i.New("SpecialMesh", {MeshType = Enum.MeshType.Brick, Offset = Vector3.new(0, 0, -1E-6)})}
-            )
-            return j
+        return function()
+            return nil
         end
-        return j
     end,
     function()
         local c, d, e, f, g = b(6)
-        local h, i = function(h, i, j, k, l)
-                return (h - i) * (l - k) / (j - i) + k
-            end, function(h, i)
-                local j = game:GetService "Workspace".CurrentCamera:ScreenPointToRay(h.X, h.Y)
-                return j.Origin + j.Direction * i
-            end
+        local i = function()
+            return Vector3.new()
+        end
         local j = function()
             return 0
         end
@@ -4991,8 +4773,8 @@ local aa = {
                 if _winRenderConn then
                     pcall(function() _winRenderConn:Disconnect() end)
                 end
-                if e(k).UseAcrylic then
-                    v.AcrylicPaint.Model:Destroy()
+                if e(k).UseAcrylic and v.AcrylicPaint and v.AcrylicPaint.Model then
+                    pcall(function() v.AcrylicPaint.Model:Destroy() end)
                 end
                 pcall(function()
                     local ovs = e(k)._SBOverlays
