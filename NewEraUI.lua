@@ -1208,10 +1208,12 @@ local aa = {
         function x.ToggleTransparency(C, D)
             if x.Window and x.Window.AcrylicPaint and x.Window.AcrylicPaint.Frame and x.Window.AcrylicPaint.Frame.Background then
                 pcall(function()
-                    x.Window.AcrylicPaint.Frame.Background.BackgroundTransparency = D and 0.65 or 0.2
+                    x.Window.AcrylicPaint.Frame.Background.BackgroundTransparency = D and 0.25 or 0.05
                     local bgImg = x.Window.AcrylicPaint.Frame:FindFirstChild("__ThemeBG")
                     if bgImg then
-                        bgImg.ImageTransparency = D and 0.2 or 0.05
+                        local curThm = x.Theme and e(o.Themes)[x.Theme]
+                        local baseTrans = (curThm and curThm.BackgroundTransparency) or 0.68
+                        bgImg.ImageTransparency = D and math.clamp(baseTrans + 0.06, 0, 0.85) or baseTrans
                     end
                 end)
             end
@@ -1969,9 +1971,10 @@ local aa = {
                     j(
                         "Frame",
                         {
-                            BackgroundTransparency = 0.55,
+                            BackgroundTransparency = 0.05,
                             Size = UDim2.fromScale(1, 1),
                             Name = "Background",
+                            ZIndex = 1,
                             ThemeTag = {BackgroundColor3 = "AcrylicMain"}
                         },
                         {j("UICorner", {CornerRadius = UDim.new(0, 12)})}
@@ -1979,20 +1982,22 @@ local aa = {
                     j(
                         "Frame",
                         {
+                            Name = "Gradient",
                             BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-                            BackgroundTransparency = 0.7,
-                            Size = UDim2.fromScale(1, 1)
+                            BackgroundTransparency = 0.35,
+                            Size = UDim2.fromScale(1, 1),
+                            ZIndex = 2
                         },
                         {
-                            j("UICorner", {CornerRadius = UDim.new(0, 10)}),
+                            j("UICorner", {CornerRadius = UDim.new(0, 12)}),
                             j("UIGradient", {Rotation = 0, ThemeTag = {Color = "AcrylicGradient"}})
                         }
                     ),
                     j(
                         "Frame",
-                        {BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 2},
+                        {Name = "Stroke", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 3},
                         {
-                            j("UICorner", {CornerRadius = UDim.new(0, 10)}),
+                            j("UICorner", {CornerRadius = UDim.new(0, 12)}),
                             j("UIStroke", {Transparency = 0.5, Thickness = 1, ThemeTag = {Color = "AcrylicBorder"}})
                         }
                     )
@@ -5114,7 +5119,7 @@ local aa = {
                         bgImg.ImageColor3 = Color3.fromRGB(255, 255, 255)
                         local isTrans = (getgenv().WindowTransparent ~= false)
                         local themeTrans = thm and thm.BackgroundTransparency
-                        bgImg.ImageTransparency = themeTrans or (isTrans and 0.2 or 0.05)
+                        bgImg.ImageTransparency = themeTrans or (isTrans and 0.74 or 0.68)
                         local im=x.InterfaceManager
                         bgImg.Visible = not (im and im.Settings and im.Settings.DisableBG)
                     elseif bgImg then
@@ -9089,7 +9094,7 @@ local aa = {
             Name = "Emerald",
             Accent = Color3.fromRGB(16, 160, 95),
             Background = "rbxassetid://100391623230690",
-            BackgroundTransparency = 0.2,
+            BackgroundTransparency = 0.68,
             AcrylicMain = Color3.fromRGB(8, 16, 11),
             AcrylicBorder = Color3.fromRGB(14, 120, 70),
             AcrylicGradient = ColorSequence.new({
@@ -9149,7 +9154,7 @@ local aa = {
             Name = "HUT RI 81",
             Accent = Color3.fromRGB(220, 20, 30),
             Background = "rbxassetid://72205077312597",
-            BackgroundTransparency = 0.2,
+            BackgroundTransparency = 0.68,
             AcrylicMain = Color3.fromRGB(160, 16, 24),
             AcrylicBorder = Color3.fromRGB(220, 30, 40),
             AcrylicGradient = ColorSequence.new({
@@ -9227,7 +9232,7 @@ local aa = {
             Name = "Blood Red",
             Accent = Color3.fromRGB(200, 20, 30),
             Background = "rbxassetid://121343473918667",
-            BackgroundTransparency = 0.2,
+            BackgroundTransparency = 0.68,
             AcrylicMain = Color3.fromRGB(25, 5, 8),
             AcrylicBorder = Color3.fromRGB(140, 15, 20),
             AcrylicGradient = ColorSequence.new({
@@ -9287,7 +9292,7 @@ local aa = {
             Name = "Rimuru Tempest",
             Accent = Color3.fromRGB(0, 195, 255),
             Background = "rbxassetid://133652514200333",
-            BackgroundTransparency = 0.2,
+            BackgroundTransparency = 0.68,
             AcrylicMain = Color3.fromRGB(8, 18, 32),
             AcrylicBorder = Color3.fromRGB(0, 140, 230),
             AcrylicGradient = ColorSequence.new({
@@ -9365,7 +9370,7 @@ local aa = {
             Name = "Solar",
             Accent = Color3.fromRGB(255, 200, 20),
             Background = "rbxassetid://83078153431765",
-            BackgroundTransparency = 0.2,
+            BackgroundTransparency = 0.68,
             AcrylicMain = Color3.fromRGB(24, 18, 6),
             AcrylicBorder = Color3.fromRGB(180, 130, 20),
             AcrylicGradient = ColorSequence.new({
@@ -9443,7 +9448,7 @@ local aa = {
             Name = "Neko",
             Accent = Color3.fromRGB(255, 105, 180),
             Background = "rbxassetid://111901135222937",
-            BackgroundTransparency = 0.2,
+            BackgroundTransparency = 0.68,
             AcrylicMain = Color3.fromRGB(28, 12, 22),
             AcrylicBorder = Color3.fromRGB(230, 90, 165),
             AcrylicGradient = ColorSequence.new({
