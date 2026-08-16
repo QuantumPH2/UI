@@ -4969,25 +4969,18 @@ local aa = {
             end
         end
         function k.AddSignal(m, n)
+            if not m then return nil end
             if n == nil then
-                if m then
-                    table.insert(k.Signals, m)
-                    return m
-                end
-                return nil
-            end
-            if m and typeof(m) == "RBXScriptConnection" then
                 table.insert(k.Signals, m)
                 return m
-            elseif m and (typeof(m) == "RBXScriptSignal" or (type(m) == "table" and m.Connect) or (type(m) == "userdata" and pcall(function() return m.Connect end))) then
-                local conn = m:Connect(n)
+            end
+            local ok, conn = pcall(function()
+                return m:Connect(n)
+            end)
+            if ok and conn then
                 table.insert(k.Signals, conn)
                 return conn
-            elseif m and m.Connect then
-                local conn = m:Connect(n)
-                table.insert(k.Signals, conn)
-                return conn
-            elseif m and m.Disconnect then
+            else
                 table.insert(k.Signals, m)
                 return m
             end
