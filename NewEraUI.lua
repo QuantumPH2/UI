@@ -5235,7 +5235,7 @@ local aa = {
         l.__index = l
         l.__type = "Button"
         function l.New(m, n)
-            assert(n.Title, "Button - Missing Title")
+            n.Title = n.Title or "Button"
             n.Callback = n.Callback or function()
                 end
             local o = e(k.Element)(n.Title, n.Description, m.Container, true)
@@ -6575,7 +6575,7 @@ local aa = {
         c.__type = "Input"
         function c.New(d, e, f)
             local g = d.Library
-            assert(f.Title, "Input - Missing Title")
+            f.Title = f.Title or "Input"
             f.Callback = f.Callback or function()
                 end
             local h, i =
@@ -6882,9 +6882,9 @@ local aa = {
         aj.__index = aj
         aj.__type = "Paragraph"
         function aj.New(c, d)
-            assert(d.Title, "Paragraph - Missing Title")
+            d.Title = d.Title or "Paragraph"
             d.Content = d.Content or ""
-            local e = ac(ag.Element)(d.Title, d.Content, aj.Container, false)
+            local e = ac(ag.Element)(d.Title, d.Content, c.Container or aj.Container, false)
             e.Frame.BackgroundTransparency = 0.92
             e.Border.Transparency = 0.6
             return e
@@ -6900,11 +6900,11 @@ local aa = {
         c.__type = "Slider"
         function c.New(d, e, f)
             local g = d.Library
-            assert(f.Title, "Slider - Missing Title.")
-            assert(f.Default ~= nil, "Slider - Missing default value.")
-            assert(f.Min ~= nil, "Slider - Missing minimum value.")
-            assert(f.Max ~= nil, "Slider - Missing maximum value.")
-            assert(f.Rounding ~= nil, "Slider - Missing rounding value.")
+            f.Title = f.Title or "Slider"
+            f.Min = f.Min or 0
+            f.Max = f.Max or 100
+            f.Default = f.Default or f.Min
+            f.Rounding = f.Rounding or 0
             local h, i, j =
                 {
                     Value = nil,
@@ -7055,7 +7055,7 @@ local aa = {
         c.__type = "Toggle"
         function c.New(d, e, f)
             local g = d.Library
-            assert(f.Title, "Toggle - Missing Title")
+            f.Title = f.Title or "Toggle"
             local h, i =
                 {
                     Value = f.Default or false,
