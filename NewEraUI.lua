@@ -3220,7 +3220,7 @@ local aa = {
                 local tabLib = t
                 local title2     = tostring(cfg.Title or "Section")
                 local iconKey2   = cfg.Icon
-                local startOpen2 = cfg.Open == true
+                local startOpen2 = cfg.Open ~= false
                 local pad2 = 5
                 local sectionMargin = 12
                 local ts2 = game:GetService("TweenService")
@@ -3326,12 +3326,27 @@ local aa = {
                     Parent = contentBg2,
                 })
 
-                local isOpen2 = false
+                local isOpen2 = true
                 local innerH2 = 0
                 local dur2 = 0.16
                 local ti2 = TweenInfo.new(dur2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
                 local _animating = false
                 local _curTween1, _curTween2 = nil, nil
+
+                local function calcContentH()
+                    local h = innerLayout2.AbsoluteContentSize.Y
+                    if h and h > 0 then return h end
+                    local total = 0
+                    for _, child in ipairs(contentBg2:GetChildren()) do
+                        if child:IsA("GuiObject") and child.Name ~= "_ElemIcon" and not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
+                            local chH = child.Size.Y.Offset
+                            if chH <= 0 then chH = child.AbsoluteSize.Y end
+                            if chH <= 0 then chH = 38 end
+                            total = total + chH + pad2
+                        end
+                    end
+                    return total
+                end
 
                 local function applyArrow2(open, anim)
                     local rot = open and 180 or 0
@@ -3348,14 +3363,14 @@ local aa = {
                     if _curTween1 then pcall(function() _curTween1:Cancel() end) end
                     if _curTween2 then pcall(function() _curTween2:Cancel() end) end
                     
-                    local curContentH = innerLayout2.AbsoluteContentSize.Y
-                    if curContentH > 0 then innerH2 = curContentH end
-                    local ch = open and (innerH2 + pad2 * 2) or 0
-                    local oh = 26 + ch + sectionMargin
-
                     if open then
                         contentBg2.Visible = true
                     end
+
+                    local curContentH = calcContentH()
+                    if curContentH > 0 then innerH2 = curContentH end
+                    local ch = open and (innerH2 + pad2 * 2) or 0
+                    local oh = 26 + ch + sectionMargin
 
                     if anim then
                         _animating = true
@@ -3363,13 +3378,13 @@ local aa = {
                         _curTween2 = ts2:Create(outerWrap2, ti2, {Size = UDim2.new(1, 0, 0, oh)})
                         _curTween1:Play()
                         _curTween2:Play()
-                        task.delay(dur2 + 0.01, function()
+                        task.delay(dur2 + 0.02, function()
                             _animating = false
                             if not isOpen2 then
                                 contentBg2.Visible = false
                             else
-                                local finalH = innerLayout2.AbsoluteContentSize.Y
-                                if finalH > 0 and finalH ~= innerH2 then
+                                local finalH = calcContentH()
+                                if finalH > 0 then
                                     innerH2 = finalH
                                     local realCh = finalH + pad2 * 2
                                     contentBg2.Size = UDim2.new(1, 0, 0, realCh)
@@ -3388,7 +3403,7 @@ local aa = {
                     local newH = innerLayout2.AbsoluteContentSize.Y
                     if newH > 0 then innerH2 = newH end
                     if isOpen2 and not _animating then
-                        local ch = newH + pad2 * 2
+                        local ch = (newH > 0 and newH or calcContentH()) + pad2 * 2
                         contentBg2.Size = UDim2.new(1, 0, 0, ch)
                         outerWrap2.Size = UDim2.new(1, 0, 0, 26 + ch + sectionMargin)
                     end
@@ -3398,7 +3413,7 @@ local aa = {
                     setOpen2(not isOpen2, true)
                 end)
                 task.defer(function()
-                    local initH = innerLayout2.AbsoluteContentSize.Y
+                    local initH = calcContentH()
                     if initH > 0 then innerH2 = initH end
                     setOpen2(startOpen2, false)
                 end)
