@@ -218,11 +218,11 @@ local aa = {
             return (lp and lp:FindFirstChildOfClass("PlayerGui")) or (lp and lp:WaitForChild("PlayerGui", 3)) or core
         end
         local targetParent = getGuiContainer()
-        local w = u("ScreenGui", {Parent = targetParent, ResetOnSpawn = false})
+        local w = u("ScreenGui", {Parent = targetParent, ResetOnSpawn = false, IgnoreGuiInset = true})
         safeProtect(w)
-        local sw = u("ScreenGui", {Parent = targetParent, ResetOnSpawn = false, DisplayOrder = 50, ZIndexBehavior = Enum.ZIndexBehavior.Sibling})
+        local sw = u("ScreenGui", {Parent = targetParent, ResetOnSpawn = false, DisplayOrder = 50, ZIndexBehavior = Enum.ZIndexBehavior.Sibling, IgnoreGuiInset = true})
         safeProtect(sw)
-        local nw = u("ScreenGui", {Parent = targetParent, ResetOnSpawn = false, DisplayOrder = 999, ZIndexBehavior = Enum.ZIndexBehavior.Sibling})
+        local nw = u("ScreenGui", {Parent = targetParent, ResetOnSpawn = false, DisplayOrder = 999, ZIndexBehavior = Enum.ZIndexBehavior.Sibling, IgnoreGuiInset = true})
         safeProtect(nw)
         t:Init(nw)
         local x = {
@@ -1267,7 +1267,6 @@ local aa = {
             return t:New(parseNotifyError(D))
         end
 
-
         local httpService = game:GetService("HttpService")
         local SaveManager = {}
         SaveManager.Folder = "FluentSettings"
@@ -1388,7 +1387,6 @@ local aa = {
         end
         SaveManager:BuildFolderTree()
         x.SaveManager = SaveManager
-
 
         local InterfaceManager = {}
         InterfaceManager.Folder = "FluentSettings"
@@ -1592,10 +1590,9 @@ local aa = {
         InterfaceManager:BuildFolderTree()
         x.InterfaceManager = InterfaceManager
 
-
         local FloatingButtonManager = {}
         FloatingButtonManager.Folder = "FloatingButtons"
-        FloatingButtonManager.Buttons = {}  -- {frame=, button=, applyShape=}
+        FloatingButtonManager.Buttons = {}
         FloatingButtonManager.Library = nil
         local function serUDim2(u) return{ScaleX=u.X.Scale,OffsetX=u.X.Offset,ScaleY=u.Y.Scale,OffsetY=u.Y.Offset} end
         local function desUDim2(t2) return UDim2.new(t2.ScaleX or 0,t2.OffsetX or 0,t2.ScaleY or 0,t2.OffsetY or 0) end
@@ -1607,13 +1604,10 @@ local aa = {
             for _,p2 in ipairs(paths) do if not isfolder(p2) then makefolder(p2) end end
         end
         FloatingButtonManager:BuildFolderTree()
-        -- AddButton(id, frameOrButton, locked, isCircle, applyShapeCallback, frame)
-        -- frameOrButton: the draggable Frame (preferred) or TextButton
-        -- applyShapeCallback: optional function(isCircle) to restore shape on load
-        -- frame: optional explicit Frame if frameOrButton is a TextButton child
+
         function FloatingButtonManager:AddButton(id, frameOrButton, locked, isCircle, applyShapeCallback, frame)
             local targetFrame = frame or frameOrButton
-            -- auto-detect: if frameOrButton is TextButton, use its Parent as frame
+
             if frameOrButton:IsA("TextButton") and not frame then
                 local p = frameOrButton.Parent
                 if p and p:IsA("Frame") then targetFrame = p end
@@ -1630,7 +1624,7 @@ local aa = {
             local path=self.Folder.."/settings/"..name..".json"
             local data={}
             for id,entry in pairs(self.Buttons) do
-                local f = entry.frame or entry  -- backwards compat: entry may be a Frame directly
+                local f = entry.frame or entry
                 data[id]={
                     size     = serUDim2(f.Size),
                     position = serUDim2(f.Position),
@@ -1651,12 +1645,12 @@ local aa = {
             for id,saved in pairs(dec) do
                 local entry=self.Buttons[id]
                 if entry then
-                    local f = entry.frame or entry  -- backwards compat
+                    local f = entry.frame or entry
                     if saved.position then f.Position = desUDim2(saved.position) end
                     if saved.size     then f.Size     = desUDim2(saved.size)     end
                     f:SetAttribute("Locked",   saved.locked   or false)
                     f:SetAttribute("IsCircle", saved.isCircle or false)
-                    -- call applyShape callback if provided so shape is restored correctly
+
                     if entry.applyShape then
                         task.defer(function()
                             pcall(entry.applyShape, saved.isCircle or false)
@@ -1886,7 +1880,6 @@ local aa = {
 
         x.MediaManager = _MM
 
-
         function x.RegisterCustomTheme(C, D, E)
             if type(D) ~= "string" or type(E) ~= "table" then return false end
             E.Name = D
@@ -1900,7 +1893,6 @@ local aa = {
             return true
         end
         x.AddCustomTheme = x.RegisterCustomTheme
-
 
         if getgenv then
             pcall(function() getgenv().Fluent_Themes = e(o.Themes) end)
@@ -2025,7 +2017,7 @@ local aa = {
         end
         return {i, j}
     end,
-    [8] = function() --[[ Assets ]]
+    [8] = function()
         local c, d, e, f, g = b(8)
         return {
             Close = "rbxassetid://9886659671",
@@ -2034,7 +2026,7 @@ local aa = {
             Restore = "rbxassetid://9886659001"
         }
     end,
-    [9] = function() --[[ Button_Comp ]]
+    [9] = function()
         local c, d, e, f, g = b(9)
         local h = d.Parent.Parent
         local i, j = e(h.Packages.Flipper), e(h.Creator)
@@ -2111,7 +2103,7 @@ local aa = {
             return p
         end
     end,
-    [10] = function() --[[ Dialog_Comp ]]
+    [10] = function()
         local c, d, e, f, g = b(10)
         local h, i, j, k =
             game:GetService "UserInputService",
@@ -2260,7 +2252,7 @@ local aa = {
         end
         return q
     end,
-    [11] = function() --[[ Element_Base ]]
+    [11] = function()
         local c, d, e, f, g = b(11)
         local h = d.Parent.Parent
         local i, j = e(h.Packages.Flipper), e(h.Creator)
@@ -2380,6 +2372,7 @@ local aa = {
                         Enum.FontStyle.Normal
                     ),
                     Text = m,
+                    RichText = true,
                     TextColor3 = Color3.fromRGB(240, 240, 240),
                     TextSize = 13,
                     TextXAlignment = Enum.TextXAlignment.Left,
@@ -2395,6 +2388,7 @@ local aa = {
                 {
                     FontFace = Font.new "rbxasset://fonts/families/GothamSSm.json",
                     Text = n,
+                    RichText = true,
                     TextColor3 = Color3.fromRGB(200, 200, 200),
                     TextSize = 12,
                     TextWrapped = true,
@@ -2453,6 +2447,7 @@ local aa = {
                 {k("UICorner", {CornerRadius = UDim.new(0, 4)}), q.Border, q.LabelHolder}
             )
             function q.SetTitle(r, s)
+                q.TitleLabel.RichText = true
                 q.TitleLabel.Text = s
                 _startMarquee(q.TitleLabel)
             end
@@ -2465,6 +2460,7 @@ local aa = {
                 else
                     q.DescLabel.Visible = true
                 end
+                q.DescLabel.RichText = true
                 q.DescLabel.Text = s
             end
             function q.Destroy(r)
@@ -2472,7 +2468,7 @@ local aa = {
             end
             q:SetTitle(m)
             q:SetDesc(n)
-            -- IconColor is applied in _addElementToSection via E.IconColor check
+
             if p then
                 local r, s, t =
                     h.Themes,
@@ -2511,7 +2507,7 @@ local aa = {
             return q
         end
     end,
-    [12] = function() --[[ Notification ]]
+    [12] = function()
         local c, d, e, f, g = b(12)
         local h = d.Parent.Parent
         local i, j, k = e(h.Packages.Flipper), e(h.Creator), e(h.Acrylic)
@@ -2747,7 +2743,7 @@ local aa = {
         end
         return o
     end,
-    [13] = function() --[[ Section ]]
+    [13] = function()
         local c, d, e, f, g = b(13)
         local h = d.Parent.Parent
         local i = e(h.Creator)
@@ -2806,7 +2802,7 @@ local aa = {
             return m
         end
     end,
-    [14] = function() --[[ Tab ]]
+    [14] = function()
         local c, d, e, f, g = b(14)
         local h = d.Parent.Parent
         local i, j = e(h.Packages.Flipper), e(h.Creator)
@@ -3201,8 +3197,7 @@ local aa = {
                 return z:AddCollapsibleSection(A, iconKey)
             end
             function x.AddCollapsibleSection(z, A, iconKey, openState)
-                -- Accept the same calling convention as AddSection: (Title, Icon).
-                -- Also accept a config table for backward compatibility: { Title=, Icon=, Open= }.
+
                 local cfg = {}
                 if type(A) == "table" then
                     cfg = A
@@ -3232,7 +3227,6 @@ local aa = {
                     Parent = x.Container,
                 })
 
-                -- Header row: matches AddSection's heading style exactly
                 local header2 = k("TextButton", {
                     Size = UDim2.new(1, 0, 0, 26),
                     BackgroundTransparency = 1,
@@ -3281,7 +3275,6 @@ local aa = {
                     Parent = header2,
                 })
 
-                -- Chevron on the right: points DOWN (v) when closed, flips UP (^) when open
                 local arrowIco2 = k("ImageLabel", {
                     Name = "_SecChevron",
                     Size = UDim2.fromOffset(16, 16),
@@ -3304,7 +3297,6 @@ local aa = {
                     end
                 end
 
-                -- Content area for nested elements, collapsible
                 local contentBg2 = k("Frame", {
                     Size = UDim2.new(1, 0, 0, 0),
                     Position = UDim2.fromOffset(0, 26),
@@ -3362,7 +3354,7 @@ local aa = {
                     applyArrow2(open, anim)
                     if _curTween1 then pcall(function() _curTween1:Cancel() end) end
                     if _curTween2 then pcall(function() _curTween2:Cancel() end) end
-                    
+
                     if open then
                         contentBg2.Visible = true
                     end
@@ -3478,7 +3470,7 @@ local aa = {
         end
         return o
     end,
-    [15] = function() --[[ Textbox ]]
+    [15] = function()
         local c, d, e, f, g = b(15)
         local h, i = game:GetService "TextService", d.Parent.Parent
         local j, k = e(i.Packages.Flipper), e(i.Creator)
@@ -3594,7 +3586,7 @@ local aa = {
             return o
         end
     end,
-    [16] = function() --[[ TitleBar ]]
+    [16] = function()
         local c, d, e, f, g = b(16)
         local h, i = d.Parent.Parent, e(d.Parent.Assets)
         local j, k = e(h.Creator), e(h.Packages.Flipper)
@@ -3931,7 +3923,7 @@ local aa = {
             return o
         end
     end,
-    [17] = function() --[[ Window ]]
+    [17] = function()
         local c, d, e, f, g = b(17)
         local h, i, j, k =
             game:GetService "UserInputService",
@@ -3983,7 +3975,6 @@ local aa = {
             local function mkCorner(r) return s("UICorner",{CornerRadius=UDim.new(0,r)}) end
             local function mkStroke(t2,thk) return s("UIStroke",{Transparency=t2,Thickness=thk or 1,ThemeTag={Color="InElementBorder"}}) end
 
-
             if t.TabLogo then
                 local logoH = 110
                 local logoFrame = s("Frame",{
@@ -4021,7 +4012,6 @@ local aa = {
                 topOffset = topOffset + logoH + 4
                 table.insert(sidebarChildren, logoFrame)
             end
-
 
             if t.UserInfoTop then
                 local lp = game:GetService("Players").LocalPlayer
@@ -4146,7 +4136,6 @@ local aa = {
                 table.insert(sidebarChildren, panel)
             end
 
-
             local showSearch = not (t.Search == false)
             local searchH = 30
             local searchBox = nil
@@ -4183,7 +4172,6 @@ local aa = {
             end
 
             v._tabTopOffset = topOffset
-
 
             if t.UserInfo then
                 local lp2 = game:GetService("Players").LocalPlayer
@@ -4306,7 +4294,6 @@ local aa = {
                 table.insert(sidebarChildren, bot)
             end
 
-
             local _tabListLayout = s("UIListLayout", {Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder})
             v.TabListContainer = s(
                 "Frame",
@@ -4337,7 +4324,6 @@ local aa = {
             )
             table.insert(sidebarChildren, v.TabHolder)
 
-
             local listLayout = _tabListLayout
             if listLayout then
                 listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
@@ -4345,12 +4331,10 @@ local aa = {
                 end)
             end
 
-
             if searchBox then
                 local allElements = {}
                 v.AllElements = allElements
                 v.SearchBox = searchBox
-                
 
                 local function scrollToFirstVisible()
                     task.wait(0.05)
@@ -4375,11 +4359,11 @@ local aa = {
                         end
                     end
                 end
-                
+
                 searchBox:GetPropertyChangedSignal("Text"):Connect(function()
                     local q = (searchBox.Text or ""):lower():gsub("^%s+",""):gsub("%s+$","")
                     local blank = q == ""
-                    
+
                     for _, tabBtn in pairs(v.TabListContainer:GetChildren()) do
                         if tabBtn:IsA("TextButton") then
                             local txt = ""
@@ -4388,14 +4372,12 @@ local aa = {
                             tabBtn.Visible = blank or txt:lower():find(q, 1, true) ~= nil
                         end
                     end
-                    
 
                     for el, label in pairs(allElements) do
                         if el and el.Parent then
                             el.Visible = blank or label:lower():find(q, 1, true) ~= nil
                         end
                     end
-                    
 
                     task.delay(0.03, function()
                         for _, cf in pairs(v.ContainerHolder and v.ContainerHolder:GetChildren() or {}) do
@@ -4426,7 +4408,6 @@ local aa = {
                         end
                     end)
                 end)
-                
 
                 game:GetService("UserInputService").InputBegan:Connect(function(inp, gp)
                     if gp then return end
@@ -4705,7 +4686,7 @@ local aa = {
                             local vpX, vpY = j.ViewportSize.X, j.ViewportSize.Y
                             local curW = v.Root.AbsoluteSize.X
                             local newX = math.clamp(_dragStartPos.X.Offset + N.X, -curW + 100, math.max(vpX - 100, 0))
-                            local newY = math.clamp(_dragStartPos.Y.Offset + N.Y, 0, math.max(vpY - 40, 0))
+                            local newY = math.clamp(_dragStartPos.Y.Offset + N.Y, -100, math.max(vpY - 40, 0))
                             _targetPos = UDim2.fromOffset(newX, newY)
                             v.Position = _targetPos
                             v.Root.Position = _targetPos
@@ -4930,7 +4911,7 @@ local aa = {
             return v
         end
     end,
-    [18] = function() --[[ Creator ]]
+    [18] = function()
         local c, d, e, f, g = b(18)
         local h = d.Parent
         local i, j, k =
@@ -4941,7 +4922,7 @@ local aa = {
                 Signals = {},
                 TransparencyMotors = {},
                 DefaultProperties = {
-                    ScreenGui = {ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling},
+                    ScreenGui = {ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling, IgnoreGuiInset = true},
                     Frame = {
                         BackgroundColor3 = Color3.new(1, 1, 1),
                         BorderColor3 = Color3.new(0, 0, 0),
@@ -5219,7 +5200,7 @@ local aa = {
         end
         return k
     end,
-    [19] = function() --[[ Module19 ]]
+    [19] = function()
         local c, d, e, f, g = b(19)
         local h = {}
         for i, j in next, d:GetChildren() do
@@ -5227,7 +5208,7 @@ local aa = {
         end
         return h
     end,
-    [20] = function() --[[ Button_El ]]
+    [20] = function()
         local c, d, e, f, g = b(20)
         local h = d.Parent.Parent
         local i = e(h.Creator)
@@ -5269,7 +5250,7 @@ local aa = {
         end
         return l
     end,
-    [21] = function() --[[ Colorpicker_El ]]
+    [21] = function()
         local c, d, e, f, g = b(21)
         local h, i, j, k =
             game:GetService "UserInputService",
@@ -5773,7 +5754,7 @@ local aa = {
         end
         return u
     end,
-    [22] = function() --[[ Dropdown_El ]]
+    [22] = function()
         local aa, ab, ac, ad, ae = b(22)
         local af, ag, ah, ai, aj =
             game:GetService "TweenService",
@@ -5859,13 +5840,9 @@ local aa = {
         end
         g.__index = g
         g.__type = "Dropdown"
-        -- Shared across all dropdown instances: tracks which side (left/right) of the window
-        -- is currently occupied by an open OutsideWindow dropdown, so a second one opening
-        -- at the same time automatically goes to the other side instead of overlapping.
+
         local _outsideSideOwner = {left = nil, right = nil, top = nil, bottom = nil}
-        -- Shared registry of currently open dropdowns, so the global "Animated Window" toggle
-        -- can immediately re-apply or clear shine on dropdowns that are already open, instead
-        -- of waiting for the user to close and reopen them.
+
         local _openDropdowns = setmetatable({}, {__mode = "k"})
         getgenv()._FluentProRefreshOpenDropdownShine = function()
             for state in next, _openDropdowns do
@@ -6030,8 +6007,7 @@ local aa = {
                 e("UICorner", {CornerRadius = UDim.new(0, 7)}),
                 e("UIGradient", {Rotation = 90, ThemeTag = {Color = "AcrylicGradient"}}),
             })
-            -- Same background, color, border and animated treatment regardless of OutsideWindow.
-            -- OutsideWindow only changes WHERE the dropdown is placed, never how it looks.
+
             local uChildren = {t, e("UICorner", {CornerRadius = UDim.new(0, 7)}),
                 ddStroke,
                 ddGradient,
@@ -6041,8 +6017,7 @@ local aa = {
             local u = e("Frame", {Size = UDim2.fromScale(1, 1), ThemeTag = {BackgroundColor3 = "DropdownHolder"}}, uChildren)
             local _isManagerDD = j.IsManagerDropdown == true
             if _isManagerDD then
-                -- Manager-built dropdowns (theme list, font list, config list, layouts list) mirror
-                -- the window's own Transparency setting live, instead of having independent transparency.
+
                 local function _syncManagerTransparency()
                     local baseTransp = c.GetThemeProperty("DropdownTransparency") or 0
                     u.BackgroundTransparency = getgenv().WindowTransparent and math.max(baseTransp, 0.35) or baseTransp
@@ -6106,7 +6081,7 @@ local aa = {
             local w, x = function()
                     local winFrame = _winFrame()
                     if not winFrame then return end
-                    
+
                     if v.Parent ~= winFrame then
                         v.Parent = winFrame
                     end
@@ -6116,8 +6091,7 @@ local aa = {
 
                     local winW = winFrame.AbsoluteSize.X
                     local popW = math.clamp(p.AbsoluteSize.X + 20, 220, math.max(220, winW - 10))
-                    
-                    -- Dropdown spans from top of UI to bottom of UI inside the window frame
+
                     v.Size = UDim2.new(0, popW, 1, 0)
 
                     local btnRelX = p.AbsolutePosition.X - winFrame.AbsolutePosition.X
@@ -6175,7 +6149,7 @@ local aa = {
                     shouldAnimate = themeSupportsShine and j.Animated == true
                 end
                 ddGradient.Visible = shouldAnimate
-                -- Directly set color without calling AddThemeObject (avoids UpdateTheme recursion)
+
                 if shouldAnimate then
                     local acrylicBorder = c.GetThemeProperty("AcrylicBorder")
                     if acrylicBorder then ddStroke.Color = acrylicBorder end
@@ -6196,7 +6170,7 @@ local aa = {
                 A.ScrollingEnabled = false
                 y()
                 w()
-                
+
                 dimOverlay.Visible = true
                 dimOverlay.BackgroundTransparency = 1
                 v.Visible = true
@@ -6251,7 +6225,6 @@ local aa = {
                     return l.Value and 1 or 0
                 end
             end
-            
 
             local filterTimer = nil
             local function updateDropdownFilter()
@@ -6278,7 +6251,7 @@ local aa = {
                     end)
                 end)
             end
-            
+
             function l.BuildDropdownList(B)
                 local C, D = l.Values, {}
                 l.Buttons = {}
@@ -6470,13 +6443,13 @@ local aa = {
                 else
                     x = x + 30
                 end
-                -- fallback: use button width if TextBounds not ready yet
+
                 if x < 60 then
                     x = p.AbsoluteSize.X > 0 and p.AbsoluteSize.X or 170
                 end
                 z()
                 task.defer(function()
-                    -- re-measure after render
+
                     local mx = 0
                     for J2, K2 in next, D do
                         local lbl2 = J2:FindFirstChild("ButtonLabel")
@@ -6566,7 +6539,7 @@ local aa = {
         end
         return g
     end,
-    [23] = function() --[[ Input_El ]]
+    [23] = function()
         local aa, ab, ac, ad, ae = b(23)
         local af = ab.Parent.Parent
         local ag = ac(af.Creator)
@@ -6642,7 +6615,7 @@ local aa = {
         end
         return c
     end,
-    [24] = function() --[[ Keybind_El ]]
+    [24] = function()
         local aa, ab, ac, ad, ae = b(24)
         local af, ag = game:GetService "UserInputService", ab.Parent.Parent
         local ah = ac(ag.Creator)
@@ -6875,7 +6848,7 @@ local aa = {
         end
         return c
     end,
-    [25] = function() --[[ Paragraph_El ]]
+    [25] = function()
         local aa, ab, ac, ad, ae = b(25)
         local af = ab.Parent.Parent
         local ag, ah, ai, aj = af.Components, ac(af.Packages.Flipper), ac(af.Creator), {}
@@ -6885,13 +6858,18 @@ local aa = {
             d.Title = d.Title or "Paragraph"
             d.Content = d.Content or ""
             local e = ac(ag.Element)(d.Title, d.Content, c.Container or aj.Container, false)
+            if e.TitleLabel then e.TitleLabel.RichText = true end
+            if e.DescLabel then e.DescLabel.RichText = true end
+            e.SetContent = function(self, text)
+                e:SetDesc(text)
+            end
             e.Frame.BackgroundTransparency = 0.92
             e.Border.Transparency = 0.6
             return e
         end
         return aj
     end,
-    [26] = function() --[[ Slider_El ]]
+    [26] = function()
         local aa, ab, ac, ad, ae = b(26)
         local af, ag = game:GetService "UserInputService", ab.Parent.Parent
         local ah = ac(ag.Creator)
@@ -7046,7 +7024,7 @@ local aa = {
         end
         return c
     end,
-    [27] = function() --[[ Toggle_El ]]
+    [27] = function()
         local aa, ab, ac, ad, ae = b(27)
         local af, ag = game:GetService "TweenService", ab.Parent.Parent
         local ah = ac(ag.Creator)
@@ -7134,7 +7112,7 @@ local aa = {
         end
         return c
     end,
-    [59] = function() --[[ Image_El ]]
+    [59] = function()
         local aa, ab, ac, ad, ae = b(59)
         local af = ab.Parent.Parent
         local c = {}
@@ -7196,7 +7174,7 @@ local aa = {
         end
         return c
     end,
-    [60] = function() --[[ Video_El ]]
+    [60] = function()
         local aa, ab, ac, ad, ae = b(60)
         local af = ab.Parent.Parent
         local c = {}
@@ -7272,14 +7250,14 @@ local aa = {
                 function mod:Destroy() wrap:Destroy() end
                 return mod
             end
-            -- Overlay controls (hidden by default, shown on video click)
+
             local overlay = Instance.new("CanvasGroup")
             overlay.Size=UDim2.new(1,0,0,54); overlay.Position=UDim2.new(0,0,1,0); overlay.AnchorPoint=Vector2.new(0,1)
             overlay.BackgroundTransparency=1; overlay.GroupTransparency=1; overlay.ZIndex=5; overlay.Parent=wrap
-            -- Gradient background on overlay
+
             local gradFr = u("Frame",{Size=UDim2.fromScale(1,1),BackgroundColor3=Color3.fromRGB(0,0,0),BackgroundTransparency=0,BorderSizePixel=0,ZIndex=5,Parent=overlay})
             u("UIGradient",{Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,0.3),NumberSequenceKeypoint.new(1,1)}),Rotation=90,Parent=gradFr})
-            -- Seek row (top part of overlay)
+
             local seekRow = u("Frame",{Size=UDim2.new(1,-12,0,16),Position=UDim2.new(0,6,0,4),BackgroundTransparency=1,ZIndex=6,Parent=overlay})
             local timeCur = u("TextLabel",{Size=UDim2.fromOffset(36,16),BackgroundTransparency=1,Text="0:00",TextSize=10,Font=Enum.Font.GothamMedium,TextColor3=Color3.fromRGB(220,220,220),ZIndex=7,Parent=seekRow})
             local seekContainer = u("Frame",{Size=UDim2.new(1,-84,0,16),Position=UDim2.fromOffset(40,0),BackgroundTransparency=1,ZIndex=6,Parent=seekRow})
@@ -7290,7 +7268,7 @@ local aa = {
             local seekKnob = u("Frame",{Size=UDim2.fromOffset(12,12),Position=UDim2.new(0,0,0.5,0),AnchorPoint=Vector2.new(0.5,0.5),BackgroundColor3=Color3.fromRGB(255,255,255),BorderSizePixel=0,ZIndex=9,Parent=seekRail})
             u("UICorner",{CornerRadius=UDim.new(1,0),Parent=seekKnob})
             local timeDur = u("TextLabel",{Size=UDim2.fromOffset(36,16),Position=UDim2.new(1,-36,0,0),BackgroundTransparency=1,Text="0:00",TextSize=10,Font=Enum.Font.GothamMedium,TextColor3=Color3.fromRGB(160,160,170),ZIndex=7,Parent=seekRow})
-            -- Controls row (bottom part of overlay)
+
             local ctrlRow = u("Frame",{Size=UDim2.new(1,-12,0,26),Position=UDim2.new(0,6,0,24),BackgroundTransparency=1,ZIndex=6,Parent=overlay})
             local function ctrlBtn2(iconName, size, cb)
                 local btn=u("TextButton",{Size=UDim2.fromOffset(size or 22,22),BackgroundTransparency=1,Text="",ZIndex=7,AutoButtonColor=false,Parent=ctrlRow})
@@ -7306,7 +7284,7 @@ local aa = {
             applyIcon(volIco,"solar/volume-loud-bold")
             local volLbl=u("TextLabel",{Size=UDim2.fromOffset(32,22),Position=UDim2.fromOffset(84,0),BackgroundTransparency=1,Text=tostring(math.floor(vol*100)).."%",TextSize=10,Font=Enum.Font.Gotham,ZIndex=7,Parent=ctrlRow,ThemeTag={TextColor3="SubText"}})
             u("UIListLayout",{FillDirection=Enum.FillDirection.Horizontal,VerticalAlignment=Enum.VerticalAlignment.Center,Padding=UDim.new(0,2),Parent=ctrlRow})
-            -- show/hide overlay
+
             local ctrlVisible=false; local fadeTimer=0; local fadingOut=false
             local function showOverlay()
                 ctrlVisible=true; fadingOut=false; fadeTimer=3
@@ -7316,12 +7294,12 @@ local aa = {
                 ctrlVisible=false; fadingOut=true
                 ts2:Create(overlay,TweenInfo.new(0.3,Enum.EasingStyle.Sine),{GroupTransparency=1}):Play()
             end
-            -- Click video OR overlay to toggle/reset
+
             local vidClickBtn=u("TextButton",{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,Text="",ZIndex=4,AutoButtonColor=false,Parent=wrap})
             vidClickBtn.MouseButton1Click:Connect(function()
                 if ctrlVisible then fadeTimer=3 else showOverlay() end
             end)
-            -- Clicking overlay buttons resets timer
+
             local function resetFade() fadeTimer=3; fadingOut=false end
             playBtn.MouseButton1Click:Connect(function()
                 pcall(function() vid:Play() end); playing=true
@@ -7337,7 +7315,7 @@ local aa = {
             end)
             pauseBtn.Visible=auto
             playBtn.Visible=not auto
-            -- Seek
+
             local seeking=false
             local function vidSeek(posX)
                 resetFade()
@@ -7362,12 +7340,12 @@ local aa = {
             local hbConn
             hbConn = rs2.Heartbeat:Connect(function(dt)
                 if not wrap.Parent then if hbConn then hbConn:Disconnect() end return end
-                -- Auto-hide timer
+
                 if ctrlVisible then
                     fadeTimer=fadeTimer-dt
                     if fadeTimer<=0 and not seeking then hideOverlay() end
                 end
-                -- Seek bar update
+
                 if not vid then return end
                 local dur=vid.TimeLength or 0
                 local pos=0; pcall(function() pos=vid.TimePosition end)
@@ -7409,7 +7387,7 @@ local aa = {
         end
         return c
     end,
-    [61] = function() --[[ Code_El ]]
+    [61] = function()
         local aa, ab, ac, ad, ae = b(61)
         local af = ab.Parent.Parent
         local c = {}
@@ -7458,7 +7436,7 @@ local aa = {
         end
         return c
     end,
-    [62] = function() --[[ Group_El ]]
+    [62] = function()
         local aa, ab, ac, ad, ae = b(62)
         local af = ab.Parent.Parent
         local c = {}
@@ -7499,7 +7477,7 @@ local aa = {
         end
         return c
     end,
-    [63] = function() --[[ Space_El ]]
+    [63] = function()
         local aa, ab, ac, ad, ae = b(63)
         local af = ab.Parent.Parent
         local c = {}
@@ -7518,7 +7496,7 @@ local aa = {
         end
         return c
     end,
-    [64] = function() --[[ Divider_El ]]
+    [64] = function()
         local aa, ab, ac, ad, ae = b(64)
         local af = ab.Parent.Parent
         local c = {}
@@ -7535,7 +7513,7 @@ local aa = {
         end
         return c
     end,
-    [65] = function() --[[ Audio_El ]]
+    [65] = function()
         local aa, ab, ac, ad, ae = b(65)
         local af = ab.Parent.Parent
         local c = {}
@@ -7956,7 +7934,7 @@ local aa = {
         return c
     end,
 
-    [28] = function() --[[ Icons ]]
+    [28] = function()
         local aa, ab, ac, ad, ae = b(28)
         return {
             assets = {
@@ -8781,7 +8759,7 @@ local aa = {
             }
         }
     end,
-    [30] = function() --[[ Amethyst_Theme ]]
+    [30] = function()
         local aa, ab, ac, ad, ae = b(30)
         local af = {
             SingleMotor = ac(ab.SingleMotor),
@@ -8793,7 +8771,7 @@ local aa = {
         }
         return af
     end,
-    [31] = function() --[[ BaseMotor ]]
+    [31] = function()
         local aa, ab, ac, ad, ae = b(31)
         local af, ag, ah, ai = game:GetService "RunService", ac(ab.Parent.Signal), function()
             end, {}
@@ -8835,7 +8813,7 @@ local aa = {
         end
         return ai
     end,
-    [33] = function() --[[ GroupMotor ]]
+    [33] = function()
         local aa, ab, ac, ad, ae = b(33)
         local af, ag, ah = ac(ab.Parent.BaseMotor), ac(ab.Parent.SingleMotor), ac(ab.Parent.isMotor)
         local ai = setmetatable({}, af)
@@ -8920,7 +8898,7 @@ local aa = {
         end
         return ai
     end,
-    [35] = function() --[[ Instant ]]
+    [35] = function()
         local aa, ab, ac, ad, ae = b(35)
         local af = {}
         af.__index = af
@@ -8932,7 +8910,7 @@ local aa = {
         end
         return af
     end,
-    [37] = function() --[[ Linear ]]
+    [37] = function()
         local aa, ab, ac, ad, ae = b(37)
         local af = {}
         af.__index = af
@@ -8954,7 +8932,7 @@ local aa = {
         end
         return af
     end,
-    [39] = function() --[[ Signal ]]
+    [39] = function()
         local aa, ab, ac, ad, ae = b(39)
         local af = {}
         af.__index = af
@@ -8997,7 +8975,7 @@ local aa = {
         end
         return ag
     end,
-    [41] = function() --[[ SingleMotor ]]
+    [41] = function()
         local aa, ab, ac, ad, ae = b(41)
         local af = ac(ab.Parent.BaseMotor)
         local ag = setmetatable({}, af)
@@ -9046,7 +9024,7 @@ local aa = {
         end
         return ag
     end,
-    [43] = function() --[[ Spring ]]
+    [43] = function()
         local aa, ab, ac, ad, ae = b(43)
         local af, ag, ah, aj = 0.001, 0.001, 0.0001, {}
         aj.__index = aj
@@ -9096,7 +9074,7 @@ local aa = {
         end
         return aj
     end,
-    [45] = function() --[[ isMotor ]]
+    [45] = function()
         local aa, ab, ac, ad, ae = b(45)
         local af = function(af)
             local ag = tostring(af):match "^Motor%((.+)%)$"
@@ -9108,7 +9086,7 @@ local aa = {
         end
         return af
     end,
-    [47] = function() --[[ Themes ]]
+    [47] = function()
         local af = {
             Names = {
                 "Emerald", "HUT RI 81", "Blood Red", "Rimuru Tempest", "Solar", "Neko"
@@ -9546,7 +9524,7 @@ local aa = {
                 ColorSequenceKeypoint.new(1, Color3.fromRGB(225, 60, 145))
             }),
         }
-        -- Aliases
+
         af["BloodRed"] = af["Blood Red"]
         af["blood red"] = af["Blood Red"]
         af["bloodred"] = af["Blood Red"]
