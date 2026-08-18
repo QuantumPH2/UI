@@ -3215,7 +3215,7 @@ local aa = {
                 local tabLib = t
                 local title2     = tostring(cfg.Title or "Section")
                 local iconKey2   = cfg.Icon
-                local startOpen2 = cfg.Open ~= false
+                local startOpen2 = cfg.Open == true
                 local pad2 = 5
                 local sectionMargin = 12
                 local ts2 = game:GetService("TweenService")
@@ -3318,7 +3318,7 @@ local aa = {
                     Parent = contentBg2,
                 })
 
-                local isOpen2 = true
+                local isOpen2 = startOpen2
                 local innerH2 = 0
                 local dur2 = 0.16
                 local ti2 = TweenInfo.new(dur2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
