@@ -313,11 +313,14 @@ local aa = {
             end
         end
         function x.Round(y, z, A)
+            if not z then return 0 end
+            z = tonumber(z) or 0
+            A = tonumber(A) or 0
             if A == 0 then
-                return math.floor(z)
+                return math.round(z)
             end
-            z = tostring(z)
-            return z:find "%." and tonumber(z:sub(1, z:find "%." + A)) or z
+            local mult = 10 ^ A
+            return math.round(z * mult) / mult
         end
         local IconCache = {}
         local IconURLs = {
@@ -560,7 +563,7 @@ local aa = {
                     if not label or not label.Parent then
                         conn:Disconnect(); _marqueeConns[animKey] = nil; return
                     end
-                    if not label.Visible or getgenv()._FluentWindowInteracting then return end
+                    if not label.Visible or not label:IsDescendantOf(game) or getgenv()._FluentWindowInteracting then return end
                     if phase == 0 then
                         timer = timer + dt; if timer >= pause then timer = 0; phase = 1 end
                     elseif phase == 1 then
@@ -2315,7 +2318,7 @@ local aa = {
                         if _marqueeConns[label] == conn then _marqueeConns[label] = nil end
                         return
                     end
-                    if not label.Visible or getgenv()._FluentWindowInteracting then return end
+                    if not label.Visible or not label:IsDescendantOf(game) or getgenv()._FluentWindowInteracting then return end
                     if phase == 0 then
                         timer = timer + dt
                         if timer >= pause then timer = 0; phase = 1 end
@@ -4501,31 +4504,39 @@ local aa = {
             })
 
             local fDragging = false
+            local fDragMoved = false
             local fDragInput = nil
             local fDragStart, fStartPos
             m.AddSignal(floatBtn.InputBegan, function(M)
                 if (M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch) and not fDragging then
                     fDragging = true
+                    fDragMoved = false
                     fDragInput = M
                     fDragStart = M.Position
                     fStartPos = floatBtn.Position
                 end
             end)
             m.AddSignal(h.InputChanged, function(M)
-                if fDragging and (M == fDragInput or M.UserInputType == Enum.UserInputType.MouseMovement) then
+                if fDragging and (M == fDragInput or M.UserInputType == Enum.UserInputType.MouseMovement or M.UserInputType == Enum.UserInputType.Touch) then
                     local delta = M.Position - fDragStart
+                    if math.abs(delta.X) > 5 or math.abs(delta.Y) > 5 then
+                        fDragMoved = true
+                    end
                     floatBtn.Position = UDim2.new(fStartPos.X.Scale, fStartPos.X.Offset + delta.X, fStartPos.Y.Scale, fStartPos.Y.Offset + delta.Y)
                 end
             end)
             m.AddSignal(h.InputEnded, function(M)
-                if fDragging and (M == fDragInput or (M.UserInputType == Enum.UserInputType.MouseButton1 and fDragInput and fDragInput.UserInputType == Enum.UserInputType.MouseButton1)) then
+                if fDragging and (M == fDragInput or (M.UserInputType == Enum.UserInputType.MouseButton1 and fDragInput and fDragInput.UserInputType == Enum.UserInputType.MouseButton1) or (M.UserInputType == Enum.UserInputType.Touch)) then
                     fDragging = false
                     fDragInput = nil
                 end
             end)
 
             m.AddSignal(floatBtn.MouseButton1Click, function()
-                v:Minimize()
+                if not fDragMoved then
+                    v:Minimize()
+                end
+                fDragMoved = false
             end)
 
             function v.SetMinimizeIcon(self, iconId)
@@ -4739,18 +4750,23 @@ local aa = {
                     v.TabHolder.CanvasSize = UDim2.new(0, 0, 0, v.TabListContainer.UIListLayout.AbsoluteContentSize.Y + 10)
                 end
             )
+            local _lastMinTick = 0
             m.AddSignal(
                 h.InputBegan,
-                function(M)
-                    if
-                        type(u.MinimizeKeybind) == "table" and u.MinimizeKeybind.Type == "Keybind" and
-                            not h:GetFocusedTextBox()
-                     then
-                        if M.KeyCode.Name == u.MinimizeKeybind.Value then
+                function(M, gp)
+                    if gp then return end
+                    if h:GetFocusedTextBox() then return end
+                    if M.UserInputType ~= Enum.UserInputType.Keyboard then return end
+
+                    if type(u.MinimizeKeybind) == "table" and u.MinimizeKeybind.Type == "Keybind" then
+                        local bindVal = u.MinimizeKeybind.Value
+                        if bindVal and bindVal ~= "None" and bindVal ~= "Unknown" and bindVal ~= "" and M.KeyCode.Name == bindVal then
                             v:Minimize()
                         end
-                    elseif M.KeyCode == u.MinimizeKey and not h:GetFocusedTextBox() then
-                        v:Minimize()
+                    elseif u.MinimizeKey and typeof(u.MinimizeKey) == "EnumItem" and u.MinimizeKey ~= Enum.KeyCode.Unknown then
+                        if M.KeyCode == u.MinimizeKey then
+                            v:Minimize()
+                        end
                     end
                 end
             )
@@ -4773,6 +4789,8 @@ local aa = {
                 end)
             end
             function v.Minimize(M)
+                if tick() - _lastMinTick < 0.25 then return end
+                _lastMinTick = tick()
                 v.Minimized = not v.Minimized
                 v.Root.Visible = not v.Minimized
                 floatBtn.Visible = true
@@ -4782,8 +4800,10 @@ local aa = {
                 end)
                 if not C then
                     C = true
-                    local N = u.MinimizeKeybind and u.MinimizeKeybind.Value or u.MinimizeKey.Name
-                    u:Notify {Title = "Interface", Content = "Press " .. N .. " or tap floating icon to toggle.", Duration = 6}
+                    local N = (u.MinimizeKeybind and u.MinimizeKeybind.Value and u.MinimizeKeybind.Value ~= "None" and u.MinimizeKeybind.Value ~= "" and u.MinimizeKeybind.Value)
+                        or (u.MinimizeKey and typeof(u.MinimizeKey) == "EnumItem" and u.MinimizeKey.Name)
+                        or "LeftControl"
+                    u:Notify {Title = "Interface", Content = "Press " .. tostring(N) .. " or tap floating icon to toggle.", Duration = 6}
                 end
             end
             function v.Destroy(M)
@@ -5216,13 +5236,14 @@ local aa = {
         l.__index = l
         l.__type = "Button"
         function l.New(m, n)
+            local g = m.Library or e(h)
             n.Title = n.Title or "Button"
             n.Callback = n.Callback or function()
                 end
             local o = e(k.Element)(n.Title, n.Description, m.Container, true)
             local btnIcon = "rbxassetid://10709791437"
-            if n.Icon then
-                local ri = m.Library:GetIcon(n.Icon)
+            if n.Icon and g and g.GetIcon then
+                local ri = g:GetIcon(n.Icon)
                 if ri then btnIcon = (type(ri) == "table" and ri.Image or ri) end
             end
             local p =
@@ -5230,8 +5251,8 @@ local aa = {
                 "ImageLabel",
                 {
                     Image = btnIcon,
-                    ImageRectOffset = (n.Icon and type(m.Library:GetIcon(n.Icon)) == "table") and m.Library:GetIcon(n.Icon).ImageRectOffset or Vector2.new(0,0),
-                    ImageRectSize  = (n.Icon and type(m.Library:GetIcon(n.Icon)) == "table") and m.Library:GetIcon(n.Icon).ImageRectSize  or Vector2.new(0,0),
+                    ImageRectOffset = (n.Icon and g and g.GetIcon and type(g:GetIcon(n.Icon)) == "table") and g:GetIcon(n.Icon).ImageRectOffset or Vector2.new(0,0),
+                    ImageRectSize  = (n.Icon and g and g.GetIcon and type(g:GetIcon(n.Icon)) == "table") and g:GetIcon(n.Icon).ImageRectSize  or Vector2.new(0,0),
                     Size = UDim2.fromOffset(16, 16),
                     AnchorPoint = Vector2.new(1, 0.5),
                     Position = UDim2.new(1, -10, 0.5, 0),
@@ -5243,7 +5264,11 @@ local aa = {
             i.AddSignal(
                 o.Frame.MouseButton1Click,
                 function()
-                    m.Library:SafeCallback(n.Callback)
+                    if g and g.SafeCallback then
+                        g:SafeCallback(n.Callback)
+                    elseif n.Callback then
+                        pcall(n.Callback)
+                    end
                 end
             )
             return o
@@ -5264,7 +5289,7 @@ local aa = {
         u.__index = u
         u.__type = "Colorpicker"
         function u.New(v, w, x)
-            local y = v.Library
+            local y = v.Library or e(o)
             assert(x.Title, "Colorpicker - Missing Title")
             assert(x.Default ~= nil, "AddColorPicker: Missing default value.")
             local z = {
@@ -5717,8 +5742,13 @@ local aa = {
                 z.Value = Color3.fromHSV(z.Hue, z.Sat, z.Vib)
                 B.BackgroundColor3 = z.Value
                 B.BackgroundTransparency = z.Transparency
-                u.Library:SafeCallback(z.Callback, z.Value)
-                u.Library:SafeCallback(z.Changed, z.Value)
+                if y and y.SafeCallback then
+                    y:SafeCallback(z.Callback, z.Value)
+                    y:SafeCallback(z.Changed, z.Value)
+                else
+                    pcall(z.Callback, z.Value)
+                    if z.Changed then pcall(z.Changed, z.Value) end
+                end
                 if z.Callback2 then
                     pcall(z.Callback2, z.Value2 or z.Value)
                 end
@@ -6580,7 +6610,9 @@ local aa = {
                     end
                 end
                 h.Value = m
-                k.Text = m
+                if k.Text ~= m then
+                    k.Text = m
+                end
                 g:SafeCallback(h.Callback, h.Value)
                 g:SafeCallback(h.Changed, h.Value)
             end
@@ -6756,8 +6788,8 @@ local aa = {
                     if m.UserInputType == Enum.UserInputType.MouseButton1 or m.UserInputType == Enum.UserInputType.Touch then
                         i = true
                         k.Text = "..."
-                        wait(0.2)
-                        local n
+                        task.wait(0.1)
+                        local n, s
                         n =
                             af.InputBegan:Connect(
                             function(o)
@@ -6769,7 +6801,6 @@ local aa = {
                                 elseif o.UserInputType == Enum.UserInputType.MouseButton2 then
                                     p = "MouseRight"
                                 end
-                                local s
                                 s =
                                     af.InputEnded:Connect(
                                     function(t)
@@ -6783,8 +6814,8 @@ local aa = {
                                             h.Value = p
                                             g:SafeCallback(h.ChangedCallback, t.KeyCode or t.UserInputType)
                                             g:SafeCallback(h.Changed, t.KeyCode or t.UserInputType)
-                                            n:Disconnect()
-                                            s:Disconnect()
+                                            if n then n:Disconnect() end
+                                            if s then s:Disconnect() end
                                         end
                                     end
                                 )
@@ -6795,11 +6826,14 @@ local aa = {
             )
             ah.AddSignal(
                 af.InputBegan,
-                function(m)
-                    if not i and not af:GetFocusedTextBox() then
-                        if h.Mode == "Toggle" then
-                            local n = h.Value
-                            if n == "MouseLeft" or n == "MouseRight" then
+                function(m, gp)
+                    if i or af:GetFocusedTextBox() then return end
+                    local n = h.Value
+                    if not n or n == "None" or n == "Unknown" or n == "" then return end
+
+                    if h.Mode == "Toggle" then
+                        if n == "MouseLeft" or n == "MouseRight" then
+                            if not gp then
                                 if
                                     n == "MouseLeft" and m.UserInputType == Enum.UserInputType.MouseButton1 or
                                         n == "MouseRight" and m.UserInputType == Enum.UserInputType.MouseButton2
@@ -6807,21 +6841,24 @@ local aa = {
                                     h.Toggled = not h.Toggled
                                     h:DoClick()
                                 end
-                            elseif m.UserInputType == Enum.UserInputType.Keyboard then
-                                if m.KeyCode.Name == n then
-                                    h.Toggled = not h.Toggled
-                                    h:DoClick()
+                            end
+                        elseif m.UserInputType == Enum.UserInputType.Keyboard and not gp then
+                            if m.KeyCode.Name == n then
+                                h.Toggled = not h.Toggled
+                                h:DoClick()
+                            end
+                        end
+                    elseif h.Mode == "Hold" then
+                        if n == "MouseLeft" or n == "MouseRight" then
+                            if not gp then
+                                if n == "MouseLeft" and m.UserInputType == Enum.UserInputType.MouseButton1 then
+                                    g:SafeCallback(h.Callback, true)
+                                elseif n == "MouseRight" and m.UserInputType == Enum.UserInputType.MouseButton2 then
+                                    g:SafeCallback(h.Callback, true)
                                 end
                             end
-                        elseif h.Mode == "Hold" then
-                            local n = h.Value
-                            if n == "MouseLeft" and m.UserInputType == Enum.UserInputType.MouseButton1 then
-                                g:SafeCallback(h.Callback, true)
-                            elseif n == "MouseRight" and m.UserInputType == Enum.UserInputType.MouseButton2 then
-                                g:SafeCallback(h.Callback, true)
-                            elseif m.UserInputType == Enum.UserInputType.Keyboard and m.KeyCode.Name == n then
-                                g:SafeCallback(h.Callback, true)
-                            end
+                        elseif m.UserInputType == Enum.UserInputType.Keyboard and not gp and m.KeyCode.Name == n then
+                            g:SafeCallback(h.Callback, true)
                         end
                     end
                 end
@@ -6829,16 +6866,16 @@ local aa = {
             ah.AddSignal(
                 af.InputEnded,
                 function(m)
-                    if not af:GetFocusedTextBox() then
-                        if h.Mode == "Hold" then
-                            local n = h.Value
-                            if n == "MouseLeft" and m.UserInputType == Enum.UserInputType.MouseButton1 then
-                                g:SafeCallback(h.Callback, false)
-                            elseif n == "MouseRight" and m.UserInputType == Enum.UserInputType.MouseButton2 then
-                                g:SafeCallback(h.Callback, false)
-                            elseif m.UserInputType == Enum.UserInputType.Keyboard and m.KeyCode.Name == n then
-                                g:SafeCallback(h.Callback, false)
-                            end
+                    if af:GetFocusedTextBox() then return end
+                    local n = h.Value
+                    if not n or n == "None" or n == "Unknown" or n == "" then return end
+                    if h.Mode == "Hold" then
+                        if n == "MouseLeft" and m.UserInputType == Enum.UserInputType.MouseButton1 then
+                            g:SafeCallback(h.Callback, false)
+                        elseif n == "MouseRight" and m.UserInputType == Enum.UserInputType.MouseButton2 then
+                            g:SafeCallback(h.Callback, false)
+                        elseif m.UserInputType == Enum.UserInputType.Keyboard and m.KeyCode.Name == n then
+                            g:SafeCallback(h.Callback, false)
                         end
                     end
                 end
@@ -7071,6 +7108,7 @@ local aa = {
                 },
                 {ai("UICorner", {CornerRadius = UDim.new(0, 9)}), k, j}
             )
+            local _lastToggleTick = 0
             function h.OnChanged(m, n)
                 h.Changed = n
                 n(h.Value)
@@ -7083,14 +7121,14 @@ local aa = {
                 j.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
                 af:Create(
                     j,
-                    TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+                    TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
                     {Position = UDim2.new(0, h.Value and 20 or 2, 0.5, 0)}
                 ):Play()
                 local activeBg = ah.GetThemeProperty("ToggleToggled") or ah.GetThemeProperty("Accent") or Color3.fromRGB(16, 160, 95)
                 local inactiveBg = ah.GetThemeProperty("ToggleSlider") or Color3.fromRGB(30, 30, 35)
                 af:Create(
                     l,
-                    TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+                    TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
                     {BackgroundColor3 = h.Value and activeBg or inactiveBg}
                 ):Play()
                 g:SafeCallback(h.Callback, h.Value)
@@ -7103,6 +7141,8 @@ local aa = {
             ah.AddSignal(
                 i.Frame.MouseButton1Click,
                 function()
+                    if tick() - _lastToggleTick < 0.15 then return end
+                    _lastToggleTick = tick()
                     h:SetValue(not h.Value)
                 end
             )
@@ -7926,6 +7966,7 @@ local aa = {
             end
             function mod:Destroy()
                 if hbConn then hbConn:Disconnect() end
+                if hideConn then hideConn:Disconnect() end
                 if snd then pcall(function() snd:Stop(); snd:Destroy() end) end
                 wrap:Destroy()
             end
