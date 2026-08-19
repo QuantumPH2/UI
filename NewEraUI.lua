@@ -3002,7 +3002,7 @@ local aa = {
                 local _conns = {}
                 local function updateScrollbar()
                     if not _alive then return end
-                    if not sf or not sf.Parent or not sf.Visible then
+                    if not sf or not sf.Parent or not sf.Visible or o.SelectedTab ~= w then
                         if sbHolder then sbHolder.Visible = false end
                         return
                     end
@@ -3018,7 +3018,7 @@ local aa = {
                         if _libCheck.DialogOpen then sbHolder.Visible = false; return end
                         local canvasH = sf.CanvasSize.Y.Offset
                         local frameH = sf.AbsoluteSize.Y
-                        if canvasH <= frameH or frameH <= 0 then
+                        if canvasH <= frameH + 4 or frameH <= 0 then
                             sbHolder.Visible = false
                             return
                         end
@@ -3034,6 +3034,7 @@ local aa = {
                         sbBar.Position = UDim2.fromOffset(1.5, barY)
                     end)
                 end
+                x._updateScrollbar = updateScrollbar
                 local function _teardown()
                     if not _alive then return end
                     _alive = false
@@ -3439,6 +3440,9 @@ local aa = {
             for s, t in next, o.Tabs do
                 t.SetTransparency(1)
                 t.Selected = false
+                if t._SBOverlay then
+                    t._SBOverlay.Visible = false
+                end
             end
             tabObj.SetTransparency(0.89)
             tabObj.Selected = true
@@ -3461,6 +3465,9 @@ local aa = {
                     curCont.Visible = true
                     curCont.CanvasPosition = Vector2.new(0, 0)
                 end
+                if tabObj._updateScrollbar then
+                    tabObj._updateScrollbar()
+                end
                 if r.ContainerHolder then
                     local tabW = r.TabWidth or 160
                     r.ContainerHolder.Position = UDim2.fromOffset(tabW + 26, 94)
@@ -3470,6 +3477,17 @@ local aa = {
                     tw:Play()
                 end
             end)
+        end
+        function o.UpdateActiveScrollbar(p)
+            for idx, tab in ipairs(o.Tabs) do
+                if tab._SBOverlay then
+                    if idx == o.SelectedTab and tab.ContainerFrame and tab.ContainerFrame.Visible then
+                        if tab._updateScrollbar then tab._updateScrollbar() end
+                    else
+                        tab._SBOverlay.Visible = false
+                    end
+                end
+            end
         end
         return o
     end,
@@ -4559,11 +4577,15 @@ local aa = {
             local _dragStartMouse = Vector3.new()
             local _dragStartPos = UDim2.new()
             local _targetPos = nil
+            local _currDragX = v.Position.X.Offset
+            local _currDragY = v.Position.Y.Offset
 
             local _isResizing = false
             local _resizeStartMouse = Vector3.new()
             local _resizeStartSize = UDim2.new()
             local _targetSize = nil
+            local _currResizeW = v.Size.X.Offset
+            local _currResizeH = v.Size.Y.Offset
 
             v._isInteracting = false
             getgenv()._FluentWindowInteracting = false
@@ -4586,14 +4608,22 @@ local aa = {
             local _RS_win = game:GetService("RunService")
             m.AddSignal(
                 _RS_win.RenderStepped,
-                function()
+                function(dt)
                     if _isDragging and _targetPos then
-                        v.Position = _targetPos
-                        v.Root.Position = _targetPos
+                        local smoothFactor = math.clamp(dt * 36, 0.12, 1)
+                        _currDragX = _currDragX + (_targetPos.X.Offset - _currDragX) * smoothFactor
+                        _currDragY = _currDragY + (_targetPos.Y.Offset - _currDragY) * smoothFactor
+                        local curPos = UDim2.fromOffset(math.round(_currDragX), math.round(_currDragY))
+                        v.Position = curPos
+                        v.Root.Position = curPos
                     end
                     if _isResizing and _targetSize then
-                        v.Size = _targetSize
-                        v.Root.Size = _targetSize
+                        local smoothFactor = math.clamp(dt * 36, 0.12, 1)
+                        _currResizeW = _currResizeW + (_targetSize.X.Offset - _currResizeW) * smoothFactor
+                        _currResizeH = _currResizeH + (_targetSize.Y.Offset - _currResizeH) * smoothFactor
+                        local curSz = UDim2.fromOffset(math.round(_currResizeW), math.round(_currResizeH))
+                        v.Size = curSz
+                        v.Root.Size = curSz
                     end
                 end
             )
@@ -4661,6 +4691,8 @@ local aa = {
                         _dragStartMouse = M.Position
                         _dragStartPos = v.Root.Position
                         _targetPos = _dragStartPos
+                        _currDragX = v.Root.Position.X.Offset
+                        _currDragY = v.Root.Position.Y.Offset
                         v._isInteracting = true
                         getgenv()._FluentWindowInteracting = true
                         if v.Maximized then
@@ -4671,6 +4703,8 @@ local aa = {
                                 i.Y - (i.Y * (L / math.max(v.Root.AbsoluteSize.Y, 1)))
                             )
                             _targetPos = _dragStartPos
+                            _currDragX = _dragStartPos.X.Offset
+                            _currDragY = _dragStartPos.Y.Offset
                         end
                     end
                 end
@@ -4683,6 +4717,8 @@ local aa = {
                         _resizeStartMouse = M.Position
                         _resizeStartSize = v.Root.Size
                         _targetSize = _resizeStartSize
+                        _currResizeW = v.Root.Size.X.Offset
+                        _currResizeH = v.Root.Size.Y.Offset
                         v._isInteracting = true
                         getgenv()._FluentWindowInteracting = true
                     end
@@ -4699,20 +4735,17 @@ local aa = {
                             local newX = math.clamp(_dragStartPos.X.Offset + N.X, -curW + 100, math.max(vpX - 100, 0))
                             local newY = math.clamp(_dragStartPos.Y.Offset + N.Y, -100, math.max(vpY - 40, 0))
                             _targetPos = UDim2.fromOffset(newX, newY)
-                            v.Position = _targetPos
-                            v.Root.Position = _targetPos
                         end
                         if _isResizing then
                             local N = M.Position - _resizeStartMouse
                             local vpX, vpY = j.ViewportSize.X, j.ViewportSize.Y
-                            local minW, minH = 470, 340
+                            local minW = (t.MinSize and t.MinSize.X) or t.MinW or 360
+                            local minH = (t.MinSize and t.MinSize.Y) or t.MinH or 220
                             local maxW = math.max(vpX - 20, minW)
                             local maxH = math.max(vpY - 20, minH)
                             local newW = math.clamp(_resizeStartSize.X.Offset + N.X, minW, maxW)
                             local newH = math.clamp(_resizeStartSize.Y.Offset + N.Y, minH, maxH)
                             _targetSize = UDim2.fromOffset(newW, newH)
-                            v.Size = _targetSize
-                            v.Root.Size = _targetSize
                         end
                     end
                 end
@@ -4775,8 +4808,9 @@ local aa = {
                 v.Root.Visible = true
                 floatBtn.Visible = true
                 pcall(function()
-                    local ovs = e(k)._SBOverlays
-                    if ovs then for _, ov in ipairs(ovs) do ov.Visible = true end end
+                    if v.TabsAPI and v.TabsAPI.UpdateActiveScrollbar then
+                        v.TabsAPI:UpdateActiveScrollbar()
+                    end
                 end)
             end
             function v.Hide(M)
@@ -4784,8 +4818,11 @@ local aa = {
                 v.Root.Visible = false
                 floatBtn.Visible = true
                 pcall(function()
-                    local ovs = e(k)._SBOverlays
-                    if ovs then for _, ov in ipairs(ovs) do ov.Visible = false end end
+                    if v.TabsAPI and v.TabsAPI.Tabs then
+                        for _, tab in ipairs(v.TabsAPI.Tabs) do
+                            if tab._SBOverlay then tab._SBOverlay.Visible = false end
+                        end
+                    end
                 end)
             end
             function v.Minimize(M)
@@ -4795,8 +4832,19 @@ local aa = {
                 v.Root.Visible = not v.Minimized
                 floatBtn.Visible = true
                 pcall(function()
-                    local ovs = e(k)._SBOverlays
-                    if ovs then for _, ov in ipairs(ovs) do ov.Visible = not v.Minimized end end
+                    if v.TabsAPI then
+                        if v.Minimized then
+                            if v.TabsAPI.Tabs then
+                                for _, tab in ipairs(v.TabsAPI.Tabs) do
+                                    if tab._SBOverlay then tab._SBOverlay.Visible = false end
+                                end
+                            end
+                        else
+                            if v.TabsAPI.UpdateActiveScrollbar then
+                                v.TabsAPI:UpdateActiveScrollbar()
+                            end
+                        end
+                    end
                 end)
                 if not C then
                     C = true
