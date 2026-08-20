@@ -1,4 +1,4 @@
-local Quantum = {}
+local W424 = {}
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
@@ -8,32 +8,34 @@ local TextService = game:GetService("TextService")
 local RunService = game:GetService("RunService")
 
 local Config = {
-    Name = "Quantum",
-    DefaultVersion = "5.1",
-    DefaultTheme = "QuantumDark",
+    Name = "W424",
+    DefaultVersion = "1.0",
+    DefaultTheme = "Dark",
     CornerRadius = 10,
     ElementCorner = 6,
     SidebarWidth = 150,
     TopbarHeight = 40,
     MinWindowSize = Vector2.new(360, 240),
     Themes = {
-        QuantumDark = {
+        Dark = {
             Background = Color3.fromRGB(12, 12, 12),
             Sidebar = Color3.fromRGB(5, 5, 5),
-            Accent = Color3.fromRGB(80, 220, 120),
+            Accent = Color3.fromRGB(0, 140, 255),
             Text = Color3.fromRGB(240, 240, 245),
             SubText = Color3.fromRGB(120, 120, 130),
             Element = Color3.fromRGB(12, 12, 12),
             ElementHover = Color3.fromRGB(20, 20, 20),
-            ToggleOn = Color3.fromRGB(80, 220, 120),
+            ToggleOn = Color3.fromRGB(0, 140, 255),
             ToggleOff = Color3.fromRGB(40, 40, 45),
             Border = Color3.fromRGB(30, 30, 35),
             Shadow = Color3.fromRGB(0, 0, 0),
             Overlay = Color3.fromRGB(0, 0, 0),
-            Success = Color3.fromRGB(80, 220, 120)
+            Success = Color3.fromRGB(0, 140, 255)
         }
     }
 }
+Config.Themes.QuantumDark = Config.Themes.Dark
+Config.Themes.W424Dark = Config.Themes.Dark
 
 local LegacyIcons = {
     Custom = "rbxassetid://109818941157555",
@@ -500,9 +502,9 @@ ConfigManager.__index = ConfigManager
 
 function ConfigManager.new(windowName)
     local self = setmetatable({}, ConfigManager)
-    self.WindowName = windowName or "Quantum"
+    self.WindowName = windowName or "W424"
     self.Data = {}
-    self.Path = self.WindowName .. "_QuantumConfig.json"
+    self.Path = self.WindowName .. "_W424Config.json"
     self.AutoSave = false
     self.AutoSaveInterval = 3
     self.Thread = nil
@@ -606,7 +608,7 @@ end
 
 function ConfigManager:SaveNamedConfig(name)
     if typeof(writefile) ~= "function" then return false end
-    local path = self.WindowName .. "_" .. name .. "_Quantum.json"
+    local path = self.WindowName .. "_" .. name .. "_W424.json"
     local ok, content = pcall(function()
         return HttpService:JSONEncode(self.Data)
     end)
@@ -618,7 +620,7 @@ end
 
 function ConfigManager:LoadNamedConfig(name)
     if typeof(readfile) ~= "function" then return false end
-    local path = self.WindowName .. "_" .. name .. "_Quantum.json"
+    local path = self.WindowName .. "_" .. name .. "_W424.json"
     local ok, content = pcall(readfile, path)
     if ok and content and content ~= "" then
         local ok2, data = pcall(function()
@@ -639,7 +641,7 @@ end
 
 function ConfigManager:DeleteNamedConfig(name)
     if typeof(delfile) == "function" then
-        local path = self.WindowName .. "_" .. name .. "_Quantum.json"
+        local path = self.WindowName .. "_" .. name .. "_W424.json"
         return pcall(delfile, path)
     end
     return false
@@ -652,7 +654,7 @@ function ConfigManager:GetAllConfigNames()
         if ok and files then
             for _, file in ipairs(files) do
                 local prefix = self.WindowName .. "_"
-                local suffix = "_Quantum.json"
+                local suffix = "_W424.json"
                 if file:sub(1, #prefix) == prefix and file:sub(-#suffix) == suffix then
                     local name = file:sub(#prefix + 1, -#suffix - 1)
                     table.insert(names, name)
@@ -672,10 +674,10 @@ function ConfigManager:BuildConfigSection(tab)
         Callback = function(state)
             if state then
                 self:EnableAutoSave(2)
-                Quantum:Notify({Title = "Auto Save", Content = "Auto save enabled (2s)", Duration = 3, Icon = "Check"})
+                W424:Notify({Title = "Auto Save", Content = "Auto save enabled (2s)", Duration = 3, Icon = "Check"})
             else
                 self:DisableAutoSave()
-                Quantum:Notify({Title = "Auto Save", Content = "Auto save disabled", Duration = 3, Icon = "X"})
+                W424:Notify({Title = "Auto Save", Content = "Auto save disabled", Duration = 3, Icon = "X"})
             end
         end
     })
@@ -704,10 +706,10 @@ function ConfigManager:BuildConfigSection(tab)
                 local nameToSave = (self.InputConfigName and self.InputConfigName ~= "") and self.InputConfigName or self.SelectedConfig
                 if nameToSave and nameToSave ~= "Select Config" then
                     self:SaveNamedConfig(nameToSave)
-                    Quantum:Notify({Title = "Config Saved", Content = "Saved config: " .. nameToSave, Duration = 3, Icon = "Check"})
+                    W424:Notify({Title = "Config Saved", Content = "Saved config: " .. nameToSave, Duration = 3, Icon = "Check"})
                     configListDropdown:Refresh(self:GetAllConfigNames(), nameToSave)
                 else
-                    Quantum:Notify({Title = "Error", Content = "Please enter or select a config name", Duration = 3, Icon = "AlertTriangle"})
+                    W424:Notify({Title = "Error", Content = "Please enter or select a config name", Duration = 3, Icon = "AlertTriangle"})
                 end
             end
         },
@@ -717,9 +719,9 @@ function ConfigManager:BuildConfigSection(tab)
                 if self.SelectedConfig and self.SelectedConfig ~= "Select Config" then
                     local success = self:LoadNamedConfig(self.SelectedConfig)
                     if success then
-                        Quantum:Notify({Title = "Config Loaded", Content = "Loaded config: " .. self.SelectedConfig, Duration = 3, Icon = "Check"})
+                        W424:Notify({Title = "Config Loaded", Content = "Loaded config: " .. self.SelectedConfig, Duration = 3, Icon = "Check"})
                     else
-                        Quantum:Notify({Title = "Error", Content = "Failed to load config", Duration = 3, Icon = "AlertTriangle"})
+                        W424:Notify({Title = "Error", Content = "Failed to load config", Duration = 3, Icon = "AlertTriangle"})
                     end
                 end
             end
@@ -729,7 +731,7 @@ function ConfigManager:BuildConfigSection(tab)
             Callback = function()
                 if self.SelectedConfig and self.SelectedConfig ~= "Select Config" then
                     self:DeleteNamedConfig(self.SelectedConfig)
-                    Quantum:Notify({Title = "Config Removed", Content = "Removed config: " .. self.SelectedConfig, Duration = 3, Icon = "Trash"})
+                    W424:Notify({Title = "Config Removed", Content = "Removed config: " .. self.SelectedConfig, Duration = 3, Icon = "Trash"})
                     self.SelectedConfig = nil
                     configListDropdown:Refresh(self:GetAllConfigNames(), "Select Config")
                 end
@@ -742,7 +744,7 @@ function ConfigManager:BuildConfigSection(tab)
                 for _, name in ipairs(allConfigs) do
                     self:DeleteNamedConfig(name)
                 end
-                Quantum:Notify({Title = "Configs Cleared", Content = "All configs removed", Duration = 3, Icon = "Trash"})
+                W424:Notify({Title = "Configs Cleared", Content = "All configs removed", Duration = 3, Icon = "Trash"})
                 self.SelectedConfig = nil
                 configListDropdown:Refresh({}, "Select Config")
             end
@@ -757,7 +759,7 @@ local ActiveNotifications = {}
 local function InitNotify()
     if NotifyScreen then return end
     NotifyScreen = Create("ScreenGui", {
-        Name = "QuantumNotify",
+        Name = "W424Notify",
         Parent = game.CoreGui,
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
         ResetOnSpawn = false,
@@ -778,7 +780,7 @@ local function InitNotify()
     })
 end
 
-function Quantum:Notify(data)
+function W424:Notify(data)
     data = data or {}
     local title = data.Title or "Notification"
     local content = data.Content or ""
@@ -877,7 +879,7 @@ local function CreateFloatingIcon(customIcon)
     local iconToUse = customIcon and GetIcon(customIcon) or GetIcon("Custom")
 
     FloatingIconScreen = Create("ScreenGui", {
-        Name = "QuantumFloatingIcon",
+        Name = "W424FloatingIcon",
         Parent = game.CoreGui,
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
         ResetOnSpawn = false,
@@ -986,682 +988,25 @@ local function CreateFloatingIcon(customIcon)
     table.insert(FloatingConnections, conn3)
 
     ListenTheme(function(theme)
-        if Backdrop and Backdrop.Parent then
-            Backdrop.BackgroundColor3 = theme.Sidebar
-            if not isCustomImage then
-                Icon.ImageColor3 = theme.Text
-            end
-        end
-    end)
-
-    FloatingIconBtn = Backdrop
-    return FloatingIconScreen
-end
-
-function Quantum:CreateWindow(data)
-    data = data or {}
-    local windowName = data.Name or "Quantum"
-    local windowIcon = data.Icon or "atom"
-    local floatingIcon = data.FloatingIcon or nil
-    local customVersion = data.Version or Config.DefaultVersion
-    local toggleKey = data.ToggleKey
-
-    if MainWindowScreen then
-        MainWindowScreen:Destroy()
-    end
-
-    CreateFloatingIcon(floatingIcon)
-
-    MainWindowScreen = Create("ScreenGui", {
-        Name = "QuantumUI",
-        Parent = game.CoreGui,
-        ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-        ResetOnSpawn = false,
-        Enabled = true
-    })
-
-    MainFrame = Create("Frame", {
-        Name = "Main",
-        Parent = MainWindowScreen,
-        Size = UDim2.new(0, 460, 0, 280),
-        Position = UDim2.new(0.5, -230, 0.5, -140),
-        AnchorPoint = Vector2.new(0, 0),
-        BackgroundColor3 = CurrentTheme.Background,
-        BorderSizePixel = 0,
-        ClipsDescendants = true,
-        Active = true,
-        ZIndex = 10
-    })
-
-    Create("UICorner", {
-        CornerRadius = UDim.new(0, Config.CornerRadius),
-        Parent = MainFrame
-    })
-
-    local Shadow = Create("ImageLabel", {
-        Name = "Shadow",
-        Parent = MainFrame,
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(1, 50, 1, 50),
-        BackgroundTransparency = 1,
-        Image = "rbxassetid://10806158995",
-        ImageColor3 = CurrentTheme.Shadow,
-        ImageTransparency = 0.5,
-        ZIndex = 0
-    })
-
-    local Topbar = Create("Frame", {
-        Name = "Topbar",
-        Parent = MainFrame,
-        Size = UDim2.new(1, 0, 0, Config.TopbarHeight),
-        BackgroundColor3 = CurrentTheme.Sidebar,
-        BorderSizePixel = 0,
-        Active = true,
-        ZIndex = 20
-    })
-
-    Create("UICorner", {
-        CornerRadius = UDim.new(0, Config.CornerRadius),
-        Parent = Topbar
-    })
-
-    local TopbarFix = Create("Frame", {
-        Name = "Fix",
-        Parent = Topbar,
-        Size = UDim2.new(1, 0, 0.5, 0),
-        Position = UDim2.new(0, 0, 0.5, 0),
-        BackgroundColor3 = CurrentTheme.Sidebar,
-        BorderSizePixel = 0,
-        ZIndex = 20
-    })
-
-    local TitleIcon = Create("ImageLabel", {
-        Name = "TitleIcon",
-        Parent = Topbar,
-        Size = UDim2.new(0, 22, 0, 22),
-        Position = UDim2.new(0, 10, 0, 9),
-        BackgroundTransparency = 1,
-        Image = GetIcon("atom"),
-        ImageColor3 = CurrentTheme.Accent,
-        ScaleType = Enum.ScaleType.Fit,
-        ZIndex = 21
-    })
-
-    local Title = Create("TextLabel", {
-        Name = "Title",
-        Parent = Topbar,
-        Size = UDim2.new(0, 170, 0, 20),
-        Position = UDim2.new(0, 34, 0, 6),
-        BackgroundTransparency = 1,
-        Text = windowName,
-        TextColor3 = Color3.fromRGB(80, 220, 120),
-        TextSize = 12,
-        Font = Enum.Font.GothamBold,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextStrokeTransparency = 0.6,
-        TextStrokeColor3 = Color3.fromRGB(40, 180, 80),
-        ZIndex = 21
-    })
-
-    local TitleGlowTween = TweenService:Create(Title, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
-        TextStrokeTransparency = 0.25
-    })
-    TitleGlowTween:Play()
-
-    local Version = Create("TextLabel", {
-        Name = "Version",
-        Parent = Topbar,
-        Size = UDim2.new(0, 160, 0, 12),
-        Position = UDim2.new(0, 32, 0, 24),
-        BackgroundTransparency = 1,
-        Text = "v" .. customVersion,
-        TextColor3 = CurrentTheme.SubText,
-        TextSize = 11,
-        Font = Enum.Font.Gotham,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 21
-    })
-
-    local ProfileSection = Create("Frame", {
-        Name = "ProfileSection",
-        Parent = Topbar,
-        Size = UDim2.new(0, 160, 0, 32),
-        Position = UDim2.new(1, -230, 0.5, -12),
-        BackgroundTransparency = 1,
-        ZIndex = 21
-    })
-
-    local ProfileFrame = Create("Frame", {
-        Name = "ProfileFrame",
-        Parent = ProfileSection,
-        Size = UDim2.new(0, 30, 0, 30),
-        Position = UDim2.new(0, 0, 0, 0),
-        BackgroundColor3 = CurrentTheme.Element,
-        BorderSizePixel = 0,
-        ZIndex = 22
-    })
-    Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = ProfileFrame})
-    Create("UIStroke", {Color = CurrentTheme.Border, Thickness = 1, Parent = ProfileFrame})
-
-    local ProfileImg = Create("ImageLabel", {
-        Parent = ProfileFrame,
-        Size = UDim2.new(1, -4, 1, -4),
-        Position = UDim2.new(0, 2, 0, 2),
-        BackgroundTransparency = 1,
-        Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=48&h=48",
-        ZIndex = 23
-    })
-    Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = ProfileImg})
-
-    local ProfileName = Create("TextLabel", {
-        Name = "ProfileName",
-        Parent = ProfileSection,
-        Size = UDim2.new(0, 120, 0, 14),
-        Position = UDim2.new(0, 30, 0, 0),
-        BackgroundTransparency = 1,
-        Text = "Quantum User",
-        TextColor3 = CurrentTheme.Text,
-        TextSize = 11,
-        Font = Enum.Font.GothamBold,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextTruncate = Enum.TextTruncate.AtEnd,
-        ZIndex = 22
-    })
-
-    local ProfileUser = Create("TextLabel", {
-        Name = "ProfileUser",
-        Parent = ProfileSection,
-        Size = UDim2.new(0, 120, 0, 12),
-        Position = UDim2.new(0, 30, 0, 14),
-        BackgroundTransparency = 1,
-        Text = "@Quantum User",
-        TextColor3 = CurrentTheme.SubText,
-        TextSize = 11,
-        Font = Enum.Font.Gotham,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextTruncate = Enum.TextTruncate.AtEnd,
-        ZIndex = 22
-    })
-
-    local ConfirmOverlay = Create("Frame", {
-        Name = "ConfirmOverlay",
-        Parent = MainFrame,
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundColor3 = CurrentTheme.Overlay,
-        BackgroundTransparency = 0.4,
-        BorderSizePixel = 0,
-        Visible = false,
-        ZIndex = 100
-    })
-    Create("UICorner", {CornerRadius = UDim.new(0, Config.CornerRadius), Parent = ConfirmOverlay})
-
-    local ConfirmBox = Create("Frame", {
-        Name = "ConfirmBox",
-        Parent = ConfirmOverlay,
-        Size = UDim2.new(0, 220, 0, 100),
-        Position = UDim2.new(0.5, -110, 0.5, -50),
-        BackgroundColor3 = CurrentTheme.Background,
-        BorderSizePixel = 0,
-        ZIndex = 101
-    })
-    Create("UICorner", {CornerRadius = UDim.new(0, 6), Parent = ConfirmBox})
-
-    Create("TextLabel", {
-        Parent = ConfirmBox,
-        Size = UDim2.new(1, 0, 0, 36),
-        Position = UDim2.new(0, 0, 0, 8),
-        BackgroundTransparency = 1,
-        Text = "Close Quantum?",
-        TextColor3 = CurrentTheme.Text,
-        TextSize = 11,
-        Font = Enum.Font.GothamBold,
-        ZIndex = 102
-    })
-
-    Create("TextLabel", {
-        Parent = ConfirmBox,
-        Size = UDim2.new(1, -20, 0, 30),
-        Position = UDim2.new(0, 10, 0, 26),
-        BackgroundTransparency = 1,
-        Text = "You can reopen using the floating icon.",
-        TextColor3 = CurrentTheme.SubText,
-        TextSize = 11,
-        Font = Enum.Font.Gotham,
-        TextWrapped = true,
-        ZIndex = 102
-    })
-
-    local ConfirmYes = Create("TextButton", {
-        Parent = ConfirmBox,
-        Size = UDim2.new(0, 80, 0, 26),
-        Position = UDim2.new(0.5, 2, 1, -30),
-        BackgroundColor3 = Color3.fromRGB(220, 60, 60),
-        Text = "Close",
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-        TextSize = 11,
-        Font = Enum.Font.GothamBold,
-        ZIndex = 102
-    })
-    Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = ConfirmYes})
-
-    local ConfirmNo = Create("TextButton", {
-        Parent = ConfirmBox,
-        Size = UDim2.new(0, 80, 0, 26),
-        Position = UDim2.new(0.5, -82, 1, -30),
-        BackgroundColor3 = CurrentTheme.Element,
-        Text = "Cancel",
-        TextColor3 = CurrentTheme.Text,
-        TextSize = 11,
-        Font = Enum.Font.GothamBold,
-        ZIndex = 102
-    })
-    Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = ConfirmNo})
-
-    local Controls = Create("Frame", {
-        Name = "Controls",
-        Parent = Topbar,
-        Size = UDim2.new(0, 90, 0, Config.TopbarHeight),
-        Position = UDim2.new(1, -95, 0, 0),
-        BackgroundTransparency = 1,
-        ZIndex = 21
-    })
-
-    local function MakeControl(name, icon, pos, callback)
-        local btn = Create("ImageButton", {
-            Name = name,
-            Parent = Controls,
-            Size = UDim2.new(0, 24, 0, 24),
-            Position = pos,
-            BackgroundTransparency = 1,
-            AutoButtonColor = false,
-            Image = GetIcon(icon),
-            ImageColor3 = CurrentTheme.SubText,
-            ZIndex = 22
-        })
-        Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = btn})
-        btn.MouseEnter:Connect(function()
-            btn.BackgroundColor3 = CurrentTheme.ElementHover
-        end)
-        btn.MouseLeave:Connect(function()
-            btn.BackgroundColor3 = CurrentTheme.Element
-        end)
-        btn.MouseButton1Click:Connect(callback)
-        return btn
-    end
-
-    MakeControl("Minimize", "Minus", UDim2.new(0, 8, 0.5, -11), function()
-        CloseAllDropdowns()
-        IsMinimized = true
-        MainFrame.Visible = false
-    end)
-
-    local IsMaximized = false
-    MakeControl("Resize", "Maximize2", UDim2.new(0, 33, 0.5, -11), function()
-        IsMaximized = not IsMaximized
-        if IsMaximized then
-            MainFrame.Size = UDim2.new(0, 440, 0, 280)
-        else
-            MainFrame.Size = UDim2.new(0, 360, 0, 220)
-        end
-    end)
-
-    MakeControl("Close", "X", UDim2.new(0, 58, 0.5, -11), function()
-        CloseAllDropdowns()
-        ConfirmOverlay.Visible = true
-    end)
-
-    ConfirmYes.MouseButton1Click:Connect(function()
-        CloseAllDropdowns()
-        IsClosed = true
-        IsMinimized = false
-        if MainWindowScreen then
-            MainWindowScreen:Destroy()
-            MainWindowScreen = nil
-        end
-        if FloatingIconScreen then
-            FloatingIconScreen:Destroy()
-            FloatingIconScreen = nil
-        end
-        if NotifyScreen then
-            NotifyScreen:Destroy()
-            NotifyScreen = nil
-        end
-        for _, conn in ipairs(FloatingConnections) do
-            if conn then pcall(function() conn:Disconnect() end) end
-        end
-        FloatingConnections = {}
-        for _, conn in ipairs(DropdownConnections) do
-            if conn then pcall(function() conn:Disconnect() end) end
-        end
-        DropdownConnections = {}
-    end)
-
-    ConfirmNo.MouseButton1Click:Connect(function()
-        ConfirmOverlay.Visible = false
-    end)
-
-    local Sidebar = Create("Frame", {
-        Name = "Sidebar",
-        Parent = MainFrame,
-        Size = UDim2.new(0, Config.SidebarWidth, 1, -Config.TopbarHeight),
-        Position = UDim2.new(0, 0, 0, Config.TopbarHeight),
-        BackgroundColor3 = CurrentTheme.Sidebar,
-        BorderSizePixel = 0,
-        ClipsDescendants = true,
-        ZIndex = 15
-    })
-    Create("UICorner", {CornerRadius = UDim.new(0, Config.CornerRadius), Parent = Sidebar})
-
-    Create("Frame", {
-        Name = "Fix",
-        Parent = Sidebar,
-        Size = UDim2.new(1, 0, 0, 10),
-        Position = UDim2.new(0, 0, 0, -10),
-        BackgroundColor3 = CurrentTheme.Sidebar,
-        BorderSizePixel = 0,
-        ZIndex = 15
-    })
-
-    
-    local SearchFrame = Create("Frame", {
-        Parent = Sidebar,
-        Size = UDim2.new(1, -10, 0, 32),
-        Position = UDim2.new(0, 5, 0, 6),
-        BackgroundColor3 = CurrentTheme.Element,
-        BorderSizePixel = 0,
-        ZIndex = 16
-    })
-    Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = SearchFrame})
-
-    local SearchIcon = Create("ImageLabel", {
-        Parent = SearchFrame,
-        Size = UDim2.new(0, 14, 0, 14),
-        Position = UDim2.new(0, 6, 0.5, -7),
-        BackgroundTransparency = 1,
-        Image = GetIcon("Search"),
-        ImageColor3 = CurrentTheme.SubText,
-        ZIndex = 17
-    })
-
-    local SearchBox = Create("TextBox", {
-        Parent = SearchFrame,
-        Size = UDim2.new(1, -24, 1, 0),
-        Position = UDim2.new(0, 22, 0, 0),
-        BackgroundTransparency = 1,
-        Text = "",
-        PlaceholderText = "Search features...",
-        TextColor3 = CurrentTheme.Text,
-        PlaceholderColor3 = CurrentTheme.SubText,
-        TextSize = 12,
-        Font = Enum.Font.Gotham,
-        ClearTextOnFocus = false,
-        ZIndex = 17
-    })
-
-    local TabList = Create("ScrollingFrame", {
-        Name = "TabList",
-        Parent = Sidebar,
-        Size = UDim2.new(1, -10, 1, -44),
-        Position = UDim2.new(0, 5, 0, 44),
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        ScrollBarThickness = 2,
-        ScrollBarImageColor3 = CurrentTheme.Accent,
-        CanvasSize = UDim2.new(0, 0, 0, 0),
-        AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        ZIndex = 16
-    })
-
-    Create("UIListLayout", {
-        Parent = TabList,
-        Padding = UDim.new(0, 3),
-        SortOrder = Enum.SortOrder.LayoutOrder
-    })
-
-    local Content = Create("Frame", {
-        Name = "Content",
-        Parent = MainFrame,
-        Size = UDim2.new(1, -Config.SidebarWidth + 4, 1, -Config.TopbarHeight),
-        Position = UDim2.new(0, Config.SidebarWidth - 4, 0, Config.TopbarHeight),
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        ClipsDescendants = true,
-        ZIndex = 14
-    })
-    Create("UICorner", {CornerRadius = UDim.new(0, Config.CornerRadius), Parent = Content})
-
-    Create("Frame", {
-        Name = "Fix",
-        Parent = Content,
-        Size = UDim2.new(0, 14, 0, 14),
-        Position = UDim2.new(0, -10, 0, 0),
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        ZIndex = 14
-    })
-    DropdownOverlay = Create("Frame", {
-        Name = "DropdownOverlay",
-        Parent = MainFrame,
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        Visible = false,
-        ZIndex = 98,
-        Active = true,
-    })
-    Create("UICorner", {CornerRadius = UDim.new(0, Config.CornerRadius), Parent = DropdownOverlay})
-
-    DropdownPanel = Create("Frame", {
-        Name = "DropdownPanel",
-        Parent = MainFrame,
-        Size = UDim2.new(0, 180, 1, -Config.TopbarHeight),
-        Position = UDim2.new(1, -180, 0, Config.TopbarHeight),
-        BackgroundColor3 = CurrentTheme.Background,
-        BorderSizePixel = 0,
-        Visible = false,
-        ClipsDescendants = true,
-        ZIndex = 99,
-    })
-    Create("UICorner", {CornerRadius = UDim.new(0, Config.CornerRadius), Parent = DropdownPanel})
-    Create("UIStroke", {Color = CurrentTheme.Border, Thickness = 1, Parent = DropdownPanel})
-
-    local DropdownPanelHeader = Create("Frame", {
-        Name = "Header",
-        Parent = DropdownPanel,
-        Size = UDim2.new(1, 0, 0, 36),
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        ZIndex = 100,
-    })
-
-    DropdownPanelTitle = Create("TextLabel", {
-        Parent = DropdownPanelHeader,
-        Size = UDim2.new(1, -10, 0, 20),
-        Position = UDim2.new(0, 8, 0, 8),
-        BackgroundTransparency = 1,
-        Text = "Select",
-        TextColor3 = CurrentTheme.Text,
-        TextSize = 12,
-        Font = Enum.Font.GothamBold,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 100,
-    })
-
-    DropdownPanelSearch = Create("TextBox", {
-        Parent = DropdownPanel,
-        Size = UDim2.new(1, -10, 0, 28),
-        Position = UDim2.new(0, 5, 0, 32),
-        BackgroundColor3 = CurrentTheme.Element,
-        Text = "",
-        PlaceholderText = "Search...",
-        TextColor3 = CurrentTheme.Text,
-        PlaceholderColor3 = CurrentTheme.SubText,
-        TextSize = 11,
-        Font = Enum.Font.Gotham,
-        ClearTextOnFocus = false,
-        ZIndex = 100,
-    })
-    Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = DropdownPanelSearch})
-
-    DropdownPanelScroll = Create("ScrollingFrame", {
-        Parent = DropdownPanel,
-        Size = UDim2.new(1, -10, 1, -68),
-        Position = UDim2.new(0, 5, 0, 64),
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        ScrollBarThickness = 2,
-        ScrollBarImageColor3 = CurrentTheme.Accent,
-        CanvasSize = UDim2.new(0, 0, 0, 0),
-        AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        ZIndex = 100,
-    })
-    Create("UIListLayout", {
-        Parent = DropdownPanelScroll,
-        Padding = UDim.new(0, 3),
-        SortOrder = Enum.SortOrder.LayoutOrder,
-    })
-    Create("UIPadding", {
-        Parent = DropdownPanelScroll,
-        PaddingBottom = UDim.new(0, 30)
-    })
-
-    local ResizeHandle = Create("ImageButton", {
-        Name = "ResizeHandle",
-        Parent = MainFrame,
-        Size = UDim2.new(0, 22, 0, 22),
-        Position = UDim2.new(1, -20, 1, -20),
-        BackgroundTransparency = 1,
-        Image = GetIcon("ChevronLeft"),
-        ImageColor3 = CurrentTheme.SubText,
-        ImageTransparency = 0.4,
-        Rotation = -45,
-        ZIndex = 30,
-        Active = true
-    })
-
-    local resizing = false
-    local resizeStart = nil
-    local startSize = nil
-
-    ResizeHandle.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            resizing = true
-            resizeStart = input.Position
-            startSize = MainFrame.Size
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - resizeStart
-            local newWidth = math.max(Config.MinWindowSize.X, startSize.X.Offset + delta.X)
-            local newHeight = math.max(Config.MinWindowSize.Y, startSize.Y.Offset + delta.Y)
-            MainFrame.Size = UDim2.new(0, newWidth, 0, newHeight)
-        end
-    end)
-
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            resizing = false
-        end
-    end)
-
-    local dragging = false
-    local dragStart = nil
-    local startPos = nil
-
-    Topbar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = MainFrame.Position
-            local changedConn
-            changedConn = input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.Cancel then
-                    dragging = false
-                    changedConn:Disconnect()
-                end
-            end)
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - dragStart
-            MainFrame.Position = UDim2.new(
-                startPos.X.Scale, startPos.X.Offset + delta.X,
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y
-            )
-        end
-    end)
-
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
-        end
-    end)
-
-    if toggleKey then
-        UserInputService.InputBegan:Connect(function(input, gpe)
-            if not gpe and input.KeyCode == toggleKey then
-                if MainFrame then
-                    if MainFrame.Visible then
-                        CloseAllDropdowns()
-                    end
-                    MainFrame.Visible = not MainFrame.Visible
-                    IsMinimized = not MainFrame.Visible
-                end
-            end
-        end)
-    end
-
-    DropdownOverlay.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            CloseAllDropdowns()
-        end
-    end)
-
-    local clickConn = UserInputService.InputBegan:Connect(function(input, gpe)
-        if not CurrentDropdownState or not CurrentDropdownState.IsOpen then return end
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            local mousePos = UserInputService:GetMouseLocation()
-            local mainPos = MainFrame.AbsolutePosition
-            local mainSize = MainFrame.AbsoluteSize
-            if mousePos.X < mainPos.X or mousePos.X > mainPos.X + mainSize.X or
-               mousePos.Y < mainPos.Y or mousePos.Y > mainPos.Y + mainSize.Y then
-                CloseAllDropdowns()
-            end
-        end
-    end)
-    table.insert(DropdownConnections, clickConn)
-
-    DropdownPanelSearch:GetPropertyChangedSignal("Text"):Connect(function()
-        if CurrentDropdownState and CurrentDropdownState.IsOpen and CurrentDropdownState.Rebuild then
-            CurrentDropdownState.Rebuild(DropdownPanelSearch.Text)
-        end
-    end)
-
-    ListenTheme(function(theme)
         MainFrame.BackgroundColor3 = theme.Background
         Shadow.ImageColor3 = theme.Shadow
         Topbar.BackgroundColor3 = theme.Sidebar
         TopbarFix.BackgroundColor3 = theme.Sidebar
+        TopAccentBar.BackgroundColor3 = theme.Accent
         Sidebar.BackgroundColor3 = theme.Sidebar
         Content.BackgroundColor3 = theme.Background
-        Title.TextStrokeColor3 = Color3.fromRGB(40, 180, 80)
         TitleIcon.ImageColor3 = theme.Accent
+        Divider.TextColor3 = theme.SubText
+        SubTitle.TextColor3 = theme.Text
+        DiscordIcon.ImageColor3 = theme.SubText
+        DiscordDivider.TextColor3 = theme.SubText
+        DiscordText.TextColor3 = theme.SubText
         TabList.ScrollBarImageColor3 = theme.Accent
         ConfirmOverlay.BackgroundColor3 = theme.Overlay
         ConfirmBox.BackgroundColor3 = theme.Background
         ConfirmNo.BackgroundColor3 = theme.Element
         ConfirmNo.TextColor3 = theme.Text
         ResizeHandle.ImageColor3 = theme.SubText
-        ProfileFrame.BackgroundColor3 = theme.Element
-        ProfileFrame.UIStroke.Color = theme.Border
-        ProfileName.TextColor3 = theme.Text
-        ProfileUser.TextColor3 = theme.SubText
         SearchFrame.BackgroundColor3 = theme.Element
         SearchIcon.ImageColor3 = theme.SubText
         SearchBox.TextColor3 = theme.Text
@@ -1675,8 +1020,27 @@ function Quantum:CreateWindow(data)
     end)
 
     local WindowAPI = {}
-    WindowAPI.Notify = function(_, d) Quantum:Notify(d) end
-    -- Theme switching removed, only QuantumDark available
+    WindowAPI.Notify = function(_, d) W424:Notify(d) end
+    WindowAPI.SetTitle = function(_, text)
+        windowName = text
+        Title.Text = text
+    end
+    WindowAPI.SetSubtitle = function(_, text)
+        windowSubtitle = text
+        SubTitle.Text = text
+    end
+    WindowAPI.SetVersion = function(_, ver)
+        customVersion = ver
+        Version.Text = "v" .. ver
+    end
+    WindowAPI.SetIcon = function(_, icon)
+        windowIcon = icon
+        TitleIcon.Image = GetIcon(icon)
+    end
+    WindowAPI.SetDiscord = function(_, link)
+        discordLink = link
+        DiscordText.Text = link
+    end
     WindowAPI.Config = ConfigManager.new(windowName)
     WindowAPI.Config:Load()
     WindowAPI.Config:StartAutoSave()
@@ -2304,7 +1668,7 @@ function Quantum:CreateWindow(data)
                 local Btn = Create("TextButton", {
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, frameHeight),
-                    BackgroundColor3 = Color3.fromRGB(60, 180, 100),
+                    BackgroundColor3 = Color3.fromRGB(30, 110, 220),
                     Text = "",
                     AutoButtonColor = false,
                     LayoutOrder = #SectionItems:GetChildren(),
@@ -2355,23 +1719,23 @@ function Quantum:CreateWindow(data)
                 end
 
                 Btn.MouseEnter:Connect(function()
-                    Btn.BackgroundColor3 = Color3.fromRGB(80, 200, 120)
+                    Btn.BackgroundColor3 = Color3.fromRGB(50, 140, 255)
                 end)
                 Btn.MouseLeave:Connect(function()
-                    Btn.BackgroundColor3 = Color3.fromRGB(60, 180, 100)
+                    Btn.BackgroundColor3 = Color3.fromRGB(30, 110, 220)
                 end)
                 Btn.MouseButton1Down:Connect(function()
-                    Btn.BackgroundColor3 = Color3.fromRGB(120, 255, 160)
+                    Btn.BackgroundColor3 = Color3.fromRGB(90, 180, 255)
                 end)
                 Btn.MouseButton1Up:Connect(function()
-                    Btn.BackgroundColor3 = Color3.fromRGB(80, 200, 120)
+                    Btn.BackgroundColor3 = Color3.fromRGB(50, 140, 255)
                 end)
                 Btn.MouseButton1Click:Connect(function()
                     callback()
                 end)
 
                 ListenTheme(function(theme)
-                    Btn.BackgroundColor3 = Color3.fromRGB(60, 180, 100)
+                    Btn.BackgroundColor3 = Color3.fromRGB(30, 110, 220)
                 end)
 
                 return {Click = callback}
@@ -2525,7 +1889,7 @@ function Quantum:CreateWindow(data)
                     Parent = DropdownBtn
                 })
                 Create("UIStroke", {
-                    Color = Color3.fromRGB(80, 220, 120),
+                    Color = Color3.fromRGB(0, 140, 255),
                     Thickness = 1,
                     Transparency = 0.7,
                     Parent = DropdownBtn
@@ -2628,8 +1992,6 @@ function Quantum:CreateWindow(data)
                             count = count + 1
                         end
                     end
-
-                    -- DropdownPanelScroll.CanvasSize is handled by AutomaticCanvasSize + UIPadding
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(function()
@@ -2793,7 +2155,7 @@ function Quantum:CreateWindow(data)
                     Parent = DropdownBtn
                 })
                 Create("UIStroke", {
-                    Color = Color3.fromRGB(80, 220, 120),
+                    Color = Color3.fromRGB(0, 140, 255),
                     Thickness = 1,
                     Transparency = 0.7,
                     Parent = DropdownBtn
@@ -2951,8 +2313,6 @@ function Quantum:CreateWindow(data)
                         count = count + 1
                         end
                     end
-
-                    -- DropdownPanelScroll.CanvasSize is handled by AutomaticCanvasSize + UIPadding
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(function()
@@ -3309,7 +2669,7 @@ function Quantum:CreateWindow(data)
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = ParaFrame})
                 Create("UIStroke", {
-                    Color = Color3.fromRGB(80, 220, 120),
+                    Color = Color3.fromRGB(0, 140, 255),
                     Thickness = 1,
                     Transparency = 0.85,
                     Parent = ParaFrame
@@ -3981,4 +3341,4 @@ function Quantum:CreateWindow(data)
     return WindowAPI
 end
 
-return Quantum
+return W424
