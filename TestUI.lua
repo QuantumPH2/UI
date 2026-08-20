@@ -2858,7 +2858,6 @@ function W424:CreateWindow(data)
                                 callback(opt)
                             end
 
-                            optBtn.Activated:Connect(SelectThisOption)
                             optBtn.MouseButton1Click:Connect(SelectThisOption)
 
                             optBtn.MouseEnter:Connect(function()
@@ -2905,7 +2904,6 @@ function W424:CreateWindow(data)
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(ToggleDropdownMenu)
-                DropdownBtn.Activated:Connect(ToggleDropdownMenu)
 
                 table.insert(RegisteredFeatures, {
                     Name = dropdownName,
@@ -3180,7 +3178,6 @@ function W424:CreateWindow(data)
                                 callback(selected)
                             end
 
-                            row.Activated:Connect(ToggleThisOption)
                             row.MouseButton1Click:Connect(ToggleThisOption)
 
                             row.MouseEnter:Connect(function()
@@ -3227,7 +3224,6 @@ function W424:CreateWindow(data)
                 end
 
                 DropdownBtn.MouseButton1Click:Connect(ToggleMultiDropdownMenu)
-                DropdownBtn.Activated:Connect(ToggleMultiDropdownMenu)
 
                 table.insert(RegisteredFeatures, {
                     Name = dropdownName,
@@ -3869,7 +3865,6 @@ function W424:CreateWindow(data)
                         UpdateInputs(pColor)
                     end
                     pBtn.MouseButton1Click:Connect(ChooseColor)
-                    pBtn.Activated:Connect(ChooseColor)
                 end
 
                 local function ReadInputs()
@@ -3939,7 +3934,6 @@ function W424:CreateWindow(data)
                 end
 
                 ColorPreview.MouseButton1Click:Connect(OpenColorPicker)
-                ColorPreview.Activated:Connect(OpenColorPicker)
 
                 local function DoApplyColor()
                     local finalColor = ReadInputs()
@@ -3950,10 +3944,8 @@ function W424:CreateWindow(data)
                 end
 
                 ApplyBtn.MouseButton1Click:Connect(DoApplyColor)
-                ApplyBtn.Activated:Connect(DoApplyColor)
 
                 CancelBtn.MouseButton1Click:Connect(CloseColorPickerModal)
-                CancelBtn.Activated:Connect(CloseColorPickerModal)
 
                 ListenTheme(function(theme)
                     PickerFrame.BackgroundColor3 = theme.Background
