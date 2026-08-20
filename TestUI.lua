@@ -890,8 +890,8 @@ local function CreateFloatingIcon(customIcon)
     local Backdrop = Create("Frame", {
         Name = "Backdrop",
         Parent = FloatingIconScreen,
-        Size = UDim2.new(0, 42, 0, 42),
-        Position = UDim2.new(0, 14, 0.5, -21),
+        Size = UDim2.new(0, 50, 0, 50),
+        Position = UDim2.new(0, 14, 0.5, -25),
         BackgroundColor3 = Color3.fromRGB(0, 0, 0),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
@@ -901,7 +901,7 @@ local function CreateFloatingIcon(customIcon)
     })
 
     Create("UICorner", {
-        CornerRadius = UDim.new(0, 10),
+        CornerRadius = UDim.new(0, 12),
         Parent = Backdrop
     })
 
@@ -911,7 +911,7 @@ local function CreateFloatingIcon(customIcon)
         Parent = Backdrop,
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(0, 36, 0, 36),
+        Size = UDim2.new(0, 44, 0, 44),
         BackgroundTransparency = 1,
         Image = iconToUse,
         ImageColor3 = isCustomImage and Color3.fromRGB(255, 255, 255) or CurrentTheme.Text,
@@ -1567,7 +1567,7 @@ function W424:CreateWindow(data)
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
         Visible = false,
-        ZIndex = 98,
+        ZIndex = 140,
         Active = true,
     })
     Create("UICorner", {CornerRadius = UDim.new(0, Config.CornerRadius), Parent = DropdownOverlay})
@@ -1581,7 +1581,7 @@ function W424:CreateWindow(data)
         BorderSizePixel = 0,
         Visible = false,
         ClipsDescendants = true,
-        ZIndex = 99,
+        ZIndex = 150,
     })
     Create("UICorner", {CornerRadius = UDim.new(0, Config.CornerRadius), Parent = DropdownPanel})
     Create("UIStroke", {Color = CurrentTheme.Border, Thickness = 1, Parent = DropdownPanel})
@@ -1592,7 +1592,7 @@ function W424:CreateWindow(data)
         Size = UDim2.new(1, 0, 0, 36),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        ZIndex = 100,
+        ZIndex = 151,
     })
 
     DropdownPanelTitle = Create("TextLabel", {
@@ -1605,7 +1605,7 @@ function W424:CreateWindow(data)
         TextSize = 12,
         Font = Enum.Font.GothamBold,
         TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 100,
+        ZIndex = 152,
     })
 
     DropdownPanelSearch = Create("TextBox", {
@@ -1620,21 +1620,21 @@ function W424:CreateWindow(data)
         TextSize = 11,
         Font = Enum.Font.Gotham,
         ClearTextOnFocus = false,
-        ZIndex = 100,
+        ZIndex = 152,
     })
     Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = DropdownPanelSearch})
 
     DropdownPanelScroll = Create("ScrollingFrame", {
         Parent = DropdownPanel,
-        Size = UDim2.new(1, -10, 1, -68),
+        Size = UDim2.new(1, -10, 1, -72),
         Position = UDim2.new(0, 5, 0, 64),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        ScrollBarThickness = 2,
+        ScrollBarThickness = 3,
         ScrollBarImageColor3 = CurrentTheme.Accent,
         CanvasSize = UDim2.new(0, 0, 0, 0),
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        ZIndex = 100,
+        ZIndex = 153,
     })
     Create("UIListLayout", {
         Parent = DropdownPanelScroll,
@@ -1643,10 +1643,10 @@ function W424:CreateWindow(data)
     })
     Create("UIPadding", {
         Parent = DropdownPanelScroll,
-        PaddingBottom = UDim.new(0, 30)
+        PaddingBottom = UDim.new(0, 40)
     })
 
-    local ResizeHandle = Create("ImageButton", {
+    ResizeHandle = Create("ImageButton", {
         Name = "ResizeHandle",
         Parent = MainFrame,
         Size = UDim2.new(0, 22, 0, 22),
@@ -2851,12 +2851,15 @@ function W424:CreateWindow(data)
                                 ZIndex = 102
                             })
 
-                            optBtn.MouseButton1Click:Connect(function()
+                            local function SelectThisOption()
                                 selected = opt
                                 UpdateButtonText()
                                 CloseAllDropdowns()
                                 callback(opt)
-                            end)
+                            end
+
+                            optBtn.Activated:Connect(SelectThisOption)
+                            optBtn.MouseButton1Click:Connect(SelectThisOption)
 
                             optBtn.MouseEnter:Connect(function()
                                 optBtn.BackgroundTransparency = 0
@@ -2870,9 +2873,16 @@ function W424:CreateWindow(data)
                             count = count + 1
                         end
                     end
+
+                    Create("Frame", {
+                        Parent = DropdownPanelScroll,
+                        Size = UDim2.new(1, 0, 0, 20),
+                        BackgroundTransparency = 1,
+                        LayoutOrder = 9999
+                    })
                 end
 
-                DropdownBtn.MouseButton1Click:Connect(function()
+                local function ToggleDropdownMenu()
                     if CurrentDropdownState.IsOpen and CurrentDropdownState.Button == DropdownBtn then
                         CloseAllDropdowns()
                     else
@@ -2887,11 +2897,15 @@ function W424:CreateWindow(data)
                         DropdownPanelTitle.Text = dropdownName
                         DropdownPanelSearch.Text = ""
                         BuildOptions()
+                        if ResizeHandle then ResizeHandle.Visible = false end
                         DropdownOverlay.Visible = true
                         DropdownPanel.Visible = true
                         Arrow.Rotation = 180
                     end
-                end)
+                end
+
+                DropdownBtn.MouseButton1Click:Connect(ToggleDropdownMenu)
+                DropdownBtn.Activated:Connect(ToggleDropdownMenu)
 
                 table.insert(RegisteredFeatures, {
                     Name = dropdownName,
@@ -3144,7 +3158,7 @@ function W424:CreateWindow(data)
                                 ZIndex = 102
                             })
 
-                            row.MouseButton1Click:Connect(function()
+                            local function ToggleThisOption()
                                 local found = false
                                 for i, s in ipairs(selected) do
                                     local sText, _ = NormalizeOption(s)
@@ -3164,7 +3178,10 @@ function W424:CreateWindow(data)
                                 optLabel.TextColor3 = isSel and CurrentTheme.Accent or CurrentTheme.Text
                                 UpdateButtonText()
                                 callback(selected)
-                            end)
+                            end
+
+                            row.Activated:Connect(ToggleThisOption)
+                            row.MouseButton1Click:Connect(ToggleThisOption)
 
                             row.MouseEnter:Connect(function()
                                 row.BackgroundTransparency = 0
@@ -3178,9 +3195,16 @@ function W424:CreateWindow(data)
                             count = count + 1
                         end
                     end
+
+                    Create("Frame", {
+                        Parent = DropdownPanelScroll,
+                        Size = UDim2.new(1, 0, 0, 20),
+                        BackgroundTransparency = 1,
+                        LayoutOrder = 9999
+                    })
                 end
 
-                DropdownBtn.MouseButton1Click:Connect(function()
+                local function ToggleMultiDropdownMenu()
                     if CurrentDropdownState.IsOpen and CurrentDropdownState.Button == DropdownBtn then
                         CloseAllDropdowns()
                     else
@@ -3195,11 +3219,15 @@ function W424:CreateWindow(data)
                         DropdownPanelTitle.Text = dropdownName
                         DropdownPanelSearch.Text = ""
                         BuildOptions()
+                        if ResizeHandle then ResizeHandle.Visible = false end
                         DropdownOverlay.Visible = true
                         DropdownPanel.Visible = true
                         Arrow.Rotation = 180
                     end
-                end)
+                end
+
+                DropdownBtn.MouseButton1Click:Connect(ToggleMultiDropdownMenu)
+                DropdownBtn.Activated:Connect(ToggleMultiDropdownMenu)
 
                 table.insert(RegisteredFeatures, {
                     Name = dropdownName,
@@ -3715,7 +3743,8 @@ function W424:CreateWindow(data)
                     BorderSizePixel = 0,
                     Visible = false,
                     ClipsDescendants = true,
-                    ZIndex = 120
+                    Active = true,
+                    ZIndex = 250
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 8), Parent = ColorModal})
                 Create("UIStroke", {Color = CurrentTheme.Accent, Thickness = 1, Parent = ColorModal})
@@ -3730,7 +3759,7 @@ function W424:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.GothamBold,
                     TextXAlignment = Enum.TextXAlignment.Left,
-                    ZIndex = 121
+                    ZIndex = 251
                 })
 
                 local PaletteGrid = Create("Frame", {
@@ -3738,7 +3767,7 @@ function W424:CreateWindow(data)
                     Size = UDim2.new(1, -20, 0, 48),
                     Position = UDim2.new(0, 10, 0, 30),
                     BackgroundTransparency = 1,
-                    ZIndex = 121
+                    ZIndex = 251
                 })
                 Create("UIGridLayout", {
                     Parent = PaletteGrid,
@@ -3767,7 +3796,7 @@ function W424:CreateWindow(data)
                     Size = UDim2.new(0, 30, 0, 24),
                     Position = UDim2.new(0, 10, 0, 84),
                     BackgroundColor3 = default,
-                    ZIndex = 121
+                    ZIndex = 251
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = LiveBox})
                 Create("UIStroke", {Color = CurrentTheme.Border, Thickness = 1, Parent = LiveBox})
@@ -3783,7 +3812,7 @@ function W424:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.Gotham,
                     ClearTextOnFocus = false,
-                    ZIndex = 121
+                    ZIndex = 251
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = RInput})
 
@@ -3798,7 +3827,7 @@ function W424:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.Gotham,
                     ClearTextOnFocus = false,
-                    ZIndex = 121
+                    ZIndex = 251
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = GInput})
 
@@ -3813,7 +3842,7 @@ function W424:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.Gotham,
                     ClearTextOnFocus = false,
-                    ZIndex = 121
+                    ZIndex = 251
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = BInput})
 
@@ -3831,14 +3860,16 @@ function W424:CreateWindow(data)
                         BackgroundColor3 = pColor,
                         Text = "",
                         AutoButtonColor = false,
-                        ZIndex = 122
+                        ZIndex = 252
                     })
                     Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = pBtn})
                     Create("UIStroke", {Color = Color3.fromRGB(40, 40, 45), Thickness = 1, Parent = pBtn})
 
-                    pBtn.MouseButton1Click:Connect(function()
+                    local function ChooseColor()
                         UpdateInputs(pColor)
-                    end)
+                    end
+                    pBtn.MouseButton1Click:Connect(ChooseColor)
+                    pBtn.Activated:Connect(ChooseColor)
                 end
 
                 local function ReadInputs()
@@ -3862,7 +3893,7 @@ function W424:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.GothamBold,
                     AutoButtonColor = false,
-                    ZIndex = 121
+                    ZIndex = 252
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = ApplyBtn})
 
@@ -3883,37 +3914,46 @@ function W424:CreateWindow(data)
                     TextSize = 11,
                     Font = Enum.Font.GothamBold,
                     AutoButtonColor = false,
-                    ZIndex = 121
+                    ZIndex = 252
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = CancelBtn})
 
-                ColorPreview.MouseButton1Click:Connect(function()
+                local function OpenColorPicker()
                     CloseAllDropdowns()
                     UpdateInputs(selectedColor)
+                    if ResizeHandle then ResizeHandle.Visible = false end
                     ColorModal.Visible = true
+                    ActiveColorModal = ColorModal
                     DropdownOverlay.Visible = true
-                    Tween(DropdownOverlay, {BackgroundTransparency = 0.8}, 0.2)
-                end)
+                    DropdownOverlay.BackgroundTransparency = 0.5
+                end
 
-                ApplyBtn.MouseButton1Click:Connect(function()
+                local function CloseColorPickerModal()
+                    ColorModal.Visible = false
+                    ActiveColorModal = nil
+                    if DropdownOverlay and (not CurrentDropdownState or not CurrentDropdownState.IsOpen) then
+                        DropdownOverlay.Visible = false
+                        DropdownOverlay.BackgroundTransparency = 1
+                    end
+                    if ResizeHandle then ResizeHandle.Visible = true end
+                end
+
+                ColorPreview.MouseButton1Click:Connect(OpenColorPicker)
+                ColorPreview.Activated:Connect(OpenColorPicker)
+
+                local function DoApplyColor()
                     local finalColor = ReadInputs()
                     selectedColor = finalColor
                     ColorPreview.BackgroundColor3 = finalColor
                     callback(finalColor)
-                    ColorModal.Visible = false
-                    DropdownOverlay.Visible = false
-                end)
+                    CloseColorPickerModal()
+                end
 
-                CancelBtn.MouseButton1Click:Connect(function()
-                    ColorModal.Visible = false
-                    DropdownOverlay.Visible = false
-                end)
+                ApplyBtn.MouseButton1Click:Connect(DoApplyColor)
+                ApplyBtn.Activated:Connect(DoApplyColor)
 
-                DropdownOverlay.InputBegan:Connect(function(input)
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                        ColorModal.Visible = false
-                    end
-                end)
+                CancelBtn.MouseButton1Click:Connect(CloseColorPickerModal)
+                CancelBtn.Activated:Connect(CloseColorPickerModal)
 
                 ListenTheme(function(theme)
                     PickerFrame.BackgroundColor3 = theme.Background
