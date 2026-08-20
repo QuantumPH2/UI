@@ -890,8 +890,8 @@ local function CreateFloatingIcon(customIcon)
     local Backdrop = Create("Frame", {
         Name = "Backdrop",
         Parent = FloatingIconScreen,
-        Size = UDim2.new(0, 64, 0, 64),
-        Position = UDim2.new(0, 14, 0.5, -32),
+        Size = UDim2.new(0, 42, 0, 42),
+        Position = UDim2.new(0, 14, 0.5, -21),
         BackgroundColor3 = Color3.fromRGB(0, 0, 0),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
@@ -901,7 +901,7 @@ local function CreateFloatingIcon(customIcon)
     })
 
     Create("UICorner", {
-        CornerRadius = UDim.new(0, 12),
+        CornerRadius = UDim.new(0, 10),
         Parent = Backdrop
     })
 
@@ -911,7 +911,7 @@ local function CreateFloatingIcon(customIcon)
         Parent = Backdrop,
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(0, 58, 0, 58),
+        Size = UDim2.new(0, 36, 0, 36),
         BackgroundTransparency = 1,
         Image = iconToUse,
         ImageColor3 = isCustomImage and Color3.fromRGB(255, 255, 255) or CurrentTheme.Text,
@@ -1004,6 +1004,8 @@ end
 
 function W424:CreateWindow(data)
     data = data or {}
+    local RegisteredFeatures = {}
+    local RegisteredSections = {}
     local windowName = data.Name or data.Title or data.ScriptName or "W424"
     local windowIcon = data.Icon or data.TitleIcon or data.Logo or "saturn"
     local windowSubtitle = data.SubTitle or data.Subtitle or data.Game or "Fish It"
@@ -2123,6 +2125,18 @@ function W424:CreateWindow(data)
                 UpdateSize()
             end
 
+            table.insert(RegisteredSections, {
+                Frame = SectionFrame,
+                Header = SectionHeader,
+                Items = SectionItems,
+                Name = sectionName,
+                Expand = function()
+                    isCollapsed = false
+                    UpdateSize()
+                end,
+                UpdateSize = UpdateSize
+            })
+
             ListenTheme(function(theme)
                 Arrow.ImageColor3 = theme.SubText
             end)
@@ -2256,6 +2270,14 @@ function W424:CreateWindow(data)
                     ToggleCircle.BackgroundColor3 = theme.Text
                     UpdateToggleVisual(false)
                 end)
+
+                table.insert(RegisteredFeatures, {
+                    Name = toggleName,
+                    Desc = desc,
+                    Frame = ToggleFrame,
+                    Section = SectionFrame,
+                    SectionItems = SectionItems
+                })
 
                 local API = {
                     Set = function(val)
@@ -2517,6 +2539,14 @@ function W424:CreateWindow(data)
                     Btn.BackgroundColor3 = Color3.fromRGB(30, 110, 220)
                 end)
 
+                table.insert(RegisteredFeatures, {
+                    Name = buttonName,
+                    Desc = desc,
+                    Frame = BtnFrame,
+                    Section = SectionFrame,
+                    SectionItems = SectionItems
+                })
+
                 return {Click = callback}
             end
 
@@ -2525,9 +2555,27 @@ function W424:CreateWindow(data)
                 local numButtons = #buttonsData
                 if numButtons == 0 then return end
 
-                local RowFrame = Create("Frame", {
+                local row1Data = {}
+                local row2Data = {}
+
+                if numButtons <= 3 then
+                    row1Data = buttonsData
+                else
+                    local half = math.ceil(numButtons / 2)
+                    for i = 1, half do
+                        table.insert(row1Data, buttonsData[i])
+                    end
+                    for i = half + 1, math.min(numButtons, half * 2) do
+                        table.insert(row2Data, buttonsData[i])
+                    end
+                end
+
+                local numRows = #row2Data > 0 and 2 or 1
+                local rowContainerHeight = numRows == 1 and 28 or 60
+
+                local MainContainer = Create("Frame", {
                     Parent = SectionItems,
-                    Size = UDim2.new(1, 0, 0, 28),
+                    Size = UDim2.new(1, 0, 0, rowContainerHeight),
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
@@ -2535,65 +2583,100 @@ function W424:CreateWindow(data)
                 })
 
                 Create("UIListLayout", {
-                    Parent = RowFrame,
-                    FillDirection = Enum.FillDirection.Horizontal,
+                    Parent = MainContainer,
+                    FillDirection = Enum.FillDirection.Vertical,
                     SortOrder = Enum.SortOrder.LayoutOrder,
-                    Padding = UDim.new(0, 5)
+                    Padding = UDim.new(0, 4)
                 })
 
-                local buttonWidth = 1 / numButtons
-                local totalPadding = (numButtons - 1) * 5
-                local padPerBtn = totalPadding / numButtons
-                
-                for _, data in ipairs(buttonsData) do
-                    local btn = Create("TextButton", {
-                        Parent = RowFrame,
-                        Size = UDim2.new(buttonWidth, -padPerBtn, 1, 0),
-                        BackgroundColor3 = Color3.fromRGB(30, 110, 220),
-                        Text = data.Name or data.Title or "Button",
-                        TextColor3 = Color3.fromRGB(255, 255, 255),
-                        TextSize = 11,
-                        Font = Enum.Font.GothamBold,
-                        AutoButtonColor = false,
-                        ClipsDescendants = true,
-                        ZIndex = 19
+                local function MakeRow(bList, parent)
+                    local rCount = #bList
+                    local RowFrame = Create("Frame", {
+                        Parent = parent,
+                        Size = UDim2.new(1, 0, 0, 28),
+                        BackgroundTransparency = 1,
+                        BorderSizePixel = 0,
+                        ZIndex = 18
                     })
-                    Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = btn})
 
-                    if data.Icon then
-                        local bIcon = Create("ImageLabel", {
-                            Parent = btn,
-                            Size = UDim2.new(0, 14, 0, 14),
-                            Position = UDim2.new(0, 6, 0.5, -7),
-                            BackgroundTransparency = 1,
-                            Image = GetIcon(data.Icon),
-                            ImageColor3 = Color3.fromRGB(255, 255, 255),
-                            ZIndex = 20
+                    Create("UIListLayout", {
+                        Parent = RowFrame,
+                        FillDirection = Enum.FillDirection.Horizontal,
+                        SortOrder = Enum.SortOrder.LayoutOrder,
+                        Padding = UDim.new(0, 5)
+                    })
+
+                    local buttonWidth = 1 / rCount
+                    local totalPadding = (rCount - 1) * 5
+                    local padPerBtn = totalPadding / rCount
+
+                    for _, data in ipairs(bList) do
+                        local btn = Create("TextButton", {
+                            Parent = RowFrame,
+                            Size = UDim2.new(buttonWidth, -padPerBtn, 1, 0),
+                            BackgroundColor3 = Color3.fromRGB(30, 110, 220),
+                            Text = data.Name or data.Title or "Button",
+                            TextColor3 = Color3.fromRGB(255, 255, 255),
+                            TextSize = 11,
+                            Font = Enum.Font.GothamBold,
+                            AutoButtonColor = false,
+                            ClipsDescendants = true,
+                            ZIndex = 19
+                        })
+                        Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = btn})
+
+                        if data.Icon then
+                            Create("ImageLabel", {
+                                Parent = btn,
+                                Size = UDim2.new(0, 14, 0, 14),
+                                Position = UDim2.new(0, 6, 0.5, -7),
+                                BackgroundTransparency = 1,
+                                Image = GetIcon(data.Icon),
+                                ImageColor3 = Color3.fromRGB(255, 255, 255),
+                                ZIndex = 20
+                            })
+                        end
+
+                        btn.MouseEnter:Connect(function()
+                            Tween(btn, {BackgroundColor3 = Color3.fromRGB(50, 140, 255)}, 0.15)
+                        end)
+                        btn.MouseLeave:Connect(function()
+                            Tween(btn, {BackgroundColor3 = Color3.fromRGB(30, 110, 220)}, 0.15)
+                        end)
+                        btn.MouseButton1Down:Connect(function()
+                            btn.BackgroundColor3 = Color3.fromRGB(90, 180, 255)
+                        end)
+                        btn.MouseButton1Up:Connect(function()
+                            btn.BackgroundColor3 = Color3.fromRGB(50, 140, 255)
+                        end)
+                        btn.MouseButton1Click:Connect(function()
+                            if data.Callback then data.Callback() end
+                        end)
+
+                        table.insert(RegisteredFeatures, {
+                            Name = data.Name or data.Title or "Button",
+                            Desc = nil,
+                            Frame = MainContainer,
+                            Section = SectionFrame,
+                            SectionItems = SectionItems
                         })
                     end
-
-                    btn.MouseEnter:Connect(function()
-                        Tween(btn, {BackgroundColor3 = Color3.fromRGB(50, 140, 255)}, 0.15)
-                    end)
-                    btn.MouseLeave:Connect(function()
-                        Tween(btn, {BackgroundColor3 = Color3.fromRGB(30, 110, 220)}, 0.15)
-                    end)
-                    btn.MouseButton1Down:Connect(function()
-                        btn.BackgroundColor3 = Color3.fromRGB(90, 180, 255)
-                    end)
-                    btn.MouseButton1Up:Connect(function()
-                        btn.BackgroundColor3 = Color3.fromRGB(50, 140, 255)
-                    end)
-                    btn.MouseButton1Click:Connect(function()
-                        if data.Callback then data.Callback() end
-                    end)
                 end
-                
+
+                MakeRow(row1Data, MainContainer)
+                if #row2Data > 0 then
+                    MakeRow(row2Data, MainContainer)
+                end
+
                 ListenTheme(function(theme)
-                    for _, child in ipairs(RowFrame:GetChildren()) do
-                        if child:IsA("TextButton") then
-                            child.BackgroundColor3 = Color3.fromRGB(30, 110, 220)
-                            child.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    for _, row in ipairs(MainContainer:GetChildren()) do
+                        if row:IsA("Frame") then
+                            for _, child in ipairs(row:GetChildren()) do
+                                if child:IsA("TextButton") then
+                                    child.BackgroundColor3 = Color3.fromRGB(30, 110, 220)
+                                    child.TextColor3 = Color3.fromRGB(255, 255, 255)
+                                end
+                            end
                         end
                     end
                 end)
@@ -2609,7 +2692,7 @@ function W424:CreateWindow(data)
                 local desc = dropdownData.Desc
 
                 local hasDesc = desc and desc ~= ""
-                local frameHeight = hasDesc and 42 or 28
+                local frameHeight = hasDesc and 44 or 30
 
                 local DropdownFrame = Create("Frame", {
                     Parent = SectionItems,
@@ -2625,7 +2708,7 @@ function W424:CreateWindow(data)
                 Create("ImageLabel", {
                     Parent = DropdownFrame,
                     Size = UDim2.new(0, 14, 0, 14),
-                    Position = UDim2.new(0, 7, 0, hasDesc and 5 or 5),
+                    Position = UDim2.new(0, 7, 0, hasDesc and 7 or 8),
                     BackgroundTransparency = 1,
                     Image = GetIcon(dropdownIcon),
                     ImageColor3 = CurrentTheme.SubText,
@@ -2634,8 +2717,8 @@ function W424:CreateWindow(data)
 
                 Create("TextLabel", {
                     Parent = DropdownFrame,
-                    Size = UDim2.new(0.4, 0, 0, 14),
-                    Position = UDim2.new(0, 22, 0, hasDesc and 1 or 3),
+                    Size = UDim2.new(1, -165, 0, 14),
+                    Position = UDim2.new(0, 24, 0, hasDesc and 4 or 8),
                     BackgroundTransparency = 1,
                     Text = dropdownName,
                     TextColor3 = CurrentTheme.Text,
@@ -2649,24 +2732,23 @@ function W424:CreateWindow(data)
                 if hasDesc then
                     Create("TextLabel", {
                         Parent = DropdownFrame,
-                        Size = UDim2.new(1, -120, 0, 10),
-                        Position = UDim2.new(0, 22, 0, 13),
+                        Size = UDim2.new(1, -165, 0, 14),
+                        Position = UDim2.new(0, 24, 0, 21),
                         BackgroundTransparency = 1,
                         Text = desc,
                         TextColor3 = CurrentTheme.SubText,
-                        TextSize = 11,
+                        TextSize = 10,
                         Font = Enum.Font.Gotham,
                         TextXAlignment = Enum.TextXAlignment.Left,
-                        TextWrapped = true,
-                        AutomaticSize = Enum.AutomaticSize.Y,
+                        TextTruncate = Enum.TextTruncate.AtEnd,
                         ZIndex = 19
                     })
                 end
 
                 local DropdownBtn = Create("TextButton", {
                     Parent = DropdownFrame,
-                    Size = UDim2.new(0, 150, 0, 26),
-                    Position = UDim2.new(1, -158, 0, hasDesc and 8 or 2),
+                    Size = UDim2.new(0, 130, 0, 24),
+                    Position = UDim2.new(1, -136, 0.5, -12),
                     BackgroundColor3 = Color3.fromRGB(55, 55, 60),
                     Text = "",
                     TextColor3 = CurrentTheme.SubText,
@@ -2721,7 +2803,7 @@ function W424:CreateWindow(data)
                     optionButtons = {}
 
                     for _, child in ipairs(DropdownPanelScroll:GetChildren()) do
-                        if child:IsA("GuiObject") and child.Name ~= "UIListLayout" then
+                        if child:IsA("GuiObject") and child.Name ~= "UIListLayout" and child.Name ~= "UIPadding" then
                             child:Destroy()
                         end
                     end
@@ -2733,6 +2815,7 @@ function W424:CreateWindow(data)
                             local optBtn = Create("TextButton", {
                                 Parent = DropdownPanelScroll,
                                 Size = UDim2.new(1, 0, 0, 30),
+                                BackgroundTransparency = 1,
                                 BackgroundColor3 = CurrentTheme.Element,
                                 Text = "",
                                 TextColor3 = CurrentTheme.Text,
@@ -2750,36 +2833,37 @@ function W424:CreateWindow(data)
                                     BackgroundTransparency = 1,
                                     Image = GetIcon(optIcon),
                                     ImageColor3 = CurrentTheme.SubText,
-                                    ZIndex = 102,
+                                    ZIndex = 102
                                 })
-                                local txt = Create("TextLabel", {
-                                    Parent = optBtn,
-                                    Size = UDim2.new(1, -20, 1, 0),
-                                    Position = UDim2.new(0, 20, 0, 0),
-                                    BackgroundTransparency = 1,
-                                    Text = optText,
-                                    TextColor3 = CurrentTheme.Text,
-                                    TextSize = 12,
-                                    Font = Enum.Font.Gotham,
-                                    TextXAlignment = Enum.TextXAlignment.Left,
-                                    ZIndex = 102,
-                                })
-                            else
-                                optBtn.Text = optText
                             end
+
+                            local optLabel = Create("TextLabel", {
+                                Parent = optBtn,
+                                Size = UDim2.new(1, optIcon and -30 or -10, 1, 0),
+                                Position = UDim2.new(0, optIcon and 25 or 5, 0, 0),
+                                BackgroundTransparency = 1,
+                                Text = optText,
+                                TextColor3 = (optText == NormalizeOption(selected)) and CurrentTheme.Accent or CurrentTheme.Text,
+                                TextSize = 11,
+                                Font = Enum.Font.Gotham,
+                                TextXAlignment = Enum.TextXAlignment.Left,
+                                TextTruncate = Enum.TextTruncate.AtEnd,
+                                ZIndex = 102
+                            })
 
                             optBtn.MouseButton1Click:Connect(function()
                                 selected = opt
                                 UpdateButtonText()
-                                callback(selected)
                                 CloseAllDropdowns()
+                                callback(opt)
                             end)
 
                             optBtn.MouseEnter:Connect(function()
-                                optBtn.BackgroundColor3 = CurrentTheme.Accent
+                                optBtn.BackgroundTransparency = 0
+                                optBtn.BackgroundColor3 = CurrentTheme.ElementHover
                             end)
                             optBtn.MouseLeave:Connect(function()
-                                optBtn.BackgroundColor3 = CurrentTheme.Element
+                                optBtn.BackgroundTransparency = 1
                             end)
 
                             table.insert(optionButtons, optBtn)
@@ -2798,66 +2882,49 @@ function W424:CreateWindow(data)
                         CurrentDropdownState.Options = options
                         CurrentDropdownState.Selected = selected
                         CurrentDropdownState.Callback = callback
-                        CurrentDropdownState.Arrow = Arrow
                         CurrentDropdownState.Button = DropdownBtn
                         CurrentDropdownState.Rebuild = BuildOptions
-                        CurrentDropdownState.OptionButtons = optionButtons
-
                         DropdownPanelTitle.Text = dropdownName
                         DropdownPanelSearch.Text = ""
-
-                        DropdownPanel.Position = UDim2.new(1, 20, 0, Config.TopbarHeight)
-                        DropdownPanel.Visible = true
+                        BuildOptions()
                         DropdownOverlay.Visible = true
-                        Tween(DropdownOverlay, {BackgroundTransparency = 0.88}, 0.2)
-                        Tween(DropdownPanel, {Position = UDim2.new(1, -180, 0, Config.TopbarHeight)}, 0.3)
+                        DropdownPanel.Visible = true
                         Arrow.Rotation = 180
-
-                        BuildOptions("")
                     end
                 end)
 
-                TabContent:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
-                    if CurrentDropdownState.IsOpen and CurrentDropdownState.Button == DropdownBtn then
-                        CloseAllDropdowns()
-                    end
-                end)
+                table.insert(RegisteredFeatures, {
+                    Name = dropdownName,
+                    Desc = desc,
+                    Frame = DropdownFrame,
+                    Section = SectionFrame,
+                    SectionItems = SectionItems
+                })
 
                 ListenTheme(function(theme)
-                    DropdownFrame.BackgroundColor3 = theme.Background
+                    DropdownFrame.BackgroundColor3 = theme.Element
                     DropdownBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
-                    UpdateButtonText()
                     Arrow.ImageColor3 = theme.SubText
-                    DropdownPanel.BackgroundColor3 = theme.Background
-                    DropdownPanelSearch.BackgroundColor3 = theme.Element
-                    DropdownPanelSearch.TextColor3 = theme.Text
-                    DropdownPanelSearch.PlaceholderColor3 = theme.SubText
-                    DropdownPanelScroll.ScrollBarImageColor3 = theme.Accent
-                    for _, btn in ipairs(optionButtons) do
-                        if btn and btn.Parent then
-                            btn.BackgroundColor3 = theme.Element
-                            if btn:IsA("TextButton") and btn.Text ~= "" then
-                                btn.TextColor3 = theme.Text
-                            end
-                        end
-                    end
+                    UpdateButtonText()
                 end)
 
                 local DropdownAPI = {}
+                function DropdownAPI:Set(val)
+                    selected = val
+                    UpdateButtonText()
+                    callback(val)
+                end
                 function DropdownAPI:Refresh(newOptions, newDefault)
                     options = newOptions or {}
                     if newDefault ~= nil then
                         selected = newDefault
-                        UpdateButtonText()
+                    elseif not table.find(options, selected) then
+                        selected = options[1] or ""
                     end
+                    UpdateButtonText()
                     if CurrentDropdownState.IsOpen and CurrentDropdownState.Button == DropdownBtn then
                         BuildOptions(DropdownPanelSearch.Text)
                     end
-                end
-                function DropdownAPI:Set(value)
-                    selected = value
-                    UpdateButtonText()
-                    callback(selected)
                 end
                 function DropdownAPI:Get()
                     return selected
@@ -2868,14 +2935,14 @@ function W424:CreateWindow(data)
             function SectionAPI:CreateMultiDropdown(dropdownData)
                 dropdownData = dropdownData or {}
                 local dropdownName = dropdownData.Name or "MultiDropdown"
-                local dropdownIcon = dropdownData.Icon or "ChevronDown"
+                local dropdownIcon = dropdownData.Icon or "CheckSquare"
                 local options = dropdownData.Options or dropdownData.Values or {}
                 local default = dropdownData.Default or {}
                 local callback = dropdownData.Callback or function() end
                 local desc = dropdownData.Desc
 
                 local hasDesc = desc and desc ~= ""
-                local frameHeight = hasDesc and 42 or 28
+                local frameHeight = hasDesc and 44 or 30
 
                 local DropdownFrame = Create("Frame", {
                     Parent = SectionItems,
@@ -2891,7 +2958,7 @@ function W424:CreateWindow(data)
                 Create("ImageLabel", {
                     Parent = DropdownFrame,
                     Size = UDim2.new(0, 14, 0, 14),
-                    Position = UDim2.new(0, 7, 0, hasDesc and 5 or 5),
+                    Position = UDim2.new(0, 7, 0, hasDesc and 7 or 8),
                     BackgroundTransparency = 1,
                     Image = GetIcon(dropdownIcon),
                     ImageColor3 = CurrentTheme.SubText,
@@ -2900,8 +2967,8 @@ function W424:CreateWindow(data)
 
                 Create("TextLabel", {
                     Parent = DropdownFrame,
-                    Size = UDim2.new(0.4, 0, 0, 14),
-                    Position = UDim2.new(0, 22, 0, hasDesc and 1 or 3),
+                    Size = UDim2.new(1, -165, 0, 14),
+                    Position = UDim2.new(0, 24, 0, hasDesc and 4 or 8),
                     BackgroundTransparency = 1,
                     Text = dropdownName,
                     TextColor3 = CurrentTheme.Text,
@@ -2915,24 +2982,23 @@ function W424:CreateWindow(data)
                 if hasDesc then
                     Create("TextLabel", {
                         Parent = DropdownFrame,
-                        Size = UDim2.new(1, -120, 0, 10),
-                        Position = UDim2.new(0, 22, 0, 13),
+                        Size = UDim2.new(1, -165, 0, 14),
+                        Position = UDim2.new(0, 24, 0, 21),
                         BackgroundTransparency = 1,
                         Text = desc,
                         TextColor3 = CurrentTheme.SubText,
-                        TextSize = 11,
+                        TextSize = 10,
                         Font = Enum.Font.Gotham,
                         TextXAlignment = Enum.TextXAlignment.Left,
-                        TextWrapped = true,
-                        AutomaticSize = Enum.AutomaticSize.Y,
+                        TextTruncate = Enum.TextTruncate.AtEnd,
                         ZIndex = 19
                     })
                 end
 
                 local DropdownBtn = Create("TextButton", {
                     Parent = DropdownFrame,
-                    Size = UDim2.new(0, 150, 0, 26),
-                    Position = UDim2.new(1, -158, 0, hasDesc and 8 or 2),
+                    Size = UDim2.new(0, 130, 0, 24),
+                    Position = UDim2.new(1, -136, 0.5, -12),
                     BackgroundColor3 = Color3.fromRGB(55, 55, 60),
                     Text = "",
                     TextColor3 = CurrentTheme.SubText,
@@ -2970,26 +3036,27 @@ function W424:CreateWindow(data)
                     for _, v in ipairs(default) do
                         table.insert(selected, v)
                     end
+                elseif default ~= "" then
+                    table.insert(selected, default)
                 end
 
                 local function UpdateButtonText()
-                    if #selected == 0 then
-                        DropdownBtn.Text = "Select options"
-                        DropdownBtn.TextColor3 = CurrentTheme.SubText
-                    elseif #selected == 1 then
-                        local t, _ = NormalizeOption(selected[1])
-                        DropdownBtn.Text = t
+                    if #selected > 0 then
+                        local displayNames = {}
+                        for _, s in ipairs(selected) do
+                            local sText, _ = NormalizeOption(s)
+                            table.insert(displayNames, sText)
+                        end
+                        DropdownBtn.Text = table.concat(displayNames, ", ")
                         DropdownBtn.TextColor3 = CurrentTheme.Text
                     else
-                        DropdownBtn.Text = #selected .. " selected"
-                        DropdownBtn.TextColor3 = CurrentTheme.Text
+                        DropdownBtn.Text = "Select options"
+                        DropdownBtn.TextColor3 = CurrentTheme.SubText
                     end
                 end
                 UpdateButtonText()
 
-                local optionItems = {}
-
-                local function IsSelected(opt)
+                local function IsOptionSelected(opt)
                     for _, s in ipairs(selected) do
                         local sText, _ = NormalizeOption(s)
                         local oText, _ = NormalizeOption(opt)
@@ -2998,6 +3065,8 @@ function W424:CreateWindow(data)
                     return false
                 end
 
+                local optionItems = {}
+
                 local function BuildOptions(filterText)
                     for _, item in ipairs(optionItems) do
                         if item then item:Destroy() end
@@ -3005,7 +3074,7 @@ function W424:CreateWindow(data)
                     optionItems = {}
 
                     for _, child in ipairs(DropdownPanelScroll:GetChildren()) do
-                        if child:IsA("GuiObject") and child.Name ~= "UIListLayout" then
+                        if child:IsA("GuiObject") and child.Name ~= "UIListLayout" and child.Name ~= "UIPadding" then
                             child:Destroy()
                         end
                     end
@@ -3014,97 +3083,99 @@ function W424:CreateWindow(data)
                     for _, opt in ipairs(options) do
                         local optText, optIcon = NormalizeOption(opt)
                         if not filterText or filterText == "" or string.find(string.lower(optText), string.lower(filterText), 1, true) then
+                            local isSel = IsOptionSelected(opt)
 
-                        local row = Create("Frame", {
-                            Parent = DropdownPanelScroll,
-                            Size = UDim2.new(1, 0, 0, 26),
-                            BackgroundColor3 = CurrentTheme.Element,
-                            ZIndex = 101,
-                        })
-                        Create("UICorner", {CornerRadius = UDim.new(0, 3), Parent = row})
-
-                        local checkBox = Create("Frame", {
-                            Parent = row,
-                            Size = UDim2.new(0, 14, 0, 14),
-                            Position = UDim2.new(0, 6, 0.5, -7),
-                            BackgroundColor3 = CurrentTheme.Background,
-                            BorderSizePixel = 0,
-                            ZIndex = 102,
-                        })
-                        Create("UICorner", {CornerRadius = UDim.new(0, 2), Parent = checkBox})
-
-                        local checkMark = Create("ImageLabel", {
-                            Parent = checkBox,
-                            Size = UDim2.new(0, 14, 0, 14),
-                            Position = UDim2.new(0.5, -6, 0.5, -6),
-                            BackgroundTransparency = 1,
-                            Image = GetIcon("Check"),
-                            ImageColor3 = CurrentTheme.Accent,
-                            ZIndex = 103,
-                            Visible = IsSelected(opt),
-                        })
-
-                        local textX = 26
-                        if optIcon then
-                            Create("ImageLabel", {
-                                Parent = row,
-                                Size = UDim2.new(0, 14, 0, 14),
-                                Position = UDim2.new(0, 22, 0.5, -6),
+                            local row = Create("TextButton", {
+                                Parent = DropdownPanelScroll,
+                                Size = UDim2.new(1, 0, 0, 30),
                                 BackgroundTransparency = 1,
-                                Image = GetIcon(optIcon),
-                                ImageColor3 = CurrentTheme.SubText,
-                                ZIndex = 102,
+                                BackgroundColor3 = CurrentTheme.Element,
+                                Text = "",
+                                AutoButtonColor = false,
+                                ZIndex = 101
                             })
-                            textX = 44
-                        end
+                            Create("UICorner", {CornerRadius = UDim.new(0, 3), Parent = row})
 
-                        local txt = Create("TextLabel", {
-                            Parent = row,
-                            Size = UDim2.new(1, -textX - 4, 1, 0),
-                            Position = UDim2.new(0, textX, 0, 0),
-                            BackgroundTransparency = 1,
-                            Text = optText,
-                            TextColor3 = CurrentTheme.Text,
-                            TextSize = 11,
-                            Font = Enum.Font.Gotham,
-                            TextXAlignment = Enum.TextXAlignment.Left,
-                            ZIndex = 102,
-                        })
+                            local chkBox = Create("Frame", {
+                                Parent = row,
+                                Size = UDim2.new(0, 16, 0, 16),
+                                Position = UDim2.new(0, 5, 0.5, -8),
+                                BackgroundColor3 = isSel and CurrentTheme.Accent or CurrentTheme.ElementHover,
+                                BorderSizePixel = 0,
+                                ZIndex = 102
+                            })
+                            Create("UICorner", {CornerRadius = UDim.new(0, 3), Parent = chkBox})
+                            Create("UIStroke", {Color = isSel and CurrentTheme.Accent or CurrentTheme.Border, Thickness = 1, Parent = chkBox})
 
-                        local clickBtn = Create("TextButton", {
-                            Parent = row,
-                            Size = UDim2.new(1, 0, 1, 0),
-                            BackgroundTransparency = 1,
-                            Text = "",
-                            ZIndex = 104,
-                        })
+                            local chkIcon = Create("ImageLabel", {
+                                Parent = chkBox,
+                                Size = UDim2.new(0, 12, 0, 12),
+                                Position = UDim2.new(0.5, -6, 0.5, -6),
+                                BackgroundTransparency = 1,
+                                Image = GetIcon("Check"),
+                                ImageColor3 = Color3.fromRGB(0, 0, 0),
+                                Visible = isSel,
+                                ZIndex = 103
+                            })
 
-                        clickBtn.MouseButton1Click:Connect(function()
-                            local selIdx = nil
-                            for i, s in ipairs(selected) do
-                                local sText, _ = NormalizeOption(s)
-                                if sText == optText then selIdx = i; break end
+                            if optIcon then
+                                Create("ImageLabel", {
+                                    Parent = row,
+                                    Size = UDim2.new(0, 14, 0, 14),
+                                    Position = UDim2.new(0, 26, 0.5, -5),
+                                    BackgroundTransparency = 1,
+                                    Image = GetIcon(optIcon),
+                                    ImageColor3 = CurrentTheme.SubText,
+                                    ZIndex = 102
+                                })
                             end
-                            if selIdx then
-                                table.remove(selected, selIdx)
-                                checkMark.Visible = false
-                            else
-                                table.insert(selected, opt)
-                                checkMark.Visible = true
-                            end
-                            UpdateButtonText()
-                            callback(selected)
-                        end)
 
-                        row.MouseEnter:Connect(function()
-                            row.BackgroundColor3 = CurrentTheme.ElementHover
-                        end)
-                        row.MouseLeave:Connect(function()
-                            row.BackgroundColor3 = CurrentTheme.Element
-                        end)
+                            local optLabel = Create("TextLabel", {
+                                Parent = row,
+                                Size = UDim2.new(1, optIcon and -50 or -30, 1, 0),
+                                Position = UDim2.new(0, optIcon and 44 or 26, 0, 0),
+                                BackgroundTransparency = 1,
+                                Text = optText,
+                                TextColor3 = isSel and CurrentTheme.Accent or CurrentTheme.Text,
+                                TextSize = 11,
+                                Font = Enum.Font.Gotham,
+                                TextXAlignment = Enum.TextXAlignment.Left,
+                                TextTruncate = Enum.TextTruncate.AtEnd,
+                                ZIndex = 102
+                            })
 
-                        table.insert(optionItems, row)
-                        count = count + 1
+                            row.MouseButton1Click:Connect(function()
+                                local found = false
+                                for i, s in ipairs(selected) do
+                                    local sText, _ = NormalizeOption(s)
+                                    if sText == optText then
+                                        table.remove(selected, i)
+                                        found = true
+                                        break
+                                    end
+                                end
+                                if not found then
+                                    table.insert(selected, opt)
+                                end
+
+                                isSel = not found
+                                chkBox.BackgroundColor3 = isSel and CurrentTheme.Accent or CurrentTheme.ElementHover
+                                chkIcon.Visible = isSel
+                                optLabel.TextColor3 = isSel and CurrentTheme.Accent or CurrentTheme.Text
+                                UpdateButtonText()
+                                callback(selected)
+                            end)
+
+                            row.MouseEnter:Connect(function()
+                                row.BackgroundTransparency = 0
+                                row.BackgroundColor3 = CurrentTheme.ElementHover
+                            end)
+                            row.MouseLeave:Connect(function()
+                                row.BackgroundTransparency = 1
+                            end)
+
+                            table.insert(optionItems, row)
+                            count = count + 1
                         end
                     end
                 end
@@ -3119,67 +3190,47 @@ function W424:CreateWindow(data)
                         CurrentDropdownState.Options = options
                         CurrentDropdownState.Selected = selected
                         CurrentDropdownState.Callback = callback
-                        CurrentDropdownState.Arrow = Arrow
                         CurrentDropdownState.Button = DropdownBtn
                         CurrentDropdownState.Rebuild = BuildOptions
-                        CurrentDropdownState.OptionButtons = optionItems
-
                         DropdownPanelTitle.Text = dropdownName
                         DropdownPanelSearch.Text = ""
-
-                        DropdownPanel.Position = UDim2.new(1, 20, 0, Config.TopbarHeight)
-                        DropdownPanel.Visible = true
-                        DropdownOverlay.Visible = true
-                        Tween(DropdownOverlay, {BackgroundTransparency = 0.88}, 0.2)
-                        Tween(DropdownPanel, {Position = UDim2.new(1, -180, 0, Config.TopbarHeight)}, 0.3)
-                        Arrow.Rotation = 180
-
                         BuildOptions()
+                        DropdownOverlay.Visible = true
+                        DropdownPanel.Visible = true
+                        Arrow.Rotation = 180
                     end
                 end)
 
-                TabContent:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
-                    if CurrentDropdownState.IsOpen and CurrentDropdownState.Button == DropdownBtn then
-                        CloseAllDropdowns()
-                    end
-                end)
+                table.insert(RegisteredFeatures, {
+                    Name = dropdownName,
+                    Desc = desc,
+                    Frame = DropdownFrame,
+                    Section = SectionFrame,
+                    SectionItems = SectionItems
+                })
 
                 ListenTheme(function(theme)
-                    DropdownFrame.BackgroundColor3 = theme.Background
+                    DropdownFrame.BackgroundColor3 = theme.Element
                     DropdownBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
-                    UpdateButtonText()
                     Arrow.ImageColor3 = theme.SubText
-                    DropdownPanel.BackgroundColor3 = theme.Background
-                    DropdownPanelSearch.BackgroundColor3 = theme.Element
-                    DropdownPanelSearch.TextColor3 = theme.Text
-                    DropdownPanelSearch.PlaceholderColor3 = theme.SubText
-                    DropdownPanelScroll.ScrollBarImageColor3 = theme.Accent
-                    for _, row in ipairs(optionItems) do
-                        if row and row.Parent then
-                            row.BackgroundColor3 = theme.Element
-                        end
-                    end
+                    UpdateButtonText()
                 end)
 
                 local MultiDropdownAPI = {}
+                function MultiDropdownAPI:Set(val)
+                    selected = type(val) == "table" and val or {val}
+                    UpdateButtonText()
+                    callback(selected)
+                end
                 function MultiDropdownAPI:Refresh(newOptions, newDefault)
                     options = newOptions or {}
-                    if type(newDefault) == "table" then
-                        selected = {}
-                        for _, v in ipairs(newDefault) do table.insert(selected, v) end
-                        UpdateButtonText()
+                    if newDefault ~= nil then
+                        selected = type(newDefault) == "table" and newDefault or {newDefault}
                     end
+                    UpdateButtonText()
                     if CurrentDropdownState.IsOpen and CurrentDropdownState.Button == DropdownBtn then
                         BuildOptions(DropdownPanelSearch.Text)
                     end
-                end
-                function MultiDropdownAPI:Set(values)
-                    selected = {}
-                    if type(values) == "table" then
-                        for _, v in ipairs(values) do table.insert(selected, v) end
-                    end
-                    UpdateButtonText()
-                    callback(selected)
                 end
                 function MultiDropdownAPI:Get()
                     return selected
@@ -3283,6 +3334,14 @@ function W424:CreateWindow(data)
                     InputBox.TextColor3 = theme.Text
                     InputBox.PlaceholderColor3 = theme.SubText
                 end)
+
+                table.insert(RegisteredFeatures, {
+                    Name = inputName,
+                    Desc = desc,
+                    Frame = InputFrame,
+                    Section = SectionFrame,
+                    SectionItems = SectionItems
+                })
 
                 local API = {
                     Set = function(text) InputBox.Text = text end,
@@ -3393,6 +3452,14 @@ function W424:CreateWindow(data)
                     BindBtn.BackgroundColor3 = theme.Element
                     BindBtn.TextColor3 = theme.Text
                 end)
+
+                table.insert(RegisteredFeatures, {
+                    Name = keybindName,
+                    Desc = desc,
+                    Frame = KeybindFrame,
+                    Section = SectionFrame,
+                    SectionItems = SectionItems
+                })
 
                 return {Set = function(key) default = key; BindBtn.Text = key.Name end, Get = function() return default end}
             end
@@ -3546,6 +3613,14 @@ function W424:CreateWindow(data)
                     TitleLabel.TextColor3 = theme.Text
                     ContentLabel.TextColor3 = theme.SubText
                 end)
+
+                table.insert(RegisteredFeatures, {
+                    Name = paraTitle,
+                    Desc = paraContent,
+                    Frame = ParaFrame,
+                    Section = SectionFrame,
+                    SectionItems = SectionItems
+                })
 
                 local API = {
                     SetTitle = function(t) TitleLabel.Text = t end,
@@ -3854,6 +3929,14 @@ function W424:CreateWindow(data)
                     CancelBtn.TextColor3 = theme.Text
                 end)
 
+                table.insert(RegisteredFeatures, {
+                    Name = pickerName,
+                    Desc = desc,
+                    Frame = PickerFrame,
+                    Section = SectionFrame,
+                    SectionItems = SectionItems
+                })
+
                 return {
                     Set = function(c)
                         selectedColor = c
@@ -3894,17 +3977,31 @@ function W424:CreateWindow(data)
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
                     LayoutOrder = #SectionItems:GetChildren(),
-                    ClipsDescendants = false,
+                    ClipsDescendants = true,
                     ZIndex = 18
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = StatusFrame})
 
+                local StatusLayout = Create("UIListLayout", {
+                    Parent = StatusFrame,
+                    FillDirection = Enum.FillDirection.Horizontal,
+                    HorizontalAlignment = Enum.HorizontalAlignment.Left,
+                    VerticalAlignment = Enum.VerticalAlignment.Center,
+                    Padding = UDim.new(0, 6),
+                    SortOrder = Enum.SortOrder.LayoutOrder
+                })
+
+                Create("UIPadding", {
+                    Parent = StatusFrame,
+                    PaddingLeft = UDim.new(0, 8)
+                })
+
                 local Dot = Create("Frame", {
                     Parent = StatusFrame,
-                    Size = UDim2.new(0, 14, 0, 14),
-                    Position = UDim2.new(0, 7, 0.5, -4),
+                    Size = UDim2.new(0, 8, 0, 8),
                     BackgroundColor3 = statusColor,
                     BorderSizePixel = 0,
+                    LayoutOrder = 1,
                     ZIndex = 19
                 })
                 Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = Dot})
@@ -3912,24 +4009,34 @@ function W424:CreateWindow(data)
                 local IconImg = Create("ImageLabel", {
                     Parent = StatusFrame,
                     Size = UDim2.new(0, 14, 0, 14),
-                    Position = UDim2.new(0, 18, 0.5, -5),
                     BackgroundTransparency = 1,
                     Image = GetIcon(statusIcon),
                     ImageColor3 = statusColor,
+                    ScaleType = Enum.ScaleType.Fit,
+                    LayoutOrder = 2,
                     ZIndex = 19
                 })
 
                 local StatusLabel = Create("TextLabel", {
                     Parent = StatusFrame,
-                    Size = UDim2.new(0, 200, 0, 18),
-                    Position = UDim2.new(0, 30, 0, 0),
+                    Size = UDim2.new(0, 0, 1, 0),
+                    AutomaticSize = Enum.AutomaticSize.X,
                     BackgroundTransparency = 1,
                     Text = statusText,
                     TextColor3 = CurrentTheme.Text,
                     TextSize = 11,
-                    Font = Enum.Font.Gotham,
+                    Font = Enum.Font.GothamMedium,
                     TextXAlignment = Enum.TextXAlignment.Left,
+                    LayoutOrder = 3,
                     ZIndex = 19
+                })
+
+                table.insert(RegisteredFeatures, {
+                    Name = statusText,
+                    Desc = nil,
+                    Frame = StatusFrame,
+                    Section = SectionFrame,
+                    SectionItems = SectionItems
                 })
 
                 ListenTheme(function(theme)
@@ -4169,6 +4276,14 @@ function W424:CreateWindow(data)
                         item.SetCompleted(false)
                     end
                 end
+                table.insert(RegisteredFeatures, {
+                    Name = questTitle,
+                    Desc = nil,
+                    Frame = QuestFrame,
+                    Section = SectionFrame,
+                    SectionItems = SectionItems
+                })
+
                 return QuestAPI
             end
 
@@ -4257,12 +4372,42 @@ function W424:CreateWindow(data)
 
     
     SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-        local text = SearchBox.Text:lower()
-        for _, tab in ipairs(TabButtons) do
-            if text == "" or tab.Name:find(text, 1, true) then
-                tab.Btn.Visible = true
-            else
-                tab.Btn.Visible = false
+        local text = SearchBox.Text:lower():gsub("^%s*(.-)%s*$", "%1")
+        if text == "" then
+            for _, feat in ipairs(RegisteredFeatures) do
+                if feat.Frame and feat.Frame.Parent then
+                    feat.Frame.Visible = true
+                end
+            end
+            for _, sec in ipairs(RegisteredSections) do
+                if sec.Frame and sec.Frame.Parent then
+                    sec.Frame.Visible = true
+                    if sec.UpdateSize then sec.UpdateSize() end
+                end
+            end
+        else
+            for _, feat in ipairs(RegisteredFeatures) do
+                if feat.Frame and feat.Frame.Parent then
+                    local match = (feat.Name and feat.Name:lower():find(text, 1, true) ~= nil) or
+                                  (feat.Desc and feat.Desc:lower():find(text, 1, true) ~= nil)
+                    feat.Frame.Visible = match
+                end
+            end
+
+            for _, sec in ipairs(RegisteredSections) do
+                if sec.Frame and sec.Frame.Parent then
+                    local anyChildVisible = false
+                    for _, child in ipairs(sec.Items:GetChildren()) do
+                        if child:IsA("GuiObject") and child.Visible and child.Name ~= "UIListLayout" and child.Name ~= "UIPadding" then
+                            anyChildVisible = true
+                            break
+                        end
+                    end
+                    sec.Frame.Visible = anyChildVisible
+                    if anyChildVisible and sec.Expand then
+                        sec.Expand()
+                    end
+                end
             end
         end
     end)
