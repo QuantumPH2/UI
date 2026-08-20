@@ -1108,14 +1108,33 @@ function W424:CreateWindow(data)
         FillDirection = Enum.FillDirection.Horizontal,
         HorizontalAlignment = Enum.HorizontalAlignment.Left,
         VerticalAlignment = Enum.VerticalAlignment.Center,
-        Padding = UDim.new(0, 6),
+        Padding = UDim.new(0, 8),
+        SortOrder = Enum.SortOrder.LayoutOrder
+    })
+
+    local TitleContainer = Create("Frame", {
+        Name = "TitleContainer",
+        Parent = TopbarLeft,
+        Size = UDim2.new(0, 0, 1, 0),
+        AutomaticSize = Enum.AutomaticSize.X,
+        BackgroundTransparency = 1,
+        LayoutOrder = 1,
+        ZIndex = 22
+    })
+
+    local TitleLayout = Create("UIListLayout", {
+        Parent = TitleContainer,
+        FillDirection = Enum.FillDirection.Vertical,
+        HorizontalAlignment = Enum.HorizontalAlignment.Left,
+        VerticalAlignment = Enum.VerticalAlignment.Center,
+        Padding = UDim.new(0, -1),
         SortOrder = Enum.SortOrder.LayoutOrder
     })
 
     local Title = Create("TextLabel", {
         Name = "Title",
-        Parent = TopbarLeft,
-        Size = UDim2.new(0, 0, 0, 20),
+        Parent = TitleContainer,
+        Size = UDim2.new(0, 0, 0, 16),
         AutomaticSize = Enum.AutomaticSize.X,
         BackgroundTransparency = 1,
         Text = windowName,
@@ -1124,7 +1143,7 @@ function W424:CreateWindow(data)
         Font = Enum.Font.GothamBold,
         TextXAlignment = Enum.TextXAlignment.Left,
         LayoutOrder = 1,
-        ZIndex = 22
+        ZIndex = 23
     })
 
     local TitleGradient = Create("UIGradient", {
@@ -1136,6 +1155,21 @@ function W424:CreateWindow(data)
             ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 20, 35))
         }),
         Rotation = 0
+    })
+
+    local Version = Create("TextLabel", {
+        Name = "Version",
+        Parent = TitleContainer,
+        Size = UDim2.new(0, 0, 0, 12),
+        AutomaticSize = Enum.AutomaticSize.X,
+        BackgroundTransparency = 1,
+        Text = "v" .. customVersion,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        TextSize = 10,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        LayoutOrder = 2,
+        ZIndex = 23
     })
 
     local TitleIcon = Create("ImageLabel", {
@@ -1175,31 +1209,6 @@ function W424:CreateWindow(data)
         Font = Enum.Font.GothamMedium,
         LayoutOrder = 4,
         ZIndex = 22
-    })
-
-    local Version = Create("TextLabel", {
-        Name = "Version",
-        Parent = TopbarLeft,
-        Size = UDim2.new(0, 0, 0, 16),
-        AutomaticSize = Enum.AutomaticSize.X,
-        BackgroundTransparency = 1,
-        Text = "v" .. customVersion,
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-        TextSize = 10,
-        Font = Enum.Font.GothamBold,
-        LayoutOrder = 5,
-        ZIndex = 22
-    })
-
-    local VersionGradient = Create("UIGradient", {
-        Name = "VersionGradient",
-        Parent = Version,
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 170, 255)),
-            ColorSequenceKeypoint.new(0.6, Color3.fromRGB(30, 100, 200)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 25, 45))
-        }),
-        Rotation = 0
     })
 
     local TopbarRight = Create("Frame", {
@@ -1843,6 +1852,18 @@ function W424:CreateWindow(data)
         return WindowAPI.Config:GetAllConfigNames()
     end
 
+    local TabIndicator = Create("Frame", {
+        Name = "TabIndicator",
+        Parent = Sidebar,
+        Size = UDim2.new(0, 3, 0, 22),
+        Position = UDim2.new(0, 2, 0, 50),
+        BackgroundColor3 = CurrentTheme.Accent,
+        BorderSizePixel = 0,
+        Visible = false,
+        ZIndex = 20
+    })
+    Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = TabIndicator})
+
     local Tabs = {}
     local ActiveTab = nil
     local TabButtons = {}
@@ -1886,16 +1907,7 @@ function W424:CreateWindow(data)
             ZIndex = 18
         })
 
-        local TabIndicator = Create("Frame", {
-            Parent = TabBtn,
-            Size = UDim2.new(0, 2, 0.5, 0),
-            Position = UDim2.new(0, 0, 0.25, 0),
-            BackgroundColor3 = CurrentTheme.Accent,
-            BorderSizePixel = 0,
-            Visible = false,
-            ZIndex = 18
-        })
-        Create("UICorner", {CornerRadius = UDim.new(0, 2), Parent = TabIndicator})
+
 
         local TabContent = Create("ScrollingFrame", {
             Parent = Content,
@@ -1917,28 +1929,39 @@ function W424:CreateWindow(data)
             SortOrder = Enum.SortOrder.LayoutOrder
         })
 
-        local function Activate()
+        local function Activate(instant)
             CloseAllDropdowns()
             if ActiveTab then
                 ActiveTab.Content.Visible = false
-                ActiveTab.Indicator.Visible = false
                 ActiveTab.Button.BackgroundColor3 = CurrentTheme.Element
-                ActiveTab.Icon.ImageColor3 = CurrentTheme.SubText
-                ActiveTab.Label.TextColor3 = CurrentTheme.SubText
+                Tween(ActiveTab.Icon, {ImageColor3 = CurrentTheme.SubText}, 0.2)
+                Tween(ActiveTab.Label, {TextColor3 = CurrentTheme.SubText}, 0.2)
             end
 
             ActiveTab = {
                 Button = TabBtn,
                 Content = TabContent,
                 Icon = TabBtnIcon,
-                Label = TabBtnText,
-                Indicator = TabIndicator
+                Label = TabBtnText
             }
 
             TabContent.Visible = true
-            TabIndicator.Visible = true
-            TabBtnIcon.ImageColor3 = CurrentTheme.Accent
-            TabBtnText.TextColor3 = CurrentTheme.Text
+            Tween(TabBtnIcon, {ImageColor3 = CurrentTheme.Accent}, 0.2)
+            Tween(TabBtnText, {TextColor3 = CurrentTheme.Text}, 0.2)
+
+            task.spawn(function()
+                task.wait()
+                if TabBtn and TabBtn.Parent and Sidebar and Sidebar.Parent then
+                    TabIndicator.Visible = true
+                    local targetY = TabBtn.AbsolutePosition.Y - Sidebar.AbsolutePosition.Y + (TabBtn.AbsoluteSize.Y - 22) / 2
+                    local targetPos = UDim2.new(0, 2, 0, targetY)
+                    if instant == true then
+                        TabIndicator.Position = targetPos
+                    else
+                        Tween(TabIndicator, {Position = targetPos}, 0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+                    end
+                end
+            end)
         end
 
         TabBtn.MouseButton1Click:Connect(Activate)
@@ -1951,7 +1974,7 @@ function W424:CreateWindow(data)
 
         table.insert(Tabs, {Activate = Activate, Name = tabName, Button = TabBtn})
         table.insert(TabButtons, {Btn = TabBtn, Name = tabName:lower()})
-        if #Tabs == 1 then Activate() end
+        if #Tabs == 1 then Activate(true) end
 
         ListenTheme(function(theme)
             if ActiveTab and ActiveTab.Button == TabBtn then
@@ -1961,7 +1984,6 @@ function W424:CreateWindow(data)
                 TabBtnIcon.ImageColor3 = theme.SubText
                 TabBtnText.TextColor3 = theme.SubText
             end
-            TabIndicator.BackgroundColor3 = theme.Accent
             TabContent.ScrollBarImageColor3 = theme.Accent
         end)
 
@@ -2208,43 +2230,37 @@ function W424:CreateWindow(data)
                 })
 
                 local state = default
-                if default then
-                    ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOn
-                    ToggleCircle.Position = UDim2.new(0, 21, 0.5, -8)
+
+                local function UpdateToggleVisual(animate)
+                    local targetPos = state and UDim2.new(0, 21, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
+                    local targetBg = state and CurrentTheme.ToggleOn or CurrentTheme.ToggleOff
+                    if animate then
+                        Tween(ToggleCircle, {Position = targetPos}, 0.18, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+                        Tween(ToggleBtn, {BackgroundColor3 = targetBg}, 0.18, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+                    else
+                        ToggleCircle.Position = targetPos
+                        ToggleBtn.BackgroundColor3 = targetBg
+                    end
                 end
+
+                UpdateToggleVisual(false)
 
                 ToggleClick.MouseButton1Click:Connect(function()
                     state = not state
-                    if state then
-                        ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOn
-                        ToggleCircle.Position = UDim2.new(0, 21, 0.5, -8)
-                    else
-                        ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOff
-                        ToggleCircle.Position = UDim2.new(0, 3, 0.5, -10)
-                    end
+                    UpdateToggleVisual(true)
                     callback(state)
                 end)
 
                 ListenTheme(function(theme)
                     ToggleFrame.BackgroundColor3 = theme.Background
                     ToggleCircle.BackgroundColor3 = theme.Text
-                    if state then
-                        ToggleBtn.BackgroundColor3 = theme.ToggleOn
-                    else
-                        ToggleBtn.BackgroundColor3 = theme.ToggleOff
-                    end
+                    UpdateToggleVisual(false)
                 end)
 
                 local API = {
                     Set = function(val)
                         state = val
-                        if state then
-                            ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOn
-                            ToggleCircle.Position = UDim2.new(0, 21, 0.5, -8)
-                        else
-                            ToggleBtn.BackgroundColor3 = CurrentTheme.ToggleOff
-                            ToggleCircle.Position = UDim2.new(0, 3, 0.5, -10)
-                        end
+                        UpdateToggleVisual(true)
                         callback(state)
                     end,
                     Get = function() return state end
@@ -2505,6 +2521,10 @@ function W424:CreateWindow(data)
             end
 
             function SectionAPI:CreateButtonRow(buttonsData)
+                buttonsData = buttonsData or {}
+                local numButtons = #buttonsData
+                if numButtons == 0 then return end
+
                 local RowFrame = Create("Frame", {
                     Parent = SectionItems,
                     Size = UDim2.new(1, 0, 0, 28),
@@ -2518,38 +2538,51 @@ function W424:CreateWindow(data)
                     Parent = RowFrame,
                     FillDirection = Enum.FillDirection.Horizontal,
                     SortOrder = Enum.SortOrder.LayoutOrder,
-                    Padding = UDim.new(0, 4)
+                    Padding = UDim.new(0, 5)
                 })
 
-                local buttonWidth = 1 / #buttonsData
+                local buttonWidth = 1 / numButtons
+                local totalPadding = (numButtons - 1) * 5
+                local padPerBtn = totalPadding / numButtons
                 
                 for _, data in ipairs(buttonsData) do
                     local btn = Create("TextButton", {
                         Parent = RowFrame,
-                        Size = UDim2.new(buttonWidth, -((#buttonsData - 1) * 4 / #buttonsData), 1, 0),
-                        BackgroundColor3 = CurrentTheme.Element,
-                        Text = data.Name or "Button",
-                        TextColor3 = CurrentTheme.Text,
+                        Size = UDim2.new(buttonWidth, -padPerBtn, 1, 0),
+                        BackgroundColor3 = Color3.fromRGB(30, 110, 220),
+                        Text = data.Name or data.Title or "Button",
+                        TextColor3 = Color3.fromRGB(255, 255, 255),
                         TextSize = 11,
                         Font = Enum.Font.GothamBold,
                         AutoButtonColor = false,
+                        ClipsDescendants = true,
                         ZIndex = 19
                     })
                     Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = btn})
-                    Create("UIStroke", {
-                        Color = CurrentTheme.Border,
-                        Thickness = 1,
-                        Transparency = 0.5,
-                        Parent = btn
-                    })
+
+                    if data.Icon then
+                        local bIcon = Create("ImageLabel", {
+                            Parent = btn,
+                            Size = UDim2.new(0, 14, 0, 14),
+                            Position = UDim2.new(0, 6, 0.5, -7),
+                            BackgroundTransparency = 1,
+                            Image = GetIcon(data.Icon),
+                            ImageColor3 = Color3.fromRGB(255, 255, 255),
+                            ZIndex = 20
+                        })
+                    end
 
                     btn.MouseEnter:Connect(function()
-                        btn.BackgroundColor3 = CurrentTheme.Accent
-                        btn.TextColor3 = Color3.fromRGB(0, 0, 0)
+                        Tween(btn, {BackgroundColor3 = Color3.fromRGB(50, 140, 255)}, 0.15)
                     end)
                     btn.MouseLeave:Connect(function()
-                        btn.BackgroundColor3 = CurrentTheme.Element
-                        btn.TextColor3 = CurrentTheme.Text
+                        Tween(btn, {BackgroundColor3 = Color3.fromRGB(30, 110, 220)}, 0.15)
+                    end)
+                    btn.MouseButton1Down:Connect(function()
+                        btn.BackgroundColor3 = Color3.fromRGB(90, 180, 255)
+                    end)
+                    btn.MouseButton1Up:Connect(function()
+                        btn.BackgroundColor3 = Color3.fromRGB(50, 140, 255)
                     end)
                     btn.MouseButton1Click:Connect(function()
                         if data.Callback then data.Callback() end
@@ -2559,10 +2592,8 @@ function W424:CreateWindow(data)
                 ListenTheme(function(theme)
                     for _, child in ipairs(RowFrame:GetChildren()) do
                         if child:IsA("TextButton") then
-                            child.BackgroundColor3 = theme.Element
-                            child.TextColor3 = theme.Text
-                            local stroke = child:FindFirstChildOfClass("UIStroke")
-                            if stroke then stroke.Color = theme.Border end
+                            child.BackgroundColor3 = Color3.fromRGB(30, 110, 220)
+                            child.TextColor3 = Color3.fromRGB(255, 255, 255)
                         end
                     end
                 end)
@@ -3529,7 +3560,7 @@ function W424:CreateWindow(data)
                 pickerData = pickerData or {}
                 local pickerName = pickerData.Name or "Color"
                 local pickerIcon = pickerData.Icon or "Palette"
-                local default = pickerData.Default or Color3.fromRGB(255, 255, 255)
+                local default = pickerData.Default or Color3.fromRGB(0, 140, 255)
                 local callback = pickerData.Callback or function() end
                 local desc = pickerData.Desc
 
@@ -3588,114 +3619,249 @@ function W424:CreateWindow(data)
 
                 local ColorPreview = Create("TextButton", {
                     Parent = PickerFrame,
-                    Size = UDim2.new(0, 34, 0, 24),
-                    Position = UDim2.new(1, -41, 0, hasDesc and 8 or 3),
+                    Size = UDim2.new(0, 36, 0, 22),
+                    Position = UDim2.new(1, -44, 0, hasDesc and 8 or 3),
                     BackgroundColor3 = default,
                     Text = "",
+                    AutoButtonColor = false,
                     ZIndex = 19
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = ColorPreview})
+                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = ColorPreview})
                 Create("UIStroke", {Color = CurrentTheme.Border, Thickness = 1, Parent = ColorPreview})
 
-                local ColorMenu = Create("Frame", {
-                    Parent = ColorPreview,
-                    Size = UDim2.new(0, 105, 0, 0),
-                    Position = UDim2.new(0, -50, 0, 18),
+                local selectedColor = default
+
+                local ColorModal = Create("Frame", {
+                    Name = "ColorPickerModal",
+                    Parent = MainFrame,
+                    Size = UDim2.new(0, 220, 0, 150),
+                    Position = UDim2.new(0.5, -110, 0.5, -75),
                     BackgroundColor3 = CurrentTheme.Background,
                     BorderSizePixel = 0,
-                    ClipsDescendants = true,
                     Visible = false,
-                    ZIndex = 30
+                    ClipsDescendants = true,
+                    ZIndex = 120
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = ColorMenu})
-                Create("UIStroke", {Color = CurrentTheme.Border, Thickness = 1, Parent = ColorMenu})
+                Create("UICorner", {CornerRadius = UDim.new(0, 8), Parent = ColorModal})
+                Create("UIStroke", {Color = CurrentTheme.Accent, Thickness = 1, Parent = ColorModal})
 
-                local RInput = Create("TextBox", {
-                    Parent = ColorMenu,
-                    Size = UDim2.new(0, 34, 0, 30),
-                    Position = UDim2.new(0, 5, 0, 5),
-                    BackgroundColor3 = CurrentTheme.Element,
-                    Text = tostring(math.round(default.R * 255)),
-                    TextColor3 = CurrentTheme.Text,
-                    TextSize = 11,
-                    Font = Enum.Font.Gotham,
-                    ZIndex = 31
-                })
-                Create("UICorner", {CornerRadius = UDim.new(0, 3), Parent = RInput})
-
-                local GInput = Create("TextBox", {
-                    Parent = ColorMenu,
-                    Size = UDim2.new(0, 34, 0, 30),
-                    Position = UDim2.new(0, 42, 0, 5),
-                    BackgroundColor3 = CurrentTheme.Element,
-                    Text = tostring(math.round(default.G * 255)),
-                    TextColor3 = CurrentTheme.Text,
-                    TextSize = 11,
-                    Font = Enum.Font.Gotham,
-                    ZIndex = 31
-                })
-                Create("UICorner", {CornerRadius = UDim.new(0, 3), Parent = GInput})
-
-                local BInput = Create("TextBox", {
-                    Parent = ColorMenu,
-                    Size = UDim2.new(0, 34, 0, 30),
-                    Position = UDim2.new(0, 79, 0, 5),
-                    BackgroundColor3 = CurrentTheme.Element,
-                    Text = tostring(math.round(default.B * 255)),
-                    TextColor3 = CurrentTheme.Text,
-                    TextSize = 11,
-                    Font = Enum.Font.Gotham,
-                    ZIndex = 31
-                })
-                Create("UICorner", {CornerRadius = UDim.new(0, 3), Parent = BInput})
-
-                local ApplyBtn = Create("TextButton", {
-                    Parent = ColorMenu,
-                    Size = UDim2.new(1, -10, 0, 30),
-                    Position = UDim2.new(0, 5, 0, 30),
-                    BackgroundColor3 = CurrentTheme.Accent,
-                    Text = "Apply",
+                local ModalTitle = Create("TextLabel", {
+                    Parent = ColorModal,
+                    Size = UDim2.new(1, -20, 0, 22),
+                    Position = UDim2.new(0, 10, 0, 6),
+                    BackgroundTransparency = 1,
+                    Text = pickerName .. " - Color Picker",
                     TextColor3 = CurrentTheme.Text,
                     TextSize = 11,
                     Font = Enum.Font.GothamBold,
-                    ZIndex = 31
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ZIndex = 121
                 })
-                Create("UICorner", {CornerRadius = UDim.new(0, 3), Parent = ApplyBtn})
 
-                local colorOpen = false
+                local PaletteGrid = Create("Frame", {
+                    Parent = ColorModal,
+                    Size = UDim2.new(1, -20, 0, 48),
+                    Position = UDim2.new(0, 10, 0, 30),
+                    BackgroundTransparency = 1,
+                    ZIndex = 121
+                })
+                Create("UIGridLayout", {
+                    Parent = PaletteGrid,
+                    CellSize = UDim2.new(0, 26, 0, 20),
+                    CellPadding = UDim2.new(0, 3, 0, 3),
+                    SortOrder = Enum.SortOrder.LayoutOrder
+                })
+
+                local presetColors = {
+                    Color3.fromRGB(255, 255, 255),
+                    Color3.fromRGB(180, 180, 185),
+                    Color3.fromRGB(50, 50, 55),
+                    Color3.fromRGB(0, 0, 0),
+                    Color3.fromRGB(240, 60, 60),
+                    Color3.fromRGB(255, 140, 0),
+                    Color3.fromRGB(255, 215, 0),
+                    Color3.fromRGB(40, 200, 80),
+                    Color3.fromRGB(0, 140, 255),
+                    Color3.fromRGB(120, 80, 255),
+                    Color3.fromRGB(230, 60, 200),
+                    Color3.fromRGB(0, 220, 220)
+                }
+
+                local LiveBox = Create("Frame", {
+                    Parent = ColorModal,
+                    Size = UDim2.new(0, 30, 0, 24),
+                    Position = UDim2.new(0, 10, 0, 84),
+                    BackgroundColor3 = default,
+                    ZIndex = 121
+                })
+                Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = LiveBox})
+                Create("UIStroke", {Color = CurrentTheme.Border, Thickness = 1, Parent = LiveBox})
+
+                local RInput = Create("TextBox", {
+                    Parent = ColorModal,
+                    Size = UDim2.new(0, 45, 0, 24),
+                    Position = UDim2.new(0, 46, 0, 84),
+                    BackgroundColor3 = CurrentTheme.Element,
+                    Text = tostring(math.round(default.R * 255)),
+                    PlaceholderText = "R",
+                    TextColor3 = CurrentTheme.Text,
+                    TextSize = 11,
+                    Font = Enum.Font.Gotham,
+                    ClearTextOnFocus = false,
+                    ZIndex = 121
+                })
+                Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = RInput})
+
+                local GInput = Create("TextBox", {
+                    Parent = ColorModal,
+                    Size = UDim2.new(0, 45, 0, 24),
+                    Position = UDim2.new(0, 96, 0, 84),
+                    BackgroundColor3 = CurrentTheme.Element,
+                    Text = tostring(math.round(default.G * 255)),
+                    PlaceholderText = "G",
+                    TextColor3 = CurrentTheme.Text,
+                    TextSize = 11,
+                    Font = Enum.Font.Gotham,
+                    ClearTextOnFocus = false,
+                    ZIndex = 121
+                })
+                Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = GInput})
+
+                local BInput = Create("TextBox", {
+                    Parent = ColorModal,
+                    Size = UDim2.new(0, 45, 0, 24),
+                    Position = UDim2.new(0, 146, 0, 84),
+                    BackgroundColor3 = CurrentTheme.Element,
+                    Text = tostring(math.round(default.B * 255)),
+                    PlaceholderText = "B",
+                    TextColor3 = CurrentTheme.Text,
+                    TextSize = 11,
+                    Font = Enum.Font.Gotham,
+                    ClearTextOnFocus = false,
+                    ZIndex = 121
+                })
+                Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = BInput})
+
+                local function UpdateInputs(c)
+                    selectedColor = c
+                    LiveBox.BackgroundColor3 = c
+                    RInput.Text = tostring(math.round(c.R * 255))
+                    GInput.Text = tostring(math.round(c.G * 255))
+                    BInput.Text = tostring(math.round(c.B * 255))
+                end
+
+                for _, pColor in ipairs(presetColors) do
+                    local pBtn = Create("TextButton", {
+                        Parent = PaletteGrid,
+                        BackgroundColor3 = pColor,
+                        Text = "",
+                        AutoButtonColor = false,
+                        ZIndex = 122
+                    })
+                    Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = pBtn})
+                    Create("UIStroke", {Color = Color3.fromRGB(40, 40, 45), Thickness = 1, Parent = pBtn})
+
+                    pBtn.MouseButton1Click:Connect(function()
+                        UpdateInputs(pColor)
+                    end)
+                end
+
+                local function ReadInputs()
+                    local r = math.clamp(tonumber(RInput.Text) or 0, 0, 255)
+                    local g = math.clamp(tonumber(GInput.Text) or 0, 0, 255)
+                    local b = math.clamp(tonumber(BInput.Text) or 0, 0, 255)
+                    return Color3.fromRGB(r, g, b)
+                end
+
+                RInput.FocusLost:Connect(function() UpdateInputs(ReadInputs()) end)
+                GInput.FocusLost:Connect(function() UpdateInputs(ReadInputs()) end)
+                BInput.FocusLost:Connect(function() UpdateInputs(ReadInputs()) end)
+
+                local ApplyBtn = Create("TextButton", {
+                    Parent = ColorModal,
+                    Size = UDim2.new(0, 92, 0, 26),
+                    Position = UDim2.new(0, 10, 1, -34),
+                    BackgroundColor3 = Color3.fromRGB(30, 110, 220),
+                    Text = "Apply",
+                    TextColor3 = Color3.fromRGB(255, 255, 255),
+                    TextSize = 11,
+                    Font = Enum.Font.GothamBold,
+                    AutoButtonColor = false,
+                    ZIndex = 121
+                })
+                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = ApplyBtn})
+
+                ApplyBtn.MouseEnter:Connect(function()
+                    Tween(ApplyBtn, {BackgroundColor3 = Color3.fromRGB(50, 140, 255)}, 0.15)
+                end)
+                ApplyBtn.MouseLeave:Connect(function()
+                    Tween(ApplyBtn, {BackgroundColor3 = Color3.fromRGB(30, 110, 220)}, 0.15)
+                end)
+
+                local CancelBtn = Create("TextButton", {
+                    Parent = ColorModal,
+                    Size = UDim2.new(0, 92, 0, 26),
+                    Position = UDim2.new(1, -102, 1, -34),
+                    BackgroundColor3 = CurrentTheme.Element,
+                    Text = "Cancel",
+                    TextColor3 = CurrentTheme.Text,
+                    TextSize = 11,
+                    Font = Enum.Font.GothamBold,
+                    AutoButtonColor = false,
+                    ZIndex = 121
+                })
+                Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = CancelBtn})
+
                 ColorPreview.MouseButton1Click:Connect(function()
-                    colorOpen = not colorOpen
-                    if colorOpen then
-                        ColorMenu.Visible = true
-                        ColorMenu.Size = UDim2.new(0, 95, 0, 42)
-                    else
-                        ColorMenu.Visible = false
-                        ColorMenu.Size = UDim2.new(0, 105, 0, 0)
-                    end
+                    CloseAllDropdowns()
+                    UpdateInputs(selectedColor)
+                    ColorModal.Visible = true
+                    DropdownOverlay.Visible = true
+                    Tween(DropdownOverlay, {BackgroundTransparency = 0.8}, 0.2)
                 end)
 
                 ApplyBtn.MouseButton1Click:Connect(function()
-                    local r = math.clamp(tonumber(RInput.Text) or 255, 0, 255)
-                    local g = math.clamp(tonumber(GInput.Text) or 255, 0, 255)
-                    local b = math.clamp(tonumber(BInput.Text) or 255, 0, 255)
-                    local newColor = Color3.fromRGB(r, g, b)
-                    ColorPreview.BackgroundColor3 = newColor
-                    callback(newColor)
-                    colorOpen = false
-                    ColorMenu.Visible = false
-                    ColorMenu.Size = UDim2.new(0, 105, 0, 0)
+                    local finalColor = ReadInputs()
+                    selectedColor = finalColor
+                    ColorPreview.BackgroundColor3 = finalColor
+                    callback(finalColor)
+                    ColorModal.Visible = false
+                    DropdownOverlay.Visible = false
+                end)
+
+                CancelBtn.MouseButton1Click:Connect(function()
+                    ColorModal.Visible = false
+                    DropdownOverlay.Visible = false
+                end)
+
+                DropdownOverlay.InputBegan:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                        ColorModal.Visible = false
+                    end
                 end)
 
                 ListenTheme(function(theme)
                     PickerFrame.BackgroundColor3 = theme.Background
-                    ColorMenu.BackgroundColor3 = theme.Background
+                    ColorModal.BackgroundColor3 = theme.Background
+                    ModalTitle.TextColor3 = theme.Text
                     RInput.BackgroundColor3 = theme.Element
+                    RInput.TextColor3 = theme.Text
                     GInput.BackgroundColor3 = theme.Element
+                    GInput.TextColor3 = theme.Text
                     BInput.BackgroundColor3 = theme.Element
-                    ApplyBtn.BackgroundColor3 = theme.Accent
+                    BInput.TextColor3 = theme.Text
+                    CancelBtn.BackgroundColor3 = theme.Element
+                    CancelBtn.TextColor3 = theme.Text
                 end)
 
-                return {Set = function(c) ColorPreview.BackgroundColor3 = c; callback(c) end, Get = function() return ColorPreview.BackgroundColor3 end}
+                return {
+                    Set = function(c)
+                        selectedColor = c
+                        ColorPreview.BackgroundColor3 = c
+                        callback(c)
+                    end,
+                    Get = function() return selectedColor end
+                }
             end
 
             function SectionAPI:CreateDivider()
