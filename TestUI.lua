@@ -985,7 +985,771 @@ local function CreateFloatingIcon(customIcon)
 
     table.insert(FloatingConnections, conn1)
     table.insert(FloatingConnections, conn2)
+    table.insert(FloatingConnections, conn1)
+    table.insert(FloatingConnections, conn2)
     table.insert(FloatingConnections, conn3)
+
+    ListenTheme(function(theme)
+        if Backdrop and Backdrop.Parent then
+            Backdrop.BackgroundColor3 = theme.Sidebar
+            if not isCustomImage then
+                Icon.ImageColor3 = theme.Text
+            end
+        end
+    end)
+
+    FloatingIconBtn = Backdrop
+    return FloatingIconScreen
+end
+
+function W424:CreateWindow(data)
+    data = data or {}
+    local windowName = data.Name or data.Title or data.ScriptName or "W424"
+    local windowIcon = data.Icon or data.TitleIcon or data.Logo or "saturn"
+    local windowSubtitle = data.SubTitle or data.Subtitle or data.Game or "Fish It"
+    local customVersion = data.Version or Config.DefaultVersion
+    local discordLink = data.Discord or data.DiscordLink or "discord.gg/w424"
+    local floatingIcon = data.FloatingIcon or nil
+    local toggleKey = data.ToggleKey
+
+    if MainWindowScreen then
+        MainWindowScreen:Destroy()
+    end
+
+    CreateFloatingIcon(floatingIcon)
+
+    MainWindowScreen = Create("ScreenGui", {
+        Name = "W424UI",
+        Parent = game.CoreGui,
+        ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+        ResetOnSpawn = false,
+        Enabled = true
+    })
+
+    MainFrame = Create("Frame", {
+        Name = "Main",
+        Parent = MainWindowScreen,
+        Size = UDim2.new(0, 480, 0, 280),
+        Position = UDim2.new(0.5, -240, 0.5, -140),
+        AnchorPoint = Vector2.new(0, 0),
+        BackgroundColor3 = CurrentTheme.Background,
+        BorderSizePixel = 0,
+        ClipsDescendants = true,
+        Active = true,
+        ZIndex = 10
+    })
+
+    Create("UICorner", {
+        CornerRadius = UDim.new(0, Config.CornerRadius),
+        Parent = MainFrame
+    })
+
+    local Shadow = Create("ImageLabel", {
+        Name = "Shadow",
+        Parent = MainFrame,
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        Size = UDim2.new(1, 50, 1, 50),
+        BackgroundTransparency = 1,
+        Image = "rbxassetid://10806158995",
+        ImageColor3 = CurrentTheme.Shadow,
+        ImageTransparency = 0.5,
+        ZIndex = 0
+    })
+
+    local Topbar = Create("Frame", {
+        Name = "Topbar",
+        Parent = MainFrame,
+        Size = UDim2.new(1, 0, 0, Config.TopbarHeight),
+        BackgroundColor3 = CurrentTheme.Sidebar,
+        BorderSizePixel = 0,
+        Active = true,
+        ZIndex = 20
+    })
+
+    Create("UICorner", {
+        CornerRadius = UDim.new(0, Config.CornerRadius),
+        Parent = Topbar
+    })
+
+    local TopbarFix = Create("Frame", {
+        Name = "Fix",
+        Parent = Topbar,
+        Size = UDim2.new(1, 0, 0.5, 0),
+        Position = UDim2.new(0, 0, 0.5, 0),
+        BackgroundColor3 = CurrentTheme.Sidebar,
+        BorderSizePixel = 0,
+        ZIndex = 20
+    })
+
+    local TopAccentBar = Create("Frame", {
+        Name = "TopAccentBar",
+        Parent = Topbar,
+        Size = UDim2.new(0, 36, 0, 3),
+        Position = UDim2.new(0.5, -18, 0, 3),
+        BackgroundColor3 = CurrentTheme.Accent,
+        BorderSizePixel = 0,
+        ZIndex = 22
+    })
+    Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = TopAccentBar})
+
+    local TopbarLeft = Create("Frame", {
+        Name = "TopbarLeft",
+        Parent = Topbar,
+        Size = UDim2.new(1, -210, 1, 0),
+        Position = UDim2.new(0, 12, 0, 0),
+        BackgroundTransparency = 1,
+        ClipsDescendants = true,
+        ZIndex = 21
+    })
+
+    local LeftLayout = Create("UIListLayout", {
+        Parent = TopbarLeft,
+        FillDirection = Enum.FillDirection.Horizontal,
+        HorizontalAlignment = Enum.HorizontalAlignment.Left,
+        VerticalAlignment = Enum.VerticalAlignment.Center,
+        Padding = UDim.new(0, 6),
+        SortOrder = Enum.SortOrder.LayoutOrder
+    })
+
+    local Title = Create("TextLabel", {
+        Name = "Title",
+        Parent = TopbarLeft,
+        Size = UDim2.new(0, 0, 0, 20),
+        AutomaticSize = Enum.AutomaticSize.X,
+        BackgroundTransparency = 1,
+        Text = windowName,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        TextSize = 13,
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        LayoutOrder = 1,
+        ZIndex = 22
+    })
+
+    local TitleGradient = Create("UIGradient", {
+        Name = "TitleGradient",
+        Parent = Title,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 160, 255)),
+            ColorSequenceKeypoint.new(0.6, Color3.fromRGB(0, 100, 210)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 20, 35))
+        }),
+        Rotation = 0
+    })
+
+    local TitleIcon = Create("ImageLabel", {
+        Name = "TitleIcon",
+        Parent = TopbarLeft,
+        Size = UDim2.new(0, 16, 0, 16),
+        BackgroundTransparency = 1,
+        Image = GetIcon(windowIcon),
+        ImageColor3 = CurrentTheme.Accent,
+        ScaleType = Enum.ScaleType.Fit,
+        LayoutOrder = 2,
+        ZIndex = 22
+    })
+
+    local Divider = Create("TextLabel", {
+        Name = "Divider",
+        Parent = TopbarLeft,
+        Size = UDim2.new(0, 4, 0, 16),
+        BackgroundTransparency = 1,
+        Text = "|",
+        TextColor3 = CurrentTheme.SubText,
+        TextSize = 12,
+        Font = Enum.Font.GothamBold,
+        LayoutOrder = 3,
+        ZIndex = 22
+    })
+
+    local SubTitle = Create("TextLabel", {
+        Name = "SubTitle",
+        Parent = TopbarLeft,
+        Size = UDim2.new(0, 0, 0, 16),
+        AutomaticSize = Enum.AutomaticSize.X,
+        BackgroundTransparency = 1,
+        Text = windowSubtitle,
+        TextColor3 = CurrentTheme.Text,
+        TextSize = 11,
+        Font = Enum.Font.GothamMedium,
+        LayoutOrder = 4,
+        ZIndex = 22
+    })
+
+    local Version = Create("TextLabel", {
+        Name = "Version",
+        Parent = TopbarLeft,
+        Size = UDim2.new(0, 0, 0, 16),
+        AutomaticSize = Enum.AutomaticSize.X,
+        BackgroundTransparency = 1,
+        Text = "v" .. customVersion,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        TextSize = 10,
+        Font = Enum.Font.GothamBold,
+        LayoutOrder = 5,
+        ZIndex = 22
+    })
+
+    local VersionGradient = Create("UIGradient", {
+        Name = "VersionGradient",
+        Parent = Version,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 170, 255)),
+            ColorSequenceKeypoint.new(0.6, Color3.fromRGB(30, 100, 200)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 25, 45))
+        }),
+        Rotation = 0
+    })
+
+    local TopbarRight = Create("Frame", {
+        Name = "TopbarRight",
+        Parent = Topbar,
+        Size = UDim2.new(0, 200, 1, 0),
+        Position = UDim2.new(1, -208, 0, 0),
+        BackgroundTransparency = 1,
+        ZIndex = 21
+    })
+
+    local RightLayout = Create("UIListLayout", {
+        Parent = TopbarRight,
+        FillDirection = Enum.FillDirection.Horizontal,
+        HorizontalAlignment = Enum.HorizontalAlignment.Right,
+        VerticalAlignment = Enum.VerticalAlignment.Center,
+        Padding = UDim.new(0, 6),
+        SortOrder = Enum.SortOrder.LayoutOrder
+    })
+
+    local DiscordBtn = Create("TextButton", {
+        Name = "DiscordBtn",
+        Parent = TopbarRight,
+        Size = UDim2.new(0, 0, 0, 24),
+        AutomaticSize = Enum.AutomaticSize.X,
+        BackgroundTransparency = 1,
+        Text = "",
+        AutoButtonColor = false,
+        LayoutOrder = 1,
+        ZIndex = 22
+    })
+
+    local DiscordLayout = Create("UIListLayout", {
+        Parent = DiscordBtn,
+        FillDirection = Enum.FillDirection.Horizontal,
+        HorizontalAlignment = Enum.HorizontalAlignment.Center,
+        VerticalAlignment = Enum.VerticalAlignment.Center,
+        Padding = UDim.new(0, 4),
+        SortOrder = Enum.SortOrder.LayoutOrder
+    })
+
+    local DiscordIcon = Create("ImageLabel", {
+        Parent = DiscordBtn,
+        Size = UDim2.new(0, 14, 0, 14),
+        BackgroundTransparency = 1,
+        Image = GetIcon("discord"),
+        ImageColor3 = CurrentTheme.SubText,
+        LayoutOrder = 1,
+        ZIndex = 23
+    })
+
+    local DiscordDivider = Create("TextLabel", {
+        Parent = DiscordBtn,
+        Size = UDim2.new(0, 4, 0, 14),
+        BackgroundTransparency = 1,
+        Text = "|",
+        TextColor3 = CurrentTheme.SubText,
+        TextSize = 11,
+        Font = Enum.Font.Gotham,
+        LayoutOrder = 2,
+        ZIndex = 23
+    })
+
+    local DiscordText = Create("TextLabel", {
+        Parent = DiscordBtn,
+        Size = UDim2.new(0, 0, 0, 14),
+        AutomaticSize = Enum.AutomaticSize.X,
+        BackgroundTransparency = 1,
+        Text = discordLink,
+        TextColor3 = CurrentTheme.SubText,
+        TextSize = 11,
+        Font = Enum.Font.Gotham,
+        LayoutOrder = 3,
+        ZIndex = 23
+    })
+
+    DiscordBtn.MouseEnter:Connect(function()
+        DiscordIcon.ImageColor3 = CurrentTheme.Accent
+        DiscordText.TextColor3 = CurrentTheme.Text
+    end)
+
+    DiscordBtn.MouseLeave:Connect(function()
+        DiscordIcon.ImageColor3 = CurrentTheme.SubText
+        DiscordText.TextColor3 = CurrentTheme.SubText
+    end)
+
+    DiscordBtn.MouseButton1Click:Connect(function()
+        if typeof(setclipboard) == "function" then
+            setclipboard(discordLink)
+        elseif typeof(toclipboard) == "function" then
+            toclipboard(discordLink)
+        elseif typeof(syn) == "table" and typeof(syn.write_clipboard) == "function" then
+            syn.write_clipboard(discordLink)
+        end
+        W424:Notify({
+            Title = "Discord Link",
+            Content = "Copied " .. discordLink .. " to clipboard!",
+            Duration = 3,
+            Icon = "Check"
+        })
+    end)
+
+    local ConfirmOverlay = Create("Frame", {
+        Name = "ConfirmOverlay",
+        Parent = MainFrame,
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundColor3 = CurrentTheme.Overlay,
+        BackgroundTransparency = 0.4,
+        BorderSizePixel = 0,
+        Visible = false,
+        ZIndex = 100
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, Config.CornerRadius), Parent = ConfirmOverlay})
+
+    local ConfirmBox = Create("Frame", {
+        Name = "ConfirmBox",
+        Parent = ConfirmOverlay,
+        Size = UDim2.new(0, 220, 0, 100),
+        Position = UDim2.new(0.5, -110, 0.5, -50),
+        BackgroundColor3 = CurrentTheme.Background,
+        BorderSizePixel = 0,
+        ZIndex = 101
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, 6), Parent = ConfirmBox})
+
+    Create("TextLabel", {
+        Parent = ConfirmBox,
+        Size = UDim2.new(1, 0, 0, 36),
+        Position = UDim2.new(0, 0, 0, 8),
+        BackgroundTransparency = 1,
+        Text = "Close W424?",
+        TextColor3 = CurrentTheme.Text,
+        TextSize = 11,
+        Font = Enum.Font.GothamBold,
+        ZIndex = 102
+    })
+
+    Create("TextLabel", {
+        Parent = ConfirmBox,
+        Size = UDim2.new(1, -20, 0, 30),
+        Position = UDim2.new(0, 10, 0, 26),
+        BackgroundTransparency = 1,
+        Text = "You can reopen using the floating icon.",
+        TextColor3 = CurrentTheme.SubText,
+        TextSize = 11,
+        Font = Enum.Font.Gotham,
+        TextWrapped = true,
+        ZIndex = 102
+    })
+
+    local ConfirmYes = Create("TextButton", {
+        Parent = ConfirmBox,
+        Size = UDim2.new(0, 80, 0, 26),
+        Position = UDim2.new(0.5, 2, 1, -30),
+        BackgroundColor3 = Color3.fromRGB(220, 60, 60),
+        Text = "Close",
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        TextSize = 11,
+        Font = Enum.Font.GothamBold,
+        ZIndex = 102
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = ConfirmYes})
+
+    local ConfirmNo = Create("TextButton", {
+        Parent = ConfirmBox,
+        Size = UDim2.new(0, 80, 0, 26),
+        Position = UDim2.new(0.5, -82, 1, -30),
+        BackgroundColor3 = CurrentTheme.Element,
+        Text = "Cancel",
+        TextColor3 = CurrentTheme.Text,
+        TextSize = 11,
+        Font = Enum.Font.GothamBold,
+        ZIndex = 102
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = ConfirmNo})
+
+    local Controls = Create("Frame", {
+        Name = "Controls",
+        Parent = TopbarRight,
+        Size = UDim2.new(0, 60, 0, Config.TopbarHeight),
+        BackgroundTransparency = 1,
+        LayoutOrder = 2,
+        ZIndex = 22
+    })
+
+    local function MakeControl(name, icon, pos, callback)
+        local btn = Create("ImageButton", {
+            Name = name,
+            Parent = Controls,
+            Size = UDim2.new(0, 24, 0, 24),
+            Position = pos,
+            BackgroundTransparency = 1,
+            AutoButtonColor = false,
+            Image = GetIcon(icon),
+            ImageColor3 = CurrentTheme.SubText,
+            ZIndex = 23
+        })
+        Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = btn})
+        btn.MouseEnter:Connect(function()
+            btn.BackgroundColor3 = CurrentTheme.ElementHover
+        end)
+        btn.MouseLeave:Connect(function()
+            btn.BackgroundColor3 = CurrentTheme.Element
+        end)
+        btn.MouseButton1Click:Connect(callback)
+        return btn
+    end
+
+    MakeControl("Minimize", "Minus", UDim2.new(0, 4, 0.5, -12), function()
+        CloseAllDropdowns()
+        IsMinimized = true
+        MainFrame.Visible = false
+    end)
+
+    MakeControl("Close", "X", UDim2.new(0, 32, 0.5, -12), function()
+        CloseAllDropdowns()
+        ConfirmOverlay.Visible = true
+    end)
+
+    ConfirmYes.MouseButton1Click:Connect(function()
+        CloseAllDropdowns()
+        IsClosed = true
+        IsMinimized = false
+        if MainWindowScreen then
+            MainWindowScreen:Destroy()
+            MainWindowScreen = nil
+        end
+        if FloatingIconScreen then
+            FloatingIconScreen:Destroy()
+            FloatingIconScreen = nil
+        end
+        if NotifyScreen then
+            NotifyScreen:Destroy()
+            NotifyScreen = nil
+        end
+        for _, conn in ipairs(FloatingConnections) do
+            if conn then pcall(function() conn:Disconnect() end) end
+        end
+        FloatingConnections = {}
+        for _, conn in ipairs(DropdownConnections) do
+            if conn then pcall(function() conn:Disconnect() end) end
+        end
+        DropdownConnections = {}
+    end)
+
+    ConfirmNo.MouseButton1Click:Connect(function()
+        ConfirmOverlay.Visible = false
+    end)
+
+    local Sidebar = Create("Frame", {
+        Name = "Sidebar",
+        Parent = MainFrame,
+        Size = UDim2.new(0, Config.SidebarWidth, 1, -Config.TopbarHeight),
+        Position = UDim2.new(0, 0, 0, Config.TopbarHeight),
+        BackgroundColor3 = CurrentTheme.Sidebar,
+        BorderSizePixel = 0,
+        ClipsDescendants = true,
+        ZIndex = 15
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, Config.CornerRadius), Parent = Sidebar})
+
+    Create("Frame", {
+        Name = "Fix",
+        Parent = Sidebar,
+        Size = UDim2.new(1, 0, 0, 10),
+        Position = UDim2.new(0, 0, 0, -10),
+        BackgroundColor3 = CurrentTheme.Sidebar,
+        BorderSizePixel = 0,
+        ZIndex = 15
+    })
+
+    local SearchFrame = Create("Frame", {
+        Parent = Sidebar,
+        Size = UDim2.new(1, -10, 0, 32),
+        Position = UDim2.new(0, 5, 0, 6),
+        BackgroundColor3 = CurrentTheme.Element,
+        BorderSizePixel = 0,
+        ZIndex = 16
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, 5), Parent = SearchFrame})
+
+    local SearchIcon = Create("ImageLabel", {
+        Parent = SearchFrame,
+        Size = UDim2.new(0, 14, 0, 14),
+        Position = UDim2.new(0, 6, 0.5, -7),
+        BackgroundTransparency = 1,
+        Image = GetIcon("Search"),
+        ImageColor3 = CurrentTheme.SubText,
+        ZIndex = 17
+    })
+
+    local SearchBox = Create("TextBox", {
+        Parent = SearchFrame,
+        Size = UDim2.new(1, -24, 1, 0),
+        Position = UDim2.new(0, 22, 0, 0),
+        BackgroundTransparency = 1,
+        Text = "",
+        PlaceholderText = "Search features...",
+        TextColor3 = CurrentTheme.Text,
+        PlaceholderColor3 = CurrentTheme.SubText,
+        TextSize = 12,
+        Font = Enum.Font.Gotham,
+        ClearTextOnFocus = false,
+        ZIndex = 17
+    })
+
+    local TabList = Create("ScrollingFrame", {
+        Name = "TabList",
+        Parent = Sidebar,
+        Size = UDim2.new(1, -10, 1, -44),
+        Position = UDim2.new(0, 5, 0, 44),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 2,
+        ScrollBarImageColor3 = CurrentTheme.Accent,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        ZIndex = 16
+    })
+
+    Create("UIListLayout", {
+        Parent = TabList,
+        Padding = UDim.new(0, 3),
+        SortOrder = Enum.SortOrder.LayoutOrder
+    })
+
+    local Content = Create("Frame", {
+        Name = "Content",
+        Parent = MainFrame,
+        Size = UDim2.new(1, -Config.SidebarWidth + 4, 1, -Config.TopbarHeight),
+        Position = UDim2.new(0, Config.SidebarWidth - 4, 0, Config.TopbarHeight),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ClipsDescendants = true,
+        ZIndex = 14
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, Config.CornerRadius), Parent = Content})
+
+    Create("Frame", {
+        Name = "Fix",
+        Parent = Content,
+        Size = UDim2.new(0, 14, 0, 14),
+        Position = UDim2.new(0, -10, 0, 0),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ZIndex = 14
+    })
+
+    DropdownOverlay = Create("Frame", {
+        Name = "DropdownOverlay",
+        Parent = MainFrame,
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Visible = false,
+        ZIndex = 98,
+        Active = true,
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, Config.CornerRadius), Parent = DropdownOverlay})
+
+    DropdownPanel = Create("Frame", {
+        Name = "DropdownPanel",
+        Parent = MainFrame,
+        Size = UDim2.new(0, 180, 1, -Config.TopbarHeight),
+        Position = UDim2.new(1, -180, 0, Config.TopbarHeight),
+        BackgroundColor3 = CurrentTheme.Background,
+        BorderSizePixel = 0,
+        Visible = false,
+        ClipsDescendants = true,
+        ZIndex = 99,
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, Config.CornerRadius), Parent = DropdownPanel})
+    Create("UIStroke", {Color = CurrentTheme.Border, Thickness = 1, Parent = DropdownPanel})
+
+    local DropdownPanelHeader = Create("Frame", {
+        Name = "Header",
+        Parent = DropdownPanel,
+        Size = UDim2.new(1, 0, 0, 36),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ZIndex = 100,
+    })
+
+    DropdownPanelTitle = Create("TextLabel", {
+        Parent = DropdownPanelHeader,
+        Size = UDim2.new(1, -10, 0, 20),
+        Position = UDim2.new(0, 8, 0, 8),
+        BackgroundTransparency = 1,
+        Text = "Select",
+        TextColor3 = CurrentTheme.Text,
+        TextSize = 12,
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 100,
+    })
+
+    DropdownPanelSearch = Create("TextBox", {
+        Parent = DropdownPanel,
+        Size = UDim2.new(1, -10, 0, 28),
+        Position = UDim2.new(0, 5, 0, 32),
+        BackgroundColor3 = CurrentTheme.Element,
+        Text = "",
+        PlaceholderText = "Search...",
+        TextColor3 = CurrentTheme.Text,
+        PlaceholderColor3 = CurrentTheme.SubText,
+        TextSize = 11,
+        Font = Enum.Font.Gotham,
+        ClearTextOnFocus = false,
+        ZIndex = 100,
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = DropdownPanelSearch})
+
+    DropdownPanelScroll = Create("ScrollingFrame", {
+        Parent = DropdownPanel,
+        Size = UDim2.new(1, -10, 1, -68),
+        Position = UDim2.new(0, 5, 0, 64),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 2,
+        ScrollBarImageColor3 = CurrentTheme.Accent,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        ZIndex = 100,
+    })
+    Create("UIListLayout", {
+        Parent = DropdownPanelScroll,
+        Padding = UDim.new(0, 3),
+        SortOrder = Enum.SortOrder.LayoutOrder,
+    })
+    Create("UIPadding", {
+        Parent = DropdownPanelScroll,
+        PaddingBottom = UDim.new(0, 30)
+    })
+
+    local ResizeHandle = Create("ImageButton", {
+        Name = "ResizeHandle",
+        Parent = MainFrame,
+        Size = UDim2.new(0, 22, 0, 22),
+        Position = UDim2.new(1, -20, 1, -20),
+        BackgroundTransparency = 1,
+        Image = GetIcon("ChevronLeft"),
+        ImageColor3 = CurrentTheme.SubText,
+        ImageTransparency = 0.4,
+        Rotation = -45,
+        ZIndex = 30,
+        Active = true
+    })
+
+    local resizing = false
+    local resizeStart = nil
+    local startSize = nil
+
+    ResizeHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            resizing = true
+            resizeStart = input.Position
+            startSize = MainFrame.Size
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - resizeStart
+            local newWidth = math.max(Config.MinWindowSize.X, startSize.X.Offset + delta.X)
+            local newHeight = math.max(Config.MinWindowSize.Y, startSize.Y.Offset + delta.Y)
+            MainFrame.Size = UDim2.new(0, newWidth, 0, newHeight)
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            resizing = false
+        end
+    end)
+
+    local dragging = false
+    local dragStart = nil
+    local startPos = nil
+
+    Topbar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = MainFrame.Position
+            local changedConn
+            changedConn = input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.Cancel then
+                    dragging = false
+                    changedConn:Disconnect()
+                end
+            end)
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            MainFrame.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + delta.X,
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+
+    if toggleKey then
+        UserInputService.InputBegan:Connect(function(input, gpe)
+            if not gpe and input.KeyCode == toggleKey then
+                if MainFrame then
+                    if MainFrame.Visible then
+                        CloseAllDropdowns()
+                    end
+                    MainFrame.Visible = not MainFrame.Visible
+                    IsMinimized = not MainFrame.Visible
+                end
+            end
+        end)
+    end
+
+    DropdownOverlay.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            CloseAllDropdowns()
+        end
+    end)
+
+    local clickConn = UserInputService.InputBegan:Connect(function(input, gpe)
+        if not CurrentDropdownState or not CurrentDropdownState.IsOpen then return end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            local mousePos = UserInputService:GetMouseLocation()
+            local mainPos = MainFrame.AbsolutePosition
+            local mainSize = MainFrame.AbsoluteSize
+            if mousePos.X < mainPos.X or mousePos.X > mainPos.X + mainSize.X or
+               mousePos.Y < mainPos.Y or mousePos.Y > mainPos.Y + mainSize.Y then
+                CloseAllDropdowns()
+            end
+        end
+    end)
+    table.insert(DropdownConnections, clickConn)
+
+    DropdownPanelSearch:GetPropertyChangedSignal("Text"):Connect(function()
+        if CurrentDropdownState and CurrentDropdownState.IsOpen and CurrentDropdownState.Rebuild then
+            CurrentDropdownState.Rebuild(DropdownPanelSearch.Text)
+        end
+    end)
 
     ListenTheme(function(theme)
         MainFrame.BackgroundColor3 = theme.Background
@@ -1045,7 +1809,6 @@ local function CreateFloatingIcon(customIcon)
     WindowAPI.Config:Load()
     WindowAPI.Config:StartAutoSave()
 
-    
     WindowAPI.EnableAutoSave = function(_, interval)
         WindowAPI.Config:EnableAutoSave(interval)
     end
