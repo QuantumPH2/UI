@@ -2051,7 +2051,12 @@ function W424:CreateWindow(data)
         ConfirmBox.BackgroundColor3 = theme.Background
         ConfirmNo.BackgroundColor3 = theme.Element
         ConfirmNo.TextColor3 = theme.Text
-        ResizeHandle.ImageColor3 = theme.SubText
+        if GripStroke then GripStroke.Color = theme.Border end
+        if ResizeLines then
+            for _, line in ipairs(ResizeLines) do
+                line.BackgroundColor3 = theme.SubText
+            end
+        end
         SearchFrame.BackgroundColor3 = theme.Element
         SearchIcon.ImageColor3 = theme.SubText
         SearchBox.TextColor3 = theme.Text
