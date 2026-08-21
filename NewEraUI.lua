@@ -518,80 +518,8 @@ local aa = {
         end
         local function StartMarquee(label, containerWidth)
             if not label then return end
-            local animKey = tostring(label) .. "_mq"
-            if _marqueeConns[animKey] then
-                pcall(function() _marqueeConns[animKey]:Disconnect() end)
-                _marqueeConns[animKey] = nil
-            end
-            local function tryStart(attempt)
-                attempt = attempt or 0
-                if not label or not label.Parent then
-                    if attempt < 10 then
-                        task.delay(0.3, function() tryStart(attempt + 1) end)
-                    end
-                    return
-                end
-                local parent = label.Parent
-                local avail = containerWidth
-                if not avail or avail <= 0 then
-                    avail = label.AbsoluteSize.X
-                    if avail <= 0 then avail = parent and parent.AbsoluteSize.X or 0 end
-                end
-                if avail <= 2 and attempt < 10 then
-                    task.delay(0.3, function() tryStart(attempt + 1) end); return
-                end
-                local fullW = _measureText(label)
-                if fullW <= 0 and attempt < 10 then
-                    task.delay(0.3, function() tryStart(attempt + 1) end); return
-                end
-                if fullW <= avail + 2 then
-                    label.TextTruncate = Enum.TextTruncate.AtEnd
-                    local baseY = label.Position.Y
-                    label.Position = UDim2.new(label.Position.X.Scale, 0, baseY.Scale, baseY.Offset)
-                    return
-                end
-                pcall(function() parent.ClipsDescendants = true end)
-                label.TextTruncate = Enum.TextTruncate.None
-                local scrollDist = fullW - avail + 12
-                local speed, pause = 44, 1.8
-                local baseY  = label.Position.Y
-                local baseXS = label.Position.X.Scale
-                label.Position = UDim2.new(baseXS, 0, baseY.Scale, baseY.Offset)
-                local phase, timer = 0, 0
-                local conn
-                conn = game:GetService("RunService").Heartbeat:Connect(function(dt)
-                    if not label or not label.Parent then
-                        conn:Disconnect(); _marqueeConns[animKey] = nil; return
-                    end
-                    if not label.Visible or not label:IsDescendantOf(game) or getgenv()._FluentWindowInteracting then return end
-                    if phase == 0 then
-                        timer = timer + dt; if timer >= pause then timer = 0; phase = 1 end
-                    elseif phase == 1 then
-                        local nxt = math.max(label.Position.X.Offset - speed * dt, -scrollDist)
-                        label.Position = UDim2.new(baseXS, nxt, baseY.Scale, baseY.Offset)
-                        if nxt <= -scrollDist then phase = 2; timer = 0 end
-                    elseif phase == 2 then
-                        timer = timer + dt; if timer >= pause then timer = 0; phase = 3 end
-                    else
-                        local nxt = math.min(label.Position.X.Offset + speed * dt, 0)
-                        label.Position = UDim2.new(baseXS, nxt, baseY.Scale, baseY.Offset)
-                        if nxt >= 0 then phase = 0; timer = 0 end
-                    end
-                end)
-                _marqueeConns[animKey] = conn
-            end
-            task.delay(0.5, function() tryStart(0) end)
-            local _debounceTimer = nil
             pcall(function()
-                label:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-                    if _debounceTimer then task.cancel(_debounceTimer) end
-                    local delayTime = getgenv()._FluentWindowInteracting and 0.45 or 0.25
-                    _debounceTimer = task.delay(delayTime, function()
-                        if not _marqueeConns[animKey] and not getgenv()._FluentWindowInteracting then
-                            tryStart(0)
-                        end
-                    end)
-                end)
+                label.TextTruncate = Enum.TextTruncate.AtEnd
             end)
         end
         x.StartMarquee = StartMarquee
@@ -1101,6 +1029,8 @@ local aa = {
                 print "You cannot create more than one window."
                 return
             end
+            D.Size = D.Size or UDim2.fromOffset(360, 240)
+            D.TabWidth = math.clamp(D.TabWidth or 110, 85, 120)
             x.MinimizeKey = D.MinimizeKey
             x.UseAcrylic = false
             x.Acrylic = false
@@ -2262,104 +2192,11 @@ local aa = {
         local k, l = j.New, i.Spring.new
         local _TS_svc = game:GetService("TextService")
         local _RS_svc = game:GetService("RunService")
-        local _marqueeConns = setmetatable({}, {__mode = "k"})
-        local _marqueeResizeConns = setmetatable({}, {__mode = "k"})
-        local function _measureText(label)
-            local w = 0
-            pcall(function() w = label.TextBounds.X end)
-            if w <= 0 then
-                pcall(function()
-                    local p2 = _TS_svc:GetTextSize(
-                        label.Text, label.TextSize, label.Font, Vector2.new(9999, 9999))
-                    w = p2.X
-                end)
-            end
-            return w
-        end
         local function _startMarquee(label)
             if not label then return end
-            if _marqueeConns[label] then
-                pcall(function() _marqueeConns[label]:Disconnect() end)
-                _marqueeConns[label] = nil
-            end
-            local function tryStart(attempt)
-                attempt = attempt or 0
-                if not label or not label.Parent then return end
-                local avail = label.AbsoluteSize.X
-                if avail <= 2 then
-                    if attempt < 10 then
-                        task.delay(0.3, function() tryStart(attempt + 1) end)
-                    end
-                    return
-                end
-                local fullW = _measureText(label)
-                if fullW <= 0 then
-                    if attempt < 10 then
-                        task.delay(0.3, function() tryStart(attempt + 1) end)
-                    end
-                    return
-                end
-                local baseY = label.Position.Y
-                local baseXS = label.Position.X.Scale
-                if fullW <= avail + 2 then
-                    label.TextTruncate = Enum.TextTruncate.AtEnd
-                    label.Position = UDim2.new(baseXS, 0, baseY.Scale, baseY.Offset)
-                    return
-                end
-                label.TextTruncate = Enum.TextTruncate.None
-                local scrollDist = fullW - avail + 12
-                local speed, pause = 44, 1.8
-                label.Position = UDim2.new(baseXS, 0, baseY.Scale, baseY.Offset)
-                local phase, timer = 0, 0
-                local conn
-                conn = _RS_svc.Heartbeat:Connect(function(dt)
-                    if not label or not label.Parent then
-                        conn:Disconnect()
-                        if _marqueeConns[label] == conn then _marqueeConns[label] = nil end
-                        return
-                    end
-                    if not label.Visible or not label:IsDescendantOf(game) or getgenv()._FluentWindowInteracting then return end
-                    if phase == 0 then
-                        timer = timer + dt
-                        if timer >= pause then timer = 0; phase = 1 end
-                    elseif phase == 1 then
-                        local nxt = math.max(label.Position.X.Offset - speed * dt, -scrollDist)
-                        label.Position = UDim2.new(baseXS, nxt, baseY.Scale, baseY.Offset)
-                        if nxt <= -scrollDist then phase = 2; timer = 0 end
-                    elseif phase == 2 then
-                        timer = timer + dt
-                        if timer >= pause then timer = 0; phase = 3 end
-                    else
-                        local nxt = math.min(label.Position.X.Offset + speed * dt, 0)
-                        label.Position = UDim2.new(baseXS, nxt, baseY.Scale, baseY.Offset)
-                        if nxt >= 0 then phase = 0; timer = 0 end
-                    end
-                end)
-                if _marqueeConns[label] then
-                    pcall(function() _marqueeConns[label]:Disconnect() end)
-                end
-                _marqueeConns[label] = conn
-            end
-            task.delay(0.3, function() tryStart(0) end)
-            if not _marqueeResizeConns[label] then
-                local rconn
-                local _dbTimer = nil
-                rconn = label:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-                    if not label or not label.Parent then
-                        rconn:Disconnect()
-                        _marqueeResizeConns[label] = nil
-                        return
-                    end
-                    if _dbTimer then task.cancel(_dbTimer) end
-                    local delayTime = getgenv()._FluentWindowInteracting and 0.45 or 0.25
-                    _dbTimer = task.delay(delayTime, function()
-                        if not getgenv()._FluentWindowInteracting then
-                            _startMarquee(label)
-                        end
-                    end)
-                end)
-                _marqueeResizeConns[label] = rconn
-            end
+            pcall(function()
+                label.TextTruncate = Enum.TextTruncate.AtEnd
+            end)
         end
         return function(m, n, o, p, q)
             local q_icon = (type(q) == "table") and q or nil
@@ -3048,11 +2885,7 @@ local aa = {
                     end)
                 end
                 table.insert(_conns, sf:GetPropertyChangedSignal("CanvasPosition"):Connect(updateScrollbar))
-                table.insert(_conns, sf:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateScrollbar))
                 table.insert(_conns, sf:GetPropertyChangedSignal("Visible"):Connect(updateScrollbar))
-                table.insert(_conns, sf.Changed:Connect(function(p)
-                    if p == "CanvasSize" then updateScrollbar() end
-                end))
                 local _lib = e(h)
                 if _lib and _lib.GUI then
                     table.insert(_conns, _lib.GUI.Destroying:Connect(_teardown))
@@ -3688,7 +3521,7 @@ local aa = {
                     l("UICorner", {CornerRadius = UDim.new(0, 10)}),
                     l(
                         "Frame",
-                        {Size = UDim2.new(1, -120, 1, 0), Position = UDim2.new(0, 16, 0, 0), BackgroundTransparency = 1},
+                        {Size = UDim2.new(1, -84, 1, 0), Position = UDim2.new(0, 16, 0, 0), BackgroundTransparency = 1},
                         {
                             l(
                                 "UIListLayout",
@@ -3837,24 +3670,19 @@ local aa = {
                     }
                 end
             )
-            o.MaxButton =
-                q(
-                i.Max,
-                UDim2.new(1, -40, 0, 4),
-                o.Frame,
-                function()
-                    n.Window.Maximize(not n.Window.Maximized)
-                end
-            )
             o.MinButton =
                 q(
                 i.Min,
-                UDim2.new(1, -80, 0, 4),
+                UDim2.new(1, -40, 0, 4),
                 o.Frame,
                 function()
                     p.Window:Minimize()
                 end
             )
+            o.MaxButton = {
+                Frame = l("Frame", {Visible = false, Parent = o.Frame}),
+                SetCallback = function() end
+            }
             do
                 local UIS = game:GetService("UserInputService")
                 local RS  = game:GetService("RunService")
@@ -3954,6 +3782,8 @@ local aa = {
         local l, m, n, o, p = e(k.Packages.Flipper), e(k.Creator), e(k.Acrylic), e(d.Parent.Assets), d.Parent
         local q, r, s = l.Spring.new, l.Instant.new, m.New
         return function(t)
+            t.Size = t.Size or UDim2.fromOffset(360, 240)
+            t.TabWidth = math.clamp(t.TabWidth or 110, 85, 120)
             local u, v, w, x, y, z =
                 e(k),
                 {
@@ -3962,14 +3792,47 @@ local aa = {
                     Size = t.Size,
                     CurrentPos = 0,
                     Position = UDim2.fromOffset(
-                        j.ViewportSize.X / 2 - t.Size.X.Offset / 2,
-                        j.ViewportSize.Y / 2 - t.Size.Y.Offset / 2
+                        math.max(0, math.floor(j.ViewportSize.X / 2 - t.Size.X.Offset / 2)),
+                        math.max(0, math.floor(j.ViewportSize.Y / 2 - t.Size.Y.Offset / 2))
                     )
                 },
                 false
             local A, B = false
             local C = false
             v.AcrylicPaint = n.AcrylicPaint()
+            local gripLine1 = s("Frame", {
+                Size = UDim2.fromOffset(12, 2),
+                Position = UDim2.fromOffset(11, 11),
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Rotation = -45,
+                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                BackgroundTransparency = 0.45,
+                BorderSizePixel = 0,
+                ThemeTag = {BackgroundColor3 = "SubText"}
+            }, {s("UICorner", {CornerRadius = UDim.new(1, 0)})})
+
+            local gripLine2 = s("Frame", {
+                Size = UDim2.fromOffset(8, 2),
+                Position = UDim2.fromOffset(14, 14),
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Rotation = -45,
+                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                BackgroundTransparency = 0.45,
+                BorderSizePixel = 0,
+                ThemeTag = {BackgroundColor3 = "SubText"}
+            }, {s("UICorner", {CornerRadius = UDim.new(1, 0)})})
+
+            local gripLine3 = s("Frame", {
+                Size = UDim2.fromOffset(4, 2),
+                Position = UDim2.fromOffset(17, 17),
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Rotation = -45,
+                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                BackgroundTransparency = 0.45,
+                BorderSizePixel = 0,
+                ThemeTag = {BackgroundColor3 = "SubText"}
+            }, {s("UICorner", {CornerRadius = UDim.new(1, 0)})})
+
             local D, E =
                 s(
                     "Frame",
@@ -3985,8 +3848,14 @@ local aa = {
                 ),
                 s(
                     "Frame",
-                    {Size = UDim2.fromOffset(20, 20), BackgroundTransparency = 1, Position = UDim2.new(1, -20, 1, -20)},
-                    {s("ImageLabel",{Size=UDim2.fromOffset(14,14),Position=UDim2.new(1,0,1,0),AnchorPoint=Vector2.new(1,1),BackgroundTransparency=1,Image="rbxassetid://10709811865",ImageTransparency=0.3,ThemeTag={ImageColor3="SubText"}})}
+                    {
+                        Size = UDim2.fromOffset(22, 22),
+                        Position = UDim2.new(1, -22, 1, -22),
+                        BackgroundTransparency = 1,
+                        Active = true,
+                        ZIndex = 25,
+                    },
+                    {gripLine1, gripLine2, gripLine3}
                 )
             local uiTopH = 54
             local topOffset = 0
@@ -4443,8 +4312,8 @@ local aa = {
                 s(
                 "Frame",
                 {
-                    Size = UDim2.new(0, t.TabWidth, 1, -66),
-                    Position = UDim2.new(0, 12, 0, 54),
+                    Size = UDim2.new(0, t.TabWidth, 1, -52),
+                    Position = UDim2.new(0, 8, 0, 44),
                     BackgroundTransparency = 1,
                     ClipsDescendants = true
                 },
@@ -4458,11 +4327,11 @@ local aa = {
                     Text = "Tab",
                     TextTransparency = 0,
                     FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
-                    TextSize = 28,
+                    TextSize = 16,
                     TextXAlignment = "Left",
                     TextYAlignment = "Center",
-                    Size = UDim2.new(1, -16, 0, 28),
-                    Position = UDim2.fromOffset(t.TabWidth + 26, 56),
+                    Size = UDim2.new(1, -t.TabWidth - 24, 0, 22),
+                    Position = UDim2.fromOffset(t.TabWidth + 16, 44),
                     BackgroundTransparency = 1,
                     ThemeTag = {TextColor3 = "Text"}
                 }
@@ -4472,8 +4341,8 @@ local aa = {
                 s(
                 "Frame",
                 {
-                    Size = UDim2.new(1, -t.TabWidth - 32, 1, -102),
-                    Position = UDim2.fromOffset(t.TabWidth + 26, 90),
+                    Size = UDim2.new(1, -t.TabWidth - 24, 1, -74),
+                    Position = UDim2.fromOffset(t.TabWidth + 16, 68),
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
                     ClipsDescendants = true,
@@ -4488,7 +4357,7 @@ local aa = {
                     ClipsDescendants = true,
                     Parent = v.ContainerHolder,
                 },
-                {s("UICorner", {CornerRadius = UDim.new(0, 10)})}
+                {s("UICorner", {CornerRadius = UDim.new(0, 8)})}
             )
             v.Root =
                 s(
@@ -4523,30 +4392,33 @@ local aa = {
 
             local fDragging = false
             local fDragMoved = false
-            local fDragInput = nil
-            local fDragStart, fStartPos
+            local fDragStartMouse = Vector2.new()
+            local fStartPos = UDim2.new()
             m.AddSignal(floatBtn.InputBegan, function(M)
                 if (M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch) and not fDragging then
                     fDragging = true
                     fDragMoved = false
-                    fDragInput = M
-                    fDragStart = M.Position
+                    fDragStartMouse = Vector2.new(M.Position.X, M.Position.Y)
                     fStartPos = floatBtn.Position
                 end
             end)
             m.AddSignal(h.InputChanged, function(M)
-                if fDragging and (M == fDragInput or M.UserInputType == Enum.UserInputType.MouseMovement or M.UserInputType == Enum.UserInputType.Touch) then
-                    local delta = M.Position - fDragStart
-                    if math.abs(delta.X) > 5 or math.abs(delta.Y) > 5 then
+                if fDragging and (M.UserInputType == Enum.UserInputType.MouseMovement or M.UserInputType == Enum.UserInputType.Touch) then
+                    local mousePos = Vector2.new(M.Position.X, M.Position.Y)
+                    local delta = mousePos - fDragStartMouse
+                    if math.abs(delta.X) > 4 or math.abs(delta.Y) > 4 then
                         fDragMoved = true
                     end
-                    floatBtn.Position = UDim2.new(fStartPos.X.Scale, fStartPos.X.Offset + delta.X, fStartPos.Y.Scale, fStartPos.Y.Offset + delta.Y)
+                    local vpX = j.ViewportSize.X
+                    local vpY = j.ViewportSize.Y
+                    local newX = math.clamp(fStartPos.X.Offset + delta.X, 0, math.max(vpX - 55, 0))
+                    local newY = math.clamp(fStartPos.Y.Offset + delta.Y, 0, math.max(vpY - 55, 0))
+                    floatBtn.Position = UDim2.fromOffset(math.floor(newX), math.floor(newY))
                 end
             end)
             m.AddSignal(h.InputEnded, function(M)
-                if fDragging and (M == fDragInput or (M.UserInputType == Enum.UserInputType.MouseButton1 and fDragInput and fDragInput.UserInputType == Enum.UserInputType.MouseButton1) or (M.UserInputType == Enum.UserInputType.Touch)) then
+                if fDragging and (M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch) then
                     fDragging = false
-                    fDragInput = nil
                 end
             end)
 
@@ -4565,65 +4437,27 @@ local aa = {
             if e(k).UseAcrylic then
                 v.AcrylicPaint.AddParent(v.Root)
             end
-            local G, H =
-                l.GroupMotor.new {X = v.Size.X.Offset, Y = v.Size.Y.Offset},
-                l.GroupMotor.new {X = v.Position.X.Offset, Y = v.Position.Y.Offset}
+            local H = l.GroupMotor.new {X = v.Position.X.Offset, Y = v.Position.Y.Offset}
             v.SelectorPosMotor = l.SingleMotor.new(17)
             v.SelectorSizeMotor = l.SingleMotor.new(16)
             v.ContainerBackMotor = l.SingleMotor.new(0)
-            v.ContainerPosMotor = l.SingleMotor.new(90)
+            v.ContainerPosMotor = l.SingleMotor.new(68)
 
             local _isDragging = false
-            local _dragStartMouse = Vector3.new()
+            local _dragStartMouse = Vector2.new()
             local _dragStartPos = UDim2.new()
-            local _targetPos = nil
-            local _currDragX = v.Position.X.Offset
-            local _currDragY = v.Position.Y.Offset
 
             local _isResizing = false
-            local _resizeStartMouse = Vector3.new()
+            local _resizeStartMouse = Vector2.new()
             local _resizeStartSize = UDim2.new()
-            local _targetSize = nil
-            local _currResizeW = v.Size.X.Offset
-            local _currResizeH = v.Size.Y.Offset
 
             v._isInteracting = false
             getgenv()._FluentWindowInteracting = false
 
-            G:onStep(
-                function(I)
-                    if not _isResizing then
-                        v.Root.Size = UDim2.new(0, I.X, 0, I.Y)
-                    end
-                end
-            )
             H:onStep(
                 function(I)
                     if not _isDragging then
                         v.Root.Position = UDim2.new(0, I.X, 0, I.Y)
-                    end
-                end
-            )
-
-            local _RS_win = game:GetService("RunService")
-            m.AddSignal(
-                _RS_win.RenderStepped,
-                function(dt)
-                    if _isDragging and _targetPos then
-                        local smoothFactor = math.clamp(dt * 36, 0.12, 1)
-                        _currDragX = _currDragX + (_targetPos.X.Offset - _currDragX) * smoothFactor
-                        _currDragY = _currDragY + (_targetPos.Y.Offset - _currDragY) * smoothFactor
-                        local curPos = UDim2.fromOffset(math.round(_currDragX), math.round(_currDragY))
-                        v.Position = curPos
-                        v.Root.Position = curPos
-                    end
-                    if _isResizing and _targetSize then
-                        local smoothFactor = math.clamp(dt * 36, 0.12, 1)
-                        _currResizeW = _currResizeW + (_targetSize.X.Offset - _currResizeW) * smoothFactor
-                        _currResizeH = _currResizeH + (_targetSize.Y.Offset - _currResizeH) * smoothFactor
-                        local curSz = UDim2.fromOffset(math.round(_currResizeW), math.round(_currResizeH))
-                        v.Size = curSz
-                        v.Root.Size = curSz
                     end
                 end
             )
@@ -4659,53 +4493,19 @@ local aa = {
             )
             v.ContainerPosMotor:onStep(
                 function(K)
-                    v.ContainerHolder.Position = UDim2.fromOffset(t.TabWidth + 26, K)
+                    v.ContainerHolder.Position = UDim2.fromOffset(t.TabWidth + 16, K)
                 end
             )
-            local K, L
-            v.Maximize = function(M, N, O)
-                v.Maximized = M
-                v.TitleBar.MaxButton.Frame.Icon.Image = M and o.Restore or o.Max
-                if M then
-                    K = v.Size.X.Offset
-                    L = v.Size.Y.Offset
-                end
-                local P, Q = M and j.ViewportSize.X or K, M and j.ViewportSize.Y or L
-                G:setGoal {
-                    X = l[O and "Instant" or "Spring"].new(P, {frequency = 6}),
-                    Y = l[O and "Instant" or "Spring"].new(Q, {frequency = 6})
-                }
-                v.Size = UDim2.fromOffset(P, Q)
-                if not N then
-                    H:setGoal {
-                        X = q(M and 0 or v.Position.X.Offset, {frequency = 6}),
-                        Y = q(M and 0 or v.Position.Y.Offset, {frequency = 6})
-                    }
-                end
-            end
+            v.Maximize = function() end
             m.AddSignal(
                 v.TitleBar.Frame.InputBegan,
                 function(M)
                     if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
                         _isDragging = true
-                        _dragStartMouse = M.Position
+                        _dragStartMouse = Vector2.new(M.Position.X, M.Position.Y)
                         _dragStartPos = v.Root.Position
-                        _targetPos = _dragStartPos
-                        _currDragX = v.Root.Position.X.Offset
-                        _currDragY = v.Root.Position.Y.Offset
                         v._isInteracting = true
                         getgenv()._FluentWindowInteracting = true
-                        if v.Maximized then
-                            v.Maximize(false, true, true)
-                            _dragStartPos =
-                                UDim2.fromOffset(
-                                i.X - (i.X * ((K - 100) / math.max(v.Root.AbsoluteSize.X, 1))),
-                                i.Y - (i.Y * (L / math.max(v.Root.AbsoluteSize.Y, 1)))
-                            )
-                            _targetPos = _dragStartPos
-                            _currDragX = _dragStartPos.X.Offset
-                            _currDragY = _dragStartPos.Y.Offset
-                        end
                     end
                 end
             )
@@ -4714,38 +4514,54 @@ local aa = {
                 function(M)
                     if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
                         _isResizing = true
-                        _resizeStartMouse = M.Position
+                        _resizeStartMouse = Vector2.new(M.Position.X, M.Position.Y)
                         _resizeStartSize = v.Root.Size
-                        _targetSize = _resizeStartSize
-                        _currResizeW = v.Root.Size.X.Offset
-                        _currResizeH = v.Root.Size.Y.Offset
                         v._isInteracting = true
                         getgenv()._FluentWindowInteracting = true
                     end
                 end
             )
+            m.AddSignal(E.MouseEnter, function()
+                gripLine1.BackgroundTransparency = 0.1
+                gripLine2.BackgroundTransparency = 0.1
+                gripLine3.BackgroundTransparency = 0.1
+            end)
+            m.AddSignal(E.MouseLeave, function()
+                gripLine1.BackgroundTransparency = 0.45
+                gripLine2.BackgroundTransparency = 0.45
+                gripLine3.BackgroundTransparency = 0.45
+            end)
             m.AddSignal(
                 h.InputChanged,
                 function(M)
                     if M.UserInputType == Enum.UserInputType.MouseMovement or M.UserInputType == Enum.UserInputType.Touch then
                         if _isDragging then
-                            local N = M.Position - _dragStartMouse
-                            local vpX, vpY = j.ViewportSize.X, j.ViewportSize.Y
+                            local mousePos = Vector2.new(M.Position.X, M.Position.Y)
+                            local delta = mousePos - _dragStartMouse
+                            local vpX = j.ViewportSize.X
+                            local vpY = j.ViewportSize.Y
                             local curW = v.Root.AbsoluteSize.X
-                            local newX = math.clamp(_dragStartPos.X.Offset + N.X, -curW + 100, math.max(vpX - 100, 0))
-                            local newY = math.clamp(_dragStartPos.Y.Offset + N.Y, -100, math.max(vpY - 40, 0))
-                            _targetPos = UDim2.fromOffset(newX, newY)
+                            local curH = v.Root.AbsoluteSize.Y
+                            local newX = math.clamp(_dragStartPos.X.Offset + delta.X, 0, math.max(vpX - curW, 0))
+                            local newY = math.clamp(_dragStartPos.Y.Offset + delta.Y, 0, math.max(vpY - curH, 0))
+                            local newPos = UDim2.fromOffset(math.floor(newX), math.floor(newY))
+                            v.Position = newPos
+                            v.Root.Position = newPos
                         end
                         if _isResizing then
-                            local N = M.Position - _resizeStartMouse
-                            local vpX, vpY = j.ViewportSize.X, j.ViewportSize.Y
-                            local minW = (t.MinSize and t.MinSize.X) or t.MinW or 360
-                            local minH = (t.MinSize and t.MinSize.Y) or t.MinH or 220
+                            local mousePos = Vector2.new(M.Position.X, M.Position.Y)
+                            local delta = mousePos - _resizeStartMouse
+                            local vpX = j.ViewportSize.X
+                            local vpY = j.ViewportSize.Y
+                            local minW = (t.MinSize and t.MinSize.X) or 320
+                            local minH = (t.MinSize and t.MinSize.Y) or 200
                             local maxW = math.max(vpX - 20, minW)
                             local maxH = math.max(vpY - 20, minH)
-                            local newW = math.clamp(_resizeStartSize.X.Offset + N.X, minW, maxW)
-                            local newH = math.clamp(_resizeStartSize.Y.Offset + N.Y, minH, maxH)
-                            _targetSize = UDim2.fromOffset(newW, newH)
+                            local newW = math.clamp(_resizeStartSize.X.Offset + delta.X, minW, maxW)
+                            local newH = math.clamp(_resizeStartSize.Y.Offset + delta.Y, minH, maxH)
+                            local newSize = UDim2.fromOffset(math.floor(newW), math.floor(newH))
+                            v.Size = newSize
+                            v.Root.Size = newSize
                         end
                     end
                 end
@@ -4756,19 +4572,10 @@ local aa = {
                     if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
                         if _isDragging then
                             _isDragging = false
-                            if _targetPos then
-                                v.Position = _targetPos
-                                v.Root.Position = _targetPos
-                            end
-                            H:setGoal {X = l.Instant.new(v.Position.X.Offset), Y = l.Instant.new(v.Position.Y.Offset)}
+                            H:setGoal {X = r(v.Root.Position.X.Offset), Y = r(v.Root.Position.Y.Offset)}
                         end
                         if _isResizing then
                             _isResizing = false
-                            if _targetSize then
-                                v.Size = _targetSize
-                                v.Root.Size = _targetSize
-                            end
-                            G:setGoal {X = l.Instant.new(v.Size.X.Offset), Y = l.Instant.new(v.Size.Y.Offset)}
                         end
                         if not _isDragging and not _isResizing then
                             v._isInteracting = false
@@ -5941,7 +5748,7 @@ local aa = {
                         end
                 },
                 ac(f.Element)(j.Title, j.Description, h.Container, false)
-            m.DescLabel.Size = UDim2.new(1, -170, 0, 14)
+            m.DescLabel.Size = UDim2.new(1, -110, 0, 14)
             l.SetTitle = m.SetTitle
             l.SetDesc = m.SetDesc
             local n, o =
@@ -5981,7 +5788,7 @@ local aa = {
                 e(
                     "TextButton",
                     {
-                        Size = UDim2.fromOffset(160, 30),
+                        Size = UDim2.fromOffset(95, 26),
                         Position = UDim2.new(1, -10, 0.5, 0),
                         AnchorPoint = Vector2.new(1, 0.5),
                         BackgroundTransparency = 0.9,
@@ -6133,7 +5940,7 @@ local aa = {
             })
 
             local v = e("Frame", {
-                Size = UDim2.new(0, 230, 1, 0),
+                Size = UDim2.new(0, 200, 1, 0),
                 Position = UDim2.new(0, 0, 0, 0),
                 BackgroundTransparency = 1,
                 ZIndex = 95,
@@ -6143,7 +5950,7 @@ local aa = {
             }, {
                 u,
                 e("UICorner", { CornerRadius = UDim.new(0, 10) }),
-                e("UISizeConstraint", { MinSize = Vector2.new(170, 0) })
+                e("UISizeConstraint", { MinSize = Vector2.new(140, 0) })
             })
 
             c.AddSignal(dimOverlay.MouseButton1Click, function()
@@ -6321,12 +6128,7 @@ local aa = {
 
             if ddSearchBox then
                 ddSearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-                    if filterTimer then filterTimer:Disconnect() end
-                    filterTimer = game:GetService("RunService").Stepped:Connect(function()
-                        updateDropdownFilter()
-                        if filterTimer then filterTimer:Disconnect() end
-                        filterTimer = nil
-                    end)
+                    updateDropdownFilter()
                 end)
             end
 
@@ -6639,12 +6441,13 @@ local aa = {
                     Type = "Input"
                 },
                 ac(aj.Element)(f.Title, f.Description, d.Container, false)
+            i.DescLabel.Size = UDim2.new(1, -110, 0, 14)
             h.SetTitle = i.SetTitle
             h.SetDesc = i.SetDesc
             local j = ac(aj.Textbox)(i.Frame, true)
             j.Frame.Position = UDim2.new(1, -10, 0.5, 0)
             j.Frame.AnchorPoint = Vector2.new(1, 0.5)
-            j.Frame.Size = UDim2.fromOffset(160, 30)
+            j.Frame.Size = UDim2.fromOffset(95, 26)
             j.Input.Text = f.Default or ""
             j.Input.PlaceholderText = f.Placeholder or ""
             local k = j.Input
@@ -6980,7 +6783,7 @@ local aa = {
                 },
                 false,
                 ac(aj.Element)(f.Title, f.Description, d.Container, false)
-            j.DescLabel.Size = UDim2.new(1, -170, 0, 14)
+            j.DescLabel.Size = UDim2.new(1, -110, 0, 14)
             h.SetTitle = j.SetTitle
             h.SetDesc = j.SetDesc
             local k =
@@ -7019,7 +6822,7 @@ local aa = {
                         TextXAlignment = Enum.TextXAlignment.Right,
                         BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         BackgroundTransparency = 1,
-                        Size = UDim2.new(0, 100, 0, 14),
+                        Size = UDim2.new(0, 60, 0, 14),
                         Position = UDim2.new(0, -4, 0.5, 0),
                         AnchorPoint = Vector2.new(1, 0.5),
                         ThemeTag = {TextColor3 = "SubText"}
@@ -7039,7 +6842,7 @@ local aa = {
                 {
                     ai("UICorner", {CornerRadius = UDim.new(1, 0)}),
                     ai("UIStroke", {Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, ThemeTag = {Color = "InElementBorder"}}),
-                    ai("UISizeConstraint", {MaxSize = Vector2.new(150, math.huge)}),
+                    ai("UISizeConstraint", {MaxSize = Vector2.new(90, math.huge)}),
                     n,
                     m,
                     l
