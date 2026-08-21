@@ -412,6 +412,12 @@ local aa = {
             ["solar/check-circle-bold"] = "rbxassetid://10709752996",
             ["solar/close-circle-bold"] = "rbxassetid://10709753149",
             ["solar/danger-triangle-bold"] = "rbxassetid://10709753149",
+            ["solar/crown-star-bold"] = "rbxassetid://10747363809",
+            ["solar/crown-bold"] = "rbxassetid://10747363809",
+            ["solar/stars-bold"] = "rbxassetid://10747363809",
+            ["solar/text-bold"] = "rbxassetid://10709752996",
+            ["solar/keyboard-bold"] = "rbxassetid://10723346959",
+            ["solar/layers-bold"] = "rbxassetid://10734950309",
             ["home"] = "rbxassetid://10723346959",
             ["eye"] = "rbxassetid://10723345518",
             ["user"] = "rbxassetid://10747373176",
@@ -435,11 +441,21 @@ local aa = {
                     return "rbxassetid://" .. A
                 end
             end
+            if SolarFallback[A] then return SolarFallback[A] end
             local prefix, name = A:match("^([^/:]+)[/:](.+)$")
             if prefix then
                 local fullKey = prefix .. "/" .. name
-                local src = LoadIconSource(prefix)
-                if src then
+                if SolarFallback[fullKey] then return SolarFallback[fullKey] end
+                if SolarFallback[name] then return SolarFallback[name] end
+                if SolarFallback["solar/" .. name] then return SolarFallback["solar/" .. name] end
+                if SolarFallback["solar/" .. name .. "-bold"] then return SolarFallback["solar/" .. name .. "-bold"] end
+                local legacy = e(o.Icons) and e(o.Icons).assets
+                if legacy then
+                    if legacy["lucide-" .. name] then return legacy["lucide-" .. name] end
+                    if legacy[name] then return legacy[name] end
+                end
+                if IconCache[prefix] then
+                    local src = IconCache[prefix]
                     if src._icons then
                         local entry = src._icons[name] or src._icons[name .. "-bold"]
                         if entry then
@@ -450,49 +466,19 @@ local aa = {
                         end
                     elseif src[name] then
                         return src[name]
-                    elseif src[name .. "-bold"] then
-                        return src[name .. "-bold"]
                     end
                 end
-                if SolarFallback[fullKey] then return SolarFallback[fullKey] end
-                if SolarFallback[A] then return SolarFallback[A] end
-                if SolarFallback[name] then return SolarFallback[name] end
-                if SolarFallback["solar/" .. name] then return SolarFallback["solar/" .. name] end
-                if SolarFallback["solar/" .. name .. "-bold"] then return SolarFallback["solar/" .. name .. "-bold"] end
-                local legacy = e(o.Icons).assets
-                if legacy then
-                    if legacy["lucide-" .. name] then return legacy["lucide-" .. name] end
-                    if legacy[name] then return legacy[name] end
-                end
-                return nil
+                return "rbxassetid://10709752996"
             else
-                local solar = LoadIconSource("solar")
-                if solar then
-                    if solar._icons then
-                        local entry = solar._icons[A] or solar._icons[A .. "-bold"] or solar._icons[A:lower()]
-                        if entry then
-                            local sheetId = solar._sprites[tostring(entry.Image)]
-                            if sheetId then
-                                return { Image = sheetId, ImageRectOffset = entry.ImageRectPosition, ImageRectSize = entry.ImageRectSize }
-                            end
-                        end
-                    elseif solar[A] then return solar[A]
-                    elseif solar[A .. "-bold"] then return solar[A .. "-bold"] end
-                end
-                local lucide = LoadIconSource("lucide")
-                if lucide then
-                    if lucide[A] then return lucide[A] end
-                    if lucide["lucide-" .. A] then return lucide["lucide-" .. A] end
-                end
-                local legacy = e(o.Icons).assets
+                if SolarFallback[A] then return SolarFallback[A] end
+                if SolarFallback["solar/" .. A] then return SolarFallback["solar/" .. A] end
+                if SolarFallback["solar/" .. A .. "-bold"] then return SolarFallback["solar/" .. A .. "-bold"] end
+                local legacy = e(o.Icons) and e(o.Icons).assets
                 if legacy then
                     if legacy["lucide-" .. A] then return legacy["lucide-" .. A] end
                     if legacy[A] then return legacy[A] end
                 end
-                if SolarFallback[A] then return SolarFallback[A] end
-                if SolarFallback["solar/" .. A] then return SolarFallback["solar/" .. A] end
-                if SolarFallback["solar/" .. A .. "-bold"] then return SolarFallback["solar/" .. A .. "-bold"] end
-                return nil
+                return "rbxassetid://10709752996"
             end
         end
         local z = {}
@@ -1029,14 +1015,23 @@ local aa = {
                 print "You cannot create more than one window."
                 return
             end
-            D.Size = D.Size or UDim2.fromOffset(360, 240)
-            D.TabWidth = math.clamp(D.TabWidth or 110, 85, 120)
+            local sidebarW = D.SidebarWidth or D.TabWidth or 150
+            local topbarH  = D.TopbarHeight or 40
+            local minWinSz = D.MinWindowSize or D.MinSize or Vector2.new(360, 240)
+            D.SidebarWidth = sidebarW
+            D.TabWidth = sidebarW
+            D.TopbarHeight = topbarH
+            D.MinWindowSize = minWinSz
+            D.MinSize = minWinSz
+            D.Size = D.Size or UDim2.fromOffset(math.max(minWinSz.X, 360), math.max(minWinSz.Y, 240))
             x.MinimizeKey = D.MinimizeKey
             x.UseAcrylic = false
             x.Acrylic = false
             local E =
                 e(s.Window) {
-                    Parent = w, Size = D.Size, Title = D.Title, SubTitle = D.SubTitle, TabWidth = D.TabWidth,
+                    Parent = w, Size = D.Size, Title = D.Title, SubTitle = D.SubTitle,
+                    TabWidth = D.TabWidth, SidebarWidth = D.SidebarWidth,
+                    TopbarHeight = D.TopbarHeight, MinWindowSize = D.MinWindowSize, MinSize = D.MinSize,
                     UserInfo = D.UserInfo, UserInfoTop = D.UserInfoTop,
                     UserInfoTitle = D.UserInfoTitle, UserInfoSubtitle = D.UserInfoSubtitle,
                     UserInfoColor = D.UserInfoColor,
@@ -1139,10 +1134,15 @@ local aa = {
             x.UseAcrylic = false
         end
         function x.ToggleTransparency(C, D)
-            if x.Window and x.Window.AcrylicPaint and x.Window.AcrylicPaint.Frame and x.Window.AcrylicPaint.Frame.Background then
+            if x.Window and x.Window.AcrylicPaint and x.Window.AcrylicPaint.Frame then
                 pcall(function()
-                    x.Window.AcrylicPaint.Frame.Background.BackgroundTransparency = D and 0.25 or 0.05
-                    local bgImg = x.Window.AcrylicPaint.Frame:FindFirstChild("__ThemeBG")
+                    local frm = x.Window.AcrylicPaint.Frame
+                    if frm:FindFirstChild("Background") then
+                        frm.Background.BackgroundTransparency = D and 0.25 or 0.05
+                    else
+                        frm.BackgroundTransparency = D and 0.25 or 0.05
+                    end
+                    local bgImg = frm:FindFirstChild("__ThemeBG")
                     if bgImg then
                         local curThm = x.Theme and e(o.Themes)[x.Theme]
                         local baseTrans = (curThm and curThm.BackgroundTransparency) or 0.68
@@ -1873,59 +1873,13 @@ local aa = {
                 "Frame",
                 {
                     Size = UDim2.fromScale(1, 1),
-                    BackgroundTransparency = 0.9,
-                    BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-                    BorderSizePixel = 0
+                    BackgroundTransparency = 0.05,
+                    BorderSizePixel = 0,
+                    ThemeTag = {BackgroundColor3 = "AcrylicMain"}
                 },
                 {
-                    j(
-                        "ImageLabel",
-                        {
-                            Image = "rbxassetid://8992230677",
-                            ScaleType = "Slice",
-                            SliceCenter = Rect.new(Vector2.new(99, 99), Vector2.new(99, 99)),
-                            AnchorPoint = Vector2.new(0.5, 0.5),
-                            Size = UDim2.new(1, 120, 1, 116),
-                            Position = UDim2.new(0.5, 0, 0.5, 0),
-                            BackgroundTransparency = 1,
-                            ImageColor3 = Color3.fromRGB(0, 0, 0),
-                            ImageTransparency = 0.7
-                        }
-                    ),
-                    j("UICorner", {CornerRadius = UDim.new(0, 12)}),
-                    j(
-                        "Frame",
-                        {
-                            BackgroundTransparency = 0.05,
-                            Size = UDim2.fromScale(1, 1),
-                            Name = "Background",
-                            ZIndex = 1,
-                            ThemeTag = {BackgroundColor3 = "AcrylicMain"}
-                        },
-                        {j("UICorner", {CornerRadius = UDim.new(0, 12)})}
-                    ),
-                    j(
-                        "Frame",
-                        {
-                            Name = "Gradient",
-                            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-                            BackgroundTransparency = 0.35,
-                            Size = UDim2.fromScale(1, 1),
-                            ZIndex = 2
-                        },
-                        {
-                            j("UICorner", {CornerRadius = UDim.new(0, 12)}),
-                            j("UIGradient", {Rotation = 0, ThemeTag = {Color = "AcrylicGradient"}})
-                        }
-                    ),
-                    j(
-                        "Frame",
-                        {Name = "Stroke", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 3},
-                        {
-                            j("UICorner", {CornerRadius = UDim.new(0, 12)}),
-                            j("UIStroke", {Transparency = 0.5, Thickness = 1, ThemeTag = {Color = "AcrylicBorder"}})
-                        }
-                    )
+                    j("UICorner", {CornerRadius = UDim.new(0, 10)}),
+                    j("UIStroke", {Transparency = 0.5, Thickness = 1, ThemeTag = {Color = "AcrylicBorder"}})
                 }
             )
             l.Model = nil
@@ -3302,10 +3256,11 @@ local aa = {
                     tabObj._updateScrollbar()
                 end
                 if r.ContainerHolder then
-                    local tabW = r.TabWidth or 160
-                    r.ContainerHolder.Position = UDim2.fromOffset(tabW + 26, 94)
+                    local tabW = r.SidebarWidth or r.TabWidth or 150
+                    local topH = r.TopbarHeight or 40
+                    r.ContainerHolder.Position = UDim2.fromOffset(tabW + 16, topH + 30)
                     local tw = twSvc:Create(r.ContainerHolder, TweenInfo.new(0.18, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                        Position = UDim2.fromOffset(tabW + 26, 90)
+                        Position = UDim2.fromOffset(tabW + 16, topH + 26)
                     })
                     tw:Play()
                 end
@@ -3513,10 +3468,11 @@ local aa = {
                     end
                     return s
                 end
+            local topH = (p.Window and p.Window.TopbarHeight) or (n.TopbarHeight) or 40
             o.Frame =
                 l(
                 "Frame",
-                {Size = UDim2.new(1, 0, 0, 48), BackgroundTransparency = 1, Parent = n.Parent},
+                {Size = UDim2.new(1, 0, 0, topH), BackgroundTransparency = 1, Parent = n.Parent},
                 {
                     l("UICorner", {CornerRadius = UDim.new(0, 10)}),
                     l(
@@ -3649,10 +3605,11 @@ local aa = {
                     end)
                 end
             end
+            local btnY = math.max(math.floor((topH - 26) / 2), 2)
             o.CloseButton =
                 q(
                 i.Close,
-                UDim2.new(1, -4, 0, 4),
+                UDim2.new(1, -4, 0, btnY),
                 o.Frame,
                 function()
                     p.Window:Dialog {
@@ -3673,7 +3630,7 @@ local aa = {
             o.MinButton =
                 q(
                 i.Min,
-                UDim2.new(1, -40, 0, 4),
+                UDim2.new(1, -38, 0, btnY),
                 o.Frame,
                 function()
                     p.Window:Minimize()
@@ -3782,14 +3739,26 @@ local aa = {
         local l, m, n, o, p = e(k.Packages.Flipper), e(k.Creator), e(k.Acrylic), e(d.Parent.Assets), d.Parent
         local q, r, s = l.Spring.new, l.Instant.new, m.New
         return function(t)
-            t.Size = t.Size or UDim2.fromOffset(360, 240)
-            t.TabWidth = math.clamp(t.TabWidth or 110, 85, 120)
+            local sidebarWidth = t.SidebarWidth or t.TabWidth or 150
+            local topbarHeight = t.TopbarHeight or 40
+            local minSize = t.MinWindowSize or t.MinSize or Vector2.new(360, 240)
+            t.SidebarWidth = sidebarWidth
+            t.TabWidth = sidebarWidth
+            t.TopbarHeight = topbarHeight
+            t.MinWindowSize = minSize
+            t.MinSize = minSize
+            t.Size = t.Size or UDim2.fromOffset(math.max(minSize.X, 360), math.max(minSize.Y, 240))
             local u, v, w, x, y, z =
                 e(k),
                 {
                     Minimized = false,
                     Maximized = false,
                     Size = t.Size,
+                    SidebarWidth = sidebarWidth,
+                    TabWidth = sidebarWidth,
+                    TopbarHeight = topbarHeight,
+                    MinWindowSize = minSize,
+                    MinSize = minSize,
                     CurrentPos = 0,
                     Position = UDim2.fromOffset(
                         math.max(0, math.floor(j.ViewportSize.X / 2 - t.Size.X.Offset / 2)),
@@ -4312,8 +4281,8 @@ local aa = {
                 s(
                 "Frame",
                 {
-                    Size = UDim2.new(0, t.TabWidth, 1, -52),
-                    Position = UDim2.new(0, 8, 0, 44),
+                    Size = UDim2.new(0, sidebarWidth, 1, -(topbarHeight + 10)),
+                    Position = UDim2.new(0, 8, 0, topbarHeight + 4),
                     BackgroundTransparency = 1,
                     ClipsDescendants = true
                 },
@@ -4327,22 +4296,25 @@ local aa = {
                     Text = "Tab",
                     TextTransparency = 0,
                     FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
-                    TextSize = 16,
+                    TextSize = 15,
                     TextXAlignment = "Left",
                     TextYAlignment = "Center",
-                    Size = UDim2.new(1, -t.TabWidth - 24, 0, 22),
-                    Position = UDim2.fromOffset(t.TabWidth + 16, 44),
+                    Size = UDim2.new(1, -sidebarWidth - 24, 0, 20),
+                    Position = UDim2.fromOffset(sidebarWidth + 16, topbarHeight + 4),
                     BackgroundTransparency = 1,
                     ThemeTag = {TextColor3 = "Text"}
                 }
             )
-            v.TabWidth = t.TabWidth
+            v.TabWidth = sidebarWidth
+            v.SidebarWidth = sidebarWidth
+            v.TopbarHeight = topbarHeight
+            v.MinWindowSize = minSize
             v.ContainerHolder =
                 s(
                 "Frame",
                 {
-                    Size = UDim2.new(1, -t.TabWidth - 24, 1, -74),
-                    Position = UDim2.fromOffset(t.TabWidth + 16, 68),
+                    Size = UDim2.new(1, -sidebarWidth - 24, 1, -(topbarHeight + 30)),
+                    Position = UDim2.fromOffset(sidebarWidth + 16, topbarHeight + 26),
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
                     ClipsDescendants = true,
@@ -4437,7 +4409,6 @@ local aa = {
             if e(k).UseAcrylic then
                 v.AcrylicPaint.AddParent(v.Root)
             end
-            local H = l.GroupMotor.new {X = v.Position.X.Offset, Y = v.Position.Y.Offset}
             v.SelectorPosMotor = l.SingleMotor.new(17)
             v.SelectorSizeMotor = l.SingleMotor.new(16)
             v.ContainerBackMotor = l.SingleMotor.new(0)
@@ -4453,14 +4424,6 @@ local aa = {
 
             v._isInteracting = false
             getgenv()._FluentWindowInteracting = false
-
-            H:onStep(
-                function(I)
-                    if not _isDragging then
-                        v.Root.Position = UDim2.new(0, I.X, 0, I.Y)
-                    end
-                end
-            )
 
             local I, J = 17, tick()
             v.SelectorPosMotor:onStep(
@@ -4553,8 +4516,8 @@ local aa = {
                             local delta = mousePos - _resizeStartMouse
                             local vpX = j.ViewportSize.X
                             local vpY = j.ViewportSize.Y
-                            local minW = (t.MinSize and t.MinSize.X) or 320
-                            local minH = (t.MinSize and t.MinSize.Y) or 200
+                            local minW = (v.MinWindowSize and v.MinWindowSize.X) or (t.MinWindowSize and t.MinWindowSize.X) or (t.MinSize and t.MinSize.X) or 360
+                            local minH = (v.MinWindowSize and v.MinWindowSize.Y) or (t.MinWindowSize and t.MinWindowSize.Y) or (t.MinSize and t.MinSize.Y) or 240
                             local maxW = math.max(vpX - 20, minW)
                             local maxH = math.max(vpY - 20, minH)
                             local newW = math.clamp(_resizeStartSize.X.Offset + delta.X, minW, maxW)
@@ -4572,7 +4535,6 @@ local aa = {
                     if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
                         if _isDragging then
                             _isDragging = false
-                            H:setGoal {X = r(v.Root.Position.X.Offset), Y = r(v.Root.Position.Y.Offset)}
                         end
                         if _isResizing then
                             _isResizing = false
