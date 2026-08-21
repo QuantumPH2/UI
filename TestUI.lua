@@ -390,7 +390,6 @@ local function ConnectButton(btn, callback)
         callback(...)
     end
     if btn:IsA("GuiButton") then
-        btn.Activated:Connect(SafeTrigger)
         btn.MouseButton1Click:Connect(SafeTrigger)
     else
         btn.InputBegan:Connect(function(input)
@@ -466,7 +465,18 @@ local ActiveConfigManager = nil
 
 local function ListenTheme(callback)
     table.insert(ThemeListeners, callback)
-    callback(CurrentTheme)
+    pcall(callback, CurrentTheme)
+end
+
+function W424:SetTheme(themeName)
+    local newTheme = type(themeName) == "table" and themeName or Config.Themes[themeName]
+    if newTheme then
+        CurrentTheme = newTheme
+        for i = #ThemeListeners, 1, -1 do
+            local cb = ThemeListeners[i]
+            pcall(cb, CurrentTheme)
+        end
+    end
 end
 
 local function CloseAllDropdowns()
@@ -1160,14 +1170,12 @@ local function CreateFloatingIcon(customIcon)
 
     table.insert(FloatingConnections, conn1)
     table.insert(FloatingConnections, conn2)
-    table.insert(FloatingConnections, conn1)
-    table.insert(FloatingConnections, conn2)
     table.insert(FloatingConnections, conn3)
 
     ListenTheme(function(theme)
         if Backdrop and Backdrop.Parent then
             Backdrop.BackgroundColor3 = theme.Sidebar
-            if not isCustomImage then
+            if not isCustomImage and Icon and Icon.Parent then
                 Icon.ImageColor3 = theme.Text
             end
         end
@@ -2033,100 +2041,157 @@ function W424:CreateWindow(data)
     end)
 
     ListenTheme(function(theme)
+        if not MainFrame or not MainFrame.Parent then return end
         MainFrame.BackgroundColor3 = theme.Background
-        Shadow.ImageColor3 = theme.Shadow
-        Topbar.BackgroundColor3 = theme.Sidebar
-        TopbarFix.BackgroundColor3 = theme.Sidebar
-        TopAccentBar.BackgroundColor3 = theme.Accent
-        Sidebar.BackgroundColor3 = theme.Sidebar
-        Content.BackgroundColor3 = theme.Background
-        TitleIcon.ImageColor3 = theme.Accent
-        Divider.TextColor3 = theme.SubText
-        SubTitle.TextColor3 = theme.Text
-        DiscordIcon.ImageColor3 = theme.SubText
-        DiscordDivider.TextColor3 = theme.SubText
-        DiscordText.TextColor3 = theme.SubText
-        TabList.ScrollBarImageColor3 = theme.Accent
-        ConfirmOverlay.BackgroundColor3 = theme.Overlay
-        ConfirmBox.BackgroundColor3 = theme.Background
-        ConfirmNo.BackgroundColor3 = theme.Element
-        ConfirmNo.TextColor3 = theme.Text
-        if GripStroke then GripStroke.Color = theme.Border end
+        if Shadow and Shadow.Parent then Shadow.ImageColor3 = theme.Shadow end
+        if Topbar and Topbar.Parent then Topbar.BackgroundColor3 = theme.Sidebar end
+        if TopbarFix and TopbarFix.Parent then TopbarFix.BackgroundColor3 = theme.Sidebar end
+        if TopAccentBar and TopAccentBar.Parent then TopAccentBar.BackgroundColor3 = theme.Accent end
+        if Sidebar and Sidebar.Parent then Sidebar.BackgroundColor3 = theme.Sidebar end
+        if Content and Content.Parent then Content.BackgroundColor3 = theme.Background end
+        if TitleIcon and TitleIcon.Parent then TitleIcon.ImageColor3 = theme.Accent end
+        if Divider and Divider.Parent then Divider.TextColor3 = theme.SubText end
+        if SubTitle and SubTitle.Parent then SubTitle.TextColor3 = theme.Text end
+        if DiscordIcon and DiscordIcon.Parent then DiscordIcon.ImageColor3 = theme.SubText end
+        if DiscordDivider and DiscordDivider.Parent then DiscordDivider.TextColor3 = theme.SubText end
+        if DiscordText and DiscordText.Parent then DiscordText.TextColor3 = theme.SubText end
+        if TabList and TabList.Parent then TabList.ScrollBarImageColor3 = theme.Accent end
+        if ConfirmOverlay and ConfirmOverlay.Parent then ConfirmOverlay.BackgroundColor3 = theme.Overlay end
+        if ConfirmBox and ConfirmBox.Parent then ConfirmBox.BackgroundColor3 = theme.Background end
+        if ConfirmNo and ConfirmNo.Parent then
+            ConfirmNo.BackgroundColor3 = theme.Element
+            ConfirmNo.TextColor3 = theme.Text
+        end
+        if GripPill and GripPill.Parent then GripPill.BackgroundColor3 = Color3.fromRGB(18, 18, 22) end
+        if GripStroke and GripStroke.Parent then GripStroke.Color = theme.Border end
         if ResizeLines then
             for _, line in ipairs(ResizeLines) do
-                line.BackgroundColor3 = theme.SubText
+                if line and line.Parent then
+                    line.BackgroundColor3 = theme.SubText
+                end
             end
         end
-        SearchFrame.BackgroundColor3 = theme.Element
-        SearchIcon.ImageColor3 = theme.SubText
-        SearchBox.TextColor3 = theme.Text
-        SearchBox.PlaceholderColor3 = theme.SubText
-        DropdownPanel.BackgroundColor3 = theme.Background
-        DropdownPanelTitle.TextColor3 = theme.Text
-        DropdownPanelSearch.BackgroundColor3 = theme.Element
-        DropdownPanelSearch.TextColor3 = theme.Text
-        DropdownPanelSearch.PlaceholderColor3 = theme.SubText
-        DropdownPanelScroll.ScrollBarImageColor3 = theme.Accent
+        if SearchFrame and SearchFrame.Parent then SearchFrame.BackgroundColor3 = theme.Element end
+        if SearchIcon and SearchIcon.Parent then SearchIcon.ImageColor3 = theme.SubText end
+        if SearchBox and SearchBox.Parent then
+            SearchBox.TextColor3 = theme.Text
+            SearchBox.PlaceholderColor3 = theme.SubText
+        end
+        if DropdownPanel and DropdownPanel.Parent then DropdownPanel.BackgroundColor3 = theme.Background end
+        if DropdownPanelTitle and DropdownPanelTitle.Parent then DropdownPanelTitle.TextColor3 = theme.Text end
+        if DropdownPanelSearch and DropdownPanelSearch.Parent then
+            DropdownPanelSearch.BackgroundColor3 = theme.Element
+            DropdownPanelSearch.TextColor3 = theme.Text
+            DropdownPanelSearch.PlaceholderColor3 = theme.SubText
+        end
+        if DropdownPanelScroll and DropdownPanelScroll.Parent then DropdownPanelScroll.ScrollBarImageColor3 = theme.Accent end
     end)
 
     local WindowAPI = {}
-    WindowAPI.Notify = function(_, d) W424:Notify(d) end
-    WindowAPI.SetTitle = function(_, text)
+    WindowAPI.Notify = function(selfOrD, maybeD)
+        local d
+        if maybeD ~= nil then d = maybeD else d = selfOrD end
+        W424:Notify(d)
+    end
+    WindowAPI.SetTitle = function(selfOrText, maybeText)
+        local text
+        if maybeText ~= nil then text = maybeText else text = selfOrText end
         windowName = text
-        Title.Text = text
+        if Title and Title.Parent then Title.Text = tostring(text or "") end
     end
-    WindowAPI.SetSubtitle = function(_, text)
+    WindowAPI.SetSubtitle = function(selfOrText, maybeText)
+        local text
+        if maybeText ~= nil then text = maybeText else text = selfOrText end
         windowSubtitle = text
-        SubTitle.Text = text
+        if SubTitle and SubTitle.Parent then SubTitle.Text = tostring(text or "") end
     end
-    WindowAPI.SetVersion = function(_, ver)
+    WindowAPI.SetVersion = function(selfOrVer, maybeVer)
+        local ver
+        if maybeVer ~= nil then ver = maybeVer else ver = selfOrVer end
         customVersion = ver
-        Version.Text = "v" .. ver
+        if Version and Version.Parent then Version.Text = "v" .. tostring(ver or "") end
     end
-    WindowAPI.SetIcon = function(_, icon)
+    WindowAPI.SetIcon = function(selfOrIcon, maybeIcon)
+        local icon
+        if maybeIcon ~= nil then icon = maybeIcon else icon = selfOrIcon end
         windowIcon = icon
-        TitleIcon.Image = GetIcon(icon)
+        if TitleIcon and TitleIcon.Parent then TitleIcon.Image = GetIcon(icon) end
     end
-    WindowAPI.SetDiscord = function(_, link)
+    WindowAPI.SetDiscord = function(selfOrLink, maybeLink)
+        local link
+        if maybeLink ~= nil then link = maybeLink else link = selfOrLink end
         discordLink = link
-        DiscordText.Text = link
+        if DiscordText and DiscordText.Parent then DiscordText.Text = tostring(link or "") end
+    end
+    WindowAPI.SetTheme = function(selfOrTheme, maybeTheme)
+        local themeName
+        if maybeTheme ~= nil then themeName = maybeTheme else themeName = selfOrTheme end
+        W424:SetTheme(themeName)
     end
     ActiveConfigManager = ConfigManager.new(windowName)
     WindowAPI.Config = ActiveConfigManager
     ActiveConfigManager:Load()
     ActiveConfigManager:StartAutoSave()
 
-    WindowAPI.EnableAutoSave = function(_, interval)
+    WindowAPI.EnableAutoSave = function(selfOrInterval, maybeInterval)
+        local interval
+        if maybeInterval ~= nil then interval = maybeInterval else interval = selfOrInterval end
         WindowAPI.Config:EnableAutoSave(interval)
     end
-    WindowAPI.DisableAutoSave = function(_)
+    WindowAPI.DisableAutoSave = function()
         WindowAPI.Config:DisableAutoSave()
     end
-    WindowAPI.SaveConfig = function(_)
+    WindowAPI.SaveConfig = function()
         WindowAPI.Config:SaveNow()
     end
-    WindowAPI.LoadConfig = function(_)
+    WindowAPI.LoadConfig = function()
         WindowAPI.Config:Load()
     end
-    WindowAPI.SetConfigValue = function(_, key, value)
+    WindowAPI.SetConfigValue = function(selfOrKey, maybeKey, maybeValue)
+        local key, value
+        if maybeValue ~= nil then
+            key = maybeKey
+            value = maybeValue
+        else
+            key = selfOrKey
+            value = maybeKey
+        end
         WindowAPI.Config:Set(key, value)
     end
-    WindowAPI.GetConfigValue = function(_, key, defaultValue)
+    WindowAPI.GetConfigValue = function(selfOrKey, maybeKey, maybeDefault)
+        local key, defaultValue
+        if maybeDefault ~= nil or (maybeKey ~= nil and type(selfOrKey) == "table") then
+            key = maybeKey
+            defaultValue = maybeDefault
+        else
+            key = selfOrKey
+            defaultValue = maybeKey
+        end
         return WindowAPI.Config:Get(key, defaultValue)
     end
-    WindowAPI.BindConfigElement = function(_, key, elementType, getValueFunc, setValueFunc)
-        WindowAPI.Config:BindElement(key, elementType, getValueFunc, setValueFunc)
+    WindowAPI.BindConfigElement = function(selfOrKey, maybeKey, maybeType, maybeGet, maybeSet)
+        if type(selfOrKey) == "table" and selfOrKey == WindowAPI then
+            WindowAPI.Config:BindElement(maybeKey, maybeType, maybeGet, maybeSet)
+        else
+            WindowAPI.Config:BindElement(selfOrKey, maybeKey, maybeType, maybeGet)
+        end
     end
-    WindowAPI.SaveNamedConfig = function(_, name)
+    WindowAPI.SaveNamedConfig = function(selfOrName, maybeName)
+        local name
+        if maybeName ~= nil then name = maybeName else name = selfOrName end
         return WindowAPI.Config:SaveNamedConfig(name)
     end
-    WindowAPI.LoadNamedConfig = function(_, name)
+    WindowAPI.LoadNamedConfig = function(selfOrName, maybeName)
+        local name
+        if maybeName ~= nil then name = maybeName else name = selfOrName end
         return WindowAPI.Config:LoadNamedConfig(name)
     end
-    WindowAPI.DeleteNamedConfig = function(_, name)
+    WindowAPI.DeleteNamedConfig = function(selfOrName, maybeName)
+        local name
+        if maybeName ~= nil then name = maybeName else name = selfOrName end
         return WindowAPI.Config:DeleteNamedConfig(name)
     end
-    WindowAPI.GetConfigNames = function(_)
+    WindowAPI.GetConfigNames = function()
         return WindowAPI.Config:GetAllConfigNames()
     end
 
@@ -2255,14 +2320,15 @@ function W424:CreateWindow(data)
         if #Tabs == 1 then Activate(true) end
 
         ListenTheme(function(theme)
+            if not TabBtn or not TabBtn.Parent then return end
             if ActiveTab and ActiveTab.Button == TabBtn then
-                TabBtnIcon.ImageColor3 = theme.Accent
-                TabBtnText.TextColor3 = theme.Text
+                if TabBtnIcon and TabBtnIcon.Parent then TabBtnIcon.ImageColor3 = theme.Accent end
+                if TabBtnText and TabBtnText.Parent then TabBtnText.TextColor3 = theme.Text end
             else
-                TabBtnIcon.ImageColor3 = theme.SubText
-                TabBtnText.TextColor3 = theme.SubText
+                if TabBtnIcon and TabBtnIcon.Parent then TabBtnIcon.ImageColor3 = theme.SubText end
+                if TabBtnText and TabBtnText.Parent then TabBtnText.TextColor3 = theme.SubText end
             end
-            TabContent.ScrollBarImageColor3 = theme.Accent
+            if TabContent and TabContent.Parent then TabContent.ScrollBarImageColor3 = theme.Accent end
         end)
 
         local TabAPI = {}
@@ -2643,13 +2709,20 @@ function W424:CreateWindow(data)
                 })
 
                 local API = {
-                    Set = function(val)
-                        state = val
+                    Set = function(selfOrVal, maybeVal)
+                        local val
+                        if maybeVal ~= nil then val = maybeVal else val = selfOrVal end
+                        state = not not val
                         UpdateToggleVisual(true)
+                        if ActiveConfigManager then
+                            ActiveConfigManager:Set(configKey, state)
+                        end
                         callback(state)
                     end,
                     Get = function() return state end
                 }
+                API.SetValue = API.Set
+                API.GetValue = API.Get
                 return API
             end
 
@@ -2812,9 +2885,12 @@ function W424:CreateWindow(data)
                 end)
 
                 local API = {
-                    Set = function(val)
+                    Set = function(selfOrVal, maybeVal)
+                        local val
+                        if maybeVal ~= nil then val = maybeVal else val = selfOrVal end
+                        val = tonumber(val) or default
                         val = math.clamp(val, min, max)
-                        val = math.floor(val / increment + 0.5) * increment
+                        val = math.floor((val - min) / increment + 0.5) * increment + min
                         Fill.Size = UDim2.new((val - min) / (max - min), 0, 1, 0)
                         Knob.Position = UDim2.new((val - min) / (max - min), -6, 0.5, -6)
                         ValueLabel.Text = tostring(val)
@@ -2825,6 +2901,8 @@ function W424:CreateWindow(data)
                     end,
                     Get = function() return tonumber(ValueLabel.Text) or default end
                 }
+                API.SetValue = API.Set
+                API.GetValue = API.Get
 
                 if ActiveConfigManager then
                     ActiveConfigManager:BindElement(configKey, "Slider", function()
@@ -2838,6 +2916,14 @@ function W424:CreateWindow(data)
                         end
                     end)
                 end
+
+                table.insert(RegisteredFeatures, {
+                    Name = sliderName,
+                    Desc = desc,
+                    Frame = SliderFrame,
+                    Section = SectionFrame,
+                    SectionItems = SectionItems
+                })
 
                 return API
             end
@@ -3317,7 +3403,9 @@ function W424:CreateWindow(data)
                 local configKey = sectionName .. "/" .. flag
 
                 local DropdownAPI = {}
-                function DropdownAPI:Set(val)
+                function DropdownAPI.Set(selfOrVal, maybeVal)
+                    local val
+                    if maybeVal ~= nil then val = maybeVal else val = selfOrVal end
                     selected = val
                     UpdateButtonText()
                     if ActiveConfigManager then
@@ -3325,7 +3413,15 @@ function W424:CreateWindow(data)
                     end
                     callback(val)
                 end
-                function DropdownAPI:Refresh(newOptions, newDefault)
+                function DropdownAPI.Refresh(selfOrOptions, maybeOptions, maybeDefault)
+                    local newOptions, newDefault
+                    if type(selfOrOptions) == "table" and selfOrOptions ~= DropdownAPI then
+                        newOptions = selfOrOptions
+                        newDefault = maybeOptions
+                    else
+                        newOptions = maybeOptions
+                        newDefault = maybeDefault
+                    end
                     options = newOptions or {}
                     if newDefault ~= nil then
                         selected = newDefault
@@ -3337,9 +3433,11 @@ function W424:CreateWindow(data)
                         BuildOptions(DropdownPanelSearch.Text)
                     end
                 end
-                function DropdownAPI:Get()
+                function DropdownAPI.Get()
                     return selected
                 end
+                DropdownAPI.SetValue = DropdownAPI.Set
+                DropdownAPI.GetValue = DropdownAPI.Get
 
                 if ActiveConfigManager then
                     ActiveConfigManager:BindElement(configKey, "Dropdown", function()
@@ -3660,7 +3758,9 @@ function W424:CreateWindow(data)
                 local configKey = sectionName .. "/" .. flag
 
                 local MultiDropdownAPI = {}
-                function MultiDropdownAPI:Set(val)
+                function MultiDropdownAPI.Set(selfOrVal, maybeVal)
+                    local val
+                    if maybeVal ~= nil then val = maybeVal else val = selfOrVal end
                     selected = type(val) == "table" and val or {val}
                     UpdateButtonText()
                     if ActiveConfigManager then
@@ -3668,7 +3768,15 @@ function W424:CreateWindow(data)
                     end
                     callback(selected)
                 end
-                function MultiDropdownAPI:Refresh(newOptions, newDefault)
+                function MultiDropdownAPI.Refresh(selfOrOptions, maybeOptions, maybeDefault)
+                    local newOptions, newDefault
+                    if type(selfOrOptions) == "table" and selfOrOptions ~= MultiDropdownAPI then
+                        newOptions = selfOrOptions
+                        newDefault = maybeOptions
+                    else
+                        newOptions = maybeOptions
+                        newDefault = maybeDefault
+                    end
                     options = newOptions or {}
                     if newDefault ~= nil then
                         selected = type(newDefault) == "table" and newDefault or {newDefault}
@@ -3678,9 +3786,11 @@ function W424:CreateWindow(data)
                         BuildOptions(DropdownPanelSearch.Text)
                     end
                 end
-                function MultiDropdownAPI:Get()
+                function MultiDropdownAPI.Get()
                     return selected
                 end
+                MultiDropdownAPI.SetValue = MultiDropdownAPI.Set
+                MultiDropdownAPI.GetValue = MultiDropdownAPI.Get
 
                 if ActiveConfigManager then
                     ActiveConfigManager:BindElement(configKey, "MultiDropdown", function()
@@ -3816,7 +3926,9 @@ function W424:CreateWindow(data)
                 })
 
                 local API = {
-                    Set = function(text)
+                    Set = function(selfOrText, maybeText)
+                        local text
+                        if maybeText ~= nil then text = maybeText else text = selfOrText end
                         InputBox.Text = tostring(text or "")
                         if ActiveConfigManager then
                             ActiveConfigManager:Set(configKey, InputBox.Text)
@@ -3824,6 +3936,10 @@ function W424:CreateWindow(data)
                     end,
                     Get = function() return InputBox.Text end
                 }
+                API.SetValue = API.Set
+                API.SetText = API.Set
+                API.GetValue = API.Get
+                API.GetText = API.Get
 
                 if ActiveConfigManager then
                     ActiveConfigManager:BindElement(configKey, "Input", function()
@@ -3943,29 +4059,36 @@ function W424:CreateWindow(data)
                 end)
 
                 ListenTheme(function(theme)
+                    if not BindFrame or not BindFrame.Parent then return end
                     BindFrame.BackgroundColor3 = theme.Background
-                    BindBtn.BackgroundColor3 = theme.Element
-                    BindBtn.TextColor3 = theme.Text
+                    if BindBtn and BindBtn.Parent then
+                        BindBtn.BackgroundColor3 = theme.Element
+                        BindBtn.TextColor3 = theme.Text
+                    end
                 end)
 
                 table.insert(RegisteredFeatures, {
-                    Name = keybindName,
+                    Name = bindName,
                     Desc = desc,
-                    Frame = KeybindFrame,
+                    Frame = BindFrame,
                     Section = SectionFrame,
                     SectionItems = SectionItems
                 })
 
                 local API = {
-                    Set = function(key)
+                    Set = function(selfOrKey, maybeKey)
+                        local key
+                        if maybeKey ~= nil then key = maybeKey else key = selfOrKey end
                         default = key
-                        BindBtn.Text = key and key.Name or "None"
-                        if ActiveConfigManager and default then
+                        BindBtn.Text = (key and key.Name) and key.Name or "None"
+                        if ActiveConfigManager and default and default.Name then
                             ActiveConfigManager:Set(configKey, default.Name)
                         end
                     end,
                     Get = function() return default end
                 }
+                API.SetValue = API.Set
+                API.GetValue = API.Get
 
                 if ActiveConfigManager then
                     ActiveConfigManager:BindElement(configKey, "Keybind", function()
@@ -4025,11 +4148,34 @@ function W424:CreateWindow(data)
                 })
 
                 ListenTheme(function(theme)
+                    if not LabelFrame or not LabelFrame.Parent then return end
                     LabelFrame.BackgroundColor3 = theme.Background
-                    Label.TextColor3 = theme.Text
+                    if Label and Label.Parent then
+                        Label.TextColor3 = theme.Text
+                    end
                 end)
 
-                return {Set = function(text) Label.Text = text end, Get = function() return Label.Text end}
+                table.insert(RegisteredFeatures, {
+                    Name = labelText,
+                    Desc = nil,
+                    Frame = LabelFrame,
+                    Section = SectionFrame,
+                    SectionItems = SectionItems
+                })
+
+                local API = {
+                    Set = function(selfOrText, maybeText)
+                        local text
+                        if maybeText ~= nil then text = maybeText else text = selfOrText end
+                        Label.Text = tostring(text or "")
+                    end,
+                    Get = function() return Label.Text end
+                }
+                API.SetText = API.Set
+                API.SetValue = API.Set
+                API.GetText = API.Get
+                API.GetValue = API.Get
+                return API
             end
 
             function SectionAPI:CreateParagraph(paraData)
@@ -4106,9 +4252,7 @@ function W424:CreateWindow(data)
                         local newHeight = 28 + bounds.Y + 10
                         ParaFrame.Size = UDim2.new(1, 0, 0, newHeight)
                     end
-                    if self._UpdateSize then
-                        self._UpdateSize()
-                    end
+                    UpdateSize(false)
                 end
 
                 task.defer(RefreshSize)
@@ -4119,7 +4263,6 @@ function W424:CreateWindow(data)
                     end
                 end)
 
-                
                 task.spawn(function()
                     for i = 1, 5 do
                         task.wait(0.1)
@@ -4129,25 +4272,41 @@ function W424:CreateWindow(data)
                 end)
 
                 ListenTheme(function(theme)
+                    if not ParaFrame or not ParaFrame.Parent then return end
                     ParaFrame.BackgroundColor3 = theme.Background
-                    TitleLabel.TextColor3 = theme.Text
-                    ContentLabel.TextColor3 = theme.SubText
+                    if TitleLabel and TitleLabel.Parent then TitleLabel.TextColor3 = theme.Text end
+                    if ContentLabel and ContentLabel.Parent then ContentLabel.TextColor3 = theme.SubText end
                 end)
 
                 table.insert(RegisteredFeatures, {
-                    Name = paraTitle,
-                    Desc = paraContent,
+                    Name = title,
+                    Desc = content,
                     Frame = ParaFrame,
                     Section = SectionFrame,
                     SectionItems = SectionItems
                 })
 
                 local API = {
-                    SetTitle = function(t) TitleLabel.Text = t end,
-                    SetContent = function(c) ContentLabel.Text = c end,
-                    SetDesc = function(c) ContentLabel.Text = c end,
+                    SetTitle = function(selfOrT, maybeT)
+                        local t
+                        if maybeT ~= nil then t = maybeT else t = selfOrT end
+                        TitleLabel.Text = tostring(t or "")
+                    end,
+                    SetContent = function(selfOrC, maybeC)
+                        local c
+                        if maybeC ~= nil then c = maybeC else c = selfOrC end
+                        ContentLabel.Text = tostring(c or "")
+                    end,
+                    SetDesc = function(selfOrC, maybeC)
+                        local c
+                        if maybeC ~= nil then c = maybeC else c = selfOrC end
+                        ContentLabel.Text = tostring(c or "")
+                    end,
                     GetContent = function() return ContentLabel.Text end,
+                    GetTitle = function() return TitleLabel.Text end,
                 }
+                API.Set = API.SetContent
+                API.Get = API.GetContent
                 return API
             end
 
@@ -4450,6 +4609,7 @@ function W424:CreateWindow(data)
                 ConnectButton(CancelBtn, CloseColorPickerModal)
 
                 ListenTheme(function(theme)
+                    if not PickerFrame or not PickerFrame.Parent then return end
                     PickerFrame.BackgroundColor3 = theme.Background
                     ColorModal.BackgroundColor3 = theme.Background
                     ModalTitle.TextColor3 = theme.Text
@@ -4472,7 +4632,12 @@ function W424:CreateWindow(data)
                 })
 
                 local API = {
-                    Set = function(c)
+                    Set = function(selfOrC, maybeC)
+                        local c
+                        if maybeC ~= nil then c = maybeC else c = selfOrC end
+                        if type(c) == "table" and c.R and c.G and c.B and not c.ClassName then
+                            c = Color3.new(c.R, c.G, c.B)
+                        end
                         selectedColor = c
                         ColorPreview.BackgroundColor3 = c
                         if ActiveConfigManager then
@@ -4482,6 +4647,10 @@ function W424:CreateWindow(data)
                     end,
                     Get = function() return selectedColor end
                 }
+                API.SetValue = API.Set
+                API.SetColor = API.Set
+                API.GetValue = API.Get
+                API.GetColor = API.Get
 
                 if ActiveConfigManager then
                     ActiveConfigManager:BindElement(configKey, "ColorPicker", function()
@@ -4511,6 +4680,7 @@ function W424:CreateWindow(data)
                 })
 
                 ListenTheme(function(theme)
+                    if not Divider or not Divider.Parent then return end
                     Divider.BackgroundColor3 = theme.Border
                 end)
 
@@ -4592,16 +4762,19 @@ function W424:CreateWindow(data)
                 })
 
                 ListenTheme(function(theme)
+                    if not StatusFrame or not StatusFrame.Parent then return end
                     StatusFrame.BackgroundColor3 = theme.Background
                     StatusLabel.TextColor3 = theme.Text
                 end)
 
                 local StatusAPI = {}
-                function StatusAPI:Set(data)
+                function StatusAPI.Set(selfOrData, maybeData)
+                    local data
+                    if maybeData ~= nil then data = maybeData else data = selfOrData end
                     if type(data) == "string" then
                         StatusLabel.Text = data
                     elseif type(data) == "table" then
-                        if data.Text then StatusLabel.Text = data.Text end
+                        if data.Text then StatusLabel.Text = tostring(data.Text) end
                         if data.Color then
                             Dot.BackgroundColor3 = data.Color
                             IconImg.ImageColor3 = data.Color
@@ -4609,10 +4782,24 @@ function W424:CreateWindow(data)
                         if data.Icon then IconImg.Image = GetIcon(data.Icon) end
                     end
                 end
-                function StatusAPI:SetText(t) StatusLabel.Text = t end
-                function StatusAPI:SetColor(c) Dot.BackgroundColor3 = c; IconImg.ImageColor3 = c end
-                function StatusAPI:SetIcon(i) IconImg.Image = GetIcon(i) end
-                function StatusAPI:Get() return StatusLabel.Text end
+                function StatusAPI.SetText(selfOrT, maybeT)
+                    local t
+                    if maybeT ~= nil then t = maybeT else t = selfOrT end
+                    StatusLabel.Text = tostring(t or "")
+                end
+                function StatusAPI.SetColor(selfOrC, maybeC)
+                    local c
+                    if maybeC ~= nil then c = maybeC else c = selfOrC end
+                    Dot.BackgroundColor3 = c
+                    IconImg.ImageColor3 = c
+                end
+                function StatusAPI.SetIcon(selfOrI, maybeI)
+                    local i
+                    if maybeI ~= nil then i = maybeI else i = selfOrI end
+                    IconImg.Image = GetIcon(i)
+                end
+                function StatusAPI.Get() return StatusLabel.Text end
+                function StatusAPI.GetText() return StatusLabel.Text end
                 return StatusAPI
             end
 
@@ -4717,7 +4904,7 @@ function W424:CreateWindow(data)
                             Visible = qCompleted
                         })
 
-                        Create("ImageLabel", {
+                        local qIconImg = Create("ImageLabel", {
                             Parent = qFrame,
                             Size = UDim2.new(0, 16, 0, 16),
                             Position = UDim2.new(0, 28, 0.5, -8),
@@ -4752,7 +4939,9 @@ function W424:CreateWindow(data)
                             qCompleted = not qCompleted
                             checkMark.Visible = qCompleted
                             qLabel.TextColor3 = qCompleted and CurrentTheme.Success or CurrentTheme.Text
-                            qFrame:FindFirstChildOfClass("ImageLabel").ImageColor3 = qCompleted and CurrentTheme.Success or CurrentTheme.SubText
+                            if qIconImg and qIconImg.Parent then
+                                qIconImg.ImageColor3 = qCompleted and CurrentTheme.Success or CurrentTheme.SubText
+                            end
                             callback(qName, qCompleted)
                         end)
 
@@ -4763,6 +4952,9 @@ function W424:CreateWindow(data)
                                 qCompleted = state
                                 checkMark.Visible = qCompleted
                                 qLabel.TextColor3 = qCompleted and CurrentTheme.Success or CurrentTheme.Text
+                                if qIconImg and qIconImg.Parent then
+                                    qIconImg.ImageColor3 = qCompleted and CurrentTheme.Success or CurrentTheme.SubText
+                                end
                             end,
                             IsCompleted = function() return qCompleted end
                         })
@@ -4771,26 +4963,31 @@ function W424:CreateWindow(data)
 
                     QuestFrame.Size = UDim2.new(1, 0, 0, 36 + questHeight)
                     QuestList.Size = UDim2.new(1, 0, 0, questHeight)
-                    if self._UpdateSize then self._UpdateSize() end
+                    UpdateSize(false)
                 end
 
                 BuildQuests()
 
                 ListenTheme(function(theme)
+                    if not QuestFrame or not QuestFrame.Parent then return end
                     QuestFrame.BackgroundColor3 = theme.Background
                     for _, item in ipairs(questItems) do
-                        if item.Frame then
+                        if item.Frame and item.Frame.Parent then
                             item.Frame.BackgroundColor3 = theme.Element
                         end
                     end
                 end)
 
                 local QuestAPI = {}
-                function QuestAPI:SetQuests(newQuests)
+                function QuestAPI.SetQuests(selfOrQ, maybeQ)
+                    local newQuests
+                    if maybeQ ~= nil then newQuests = maybeQ else newQuests = selfOrQ end
                     quests = newQuests or {}
                     BuildQuests()
                 end
-                function QuestAPI:Complete(name)
+                function QuestAPI.Complete(selfOrName, maybeName)
+                    local name
+                    if maybeName ~= nil then name = maybeName else name = selfOrName end
                     for _, item in ipairs(questItems) do
                         if item.Name == name then
                             item.SetCompleted(true)
@@ -4798,7 +4995,9 @@ function W424:CreateWindow(data)
                         end
                     end
                 end
-                function QuestAPI:Uncomplete(name)
+                function QuestAPI.Uncomplete(selfOrName, maybeName)
+                    local name
+                    if maybeName ~= nil then name = maybeName else name = selfOrName end
                     for _, item in ipairs(questItems) do
                         if item.Name == name then
                             item.SetCompleted(false)
@@ -4806,7 +5005,9 @@ function W424:CreateWindow(data)
                         end
                     end
                 end
-                function QuestAPI:IsComplete(name)
+                function QuestAPI.IsComplete(selfOrName, maybeName)
+                    local name
+                    if maybeName ~= nil then name = maybeName else name = selfOrName end
                     for _, item in ipairs(questItems) do
                         if item.Name == name then
                             return item.IsCompleted()
@@ -4814,7 +5015,7 @@ function W424:CreateWindow(data)
                     end
                     return false
                 end
-                function QuestAPI:GetCompleted()
+                function QuestAPI.GetCompleted()
                     local completed = {}
                     for _, item in ipairs(questItems) do
                         if item.IsCompleted() then
@@ -4823,7 +5024,7 @@ function W424:CreateWindow(data)
                     end
                     return completed
                 end
-                function QuestAPI:Reset()
+                function QuestAPI.Reset()
                     for _, item in ipairs(questItems) do
                         item.SetCompleted(false)
                     end
@@ -4968,11 +5169,22 @@ function W424:CreateWindow(data)
                 end
             end
         else
+            local frameVisibility = {}
             for _, feat in ipairs(RegisteredFeatures) do
                 if feat.Frame and feat.Frame.Parent then
-                    local match = (feat.Name and feat.Name:lower():find(text, 1, true) ~= nil) or
-                                  (feat.Desc and feat.Desc:lower():find(text, 1, true) ~= nil)
-                    feat.Frame.Visible = match
+                    local match = (feat.Name and tostring(feat.Name):lower():find(text, 1, true) ~= nil) or
+                                  (feat.Desc and tostring(feat.Desc):lower():find(text, 1, true) ~= nil)
+                    if match then
+                        frameVisibility[feat.Frame] = true
+                    elseif frameVisibility[feat.Frame] == nil then
+                        frameVisibility[feat.Frame] = false
+                    end
+                end
+            end
+
+            for frame, isVis in pairs(frameVisibility) do
+                if frame and frame.Parent then
+                    frame.Visible = isVis
                 end
             end
 
@@ -4986,13 +5198,16 @@ function W424:CreateWindow(data)
                         end
                     end
                     sec.Frame.Visible = anyChildVisible
-                    if anyChildVisible and sec.Expand then
-                        sec.Expand()
+                    if anyChildVisible then
+                        if sec.Expand then sec.Expand() end
+                        if sec.UpdateSize then sec.UpdateSize() end
                     end
                 end
             end
         end
     end)
+
+    WindowAPI.Tab = WindowAPI.CreateTab
 
     return WindowAPI
 end
