@@ -461,6 +461,7 @@ local DropdownPanelSearch = nil
 local DropdownPanelScroll = nil
 local ResizeHandle = nil
 local ActiveColorModal = nil
+local ActiveConfigManager = nil
 
 
 local function ListenTheme(callback)
@@ -534,12 +535,84 @@ function ConfigManager.new(windowName)
     local self = setmetatable({}, ConfigManager)
     self.WindowName = windowName or "W424"
     self.Data = {}
+    self.SavedConfigs = {}
     self.Path = self.WindowName .. "_W424Config.json"
     self.AutoSave = false
-    self.AutoSaveInterval = 3
+    self.AutoSaveInterval = 2
     self.Thread = nil
     self.Elements = {}
+    self.SelectedConfig = nil
+    self.InputConfigName = ""
+    self:EnsureFolder()
+    self:LoadIndex()
     return self
+end
+
+function ConfigManager:EnsureFolder()
+    if typeof(makefolder) == "function" and typeof(isfolder) == "function" then
+        pcall(function()
+            if not isfolder("W424_Configs") then
+                makefolder("W424_Configs")
+            end
+        end)
+    end
+end
+
+function ConfigManager:GetConfigFilePath(name)
+    local clean = tostring(name or ""):gsub("[^%w%-_]", "_")
+    if typeof(isfolder) == "function" and isfolder("W424_Configs") then
+        return "W424_Configs/" .. clean .. ".json"
+    end
+    return self.WindowName .. "_" .. clean .. "_W424.json"
+end
+
+function ConfigManager:GetIndexPath()
+    if typeof(isfolder) == "function" and isfolder("W424_Configs") then
+        return "W424_Configs/_index.json"
+    end
+    return self.WindowName .. "_ConfigsIndex.json"
+end
+
+function ConfigManager:SaveIndex()
+    if typeof(writefile) ~= "function" then return end
+    self:EnsureFolder()
+    local names = {}
+    for n, _ in pairs(self.SavedConfigs) do
+        table.insert(names, n)
+    end
+    pcall(function()
+        local content = HttpService:JSONEncode(names)
+        writefile(self:GetIndexPath(), content)
+    end)
+end
+
+function ConfigManager:LoadIndex()
+    if typeof(readfile) ~= "function" then return end
+    local ok, content = pcall(readfile, self:GetIndexPath())
+    if ok and content and content ~= "" then
+        local ok2, names = pcall(function()
+            return HttpService:JSONDecode(content)
+        end)
+        if ok2 and type(names) == "table" then
+            for _, n in ipairs(names) do
+                if type(n) == "string" and n ~= "" then
+                    self.SavedConfigs[n] = true
+                end
+            end
+        end
+    end
+end
+
+function ConfigManager:CollectAllData()
+    for key, elem in pairs(self.Elements) do
+        if elem and elem.Get then
+            local ok, val = pcall(elem.Get)
+            if ok and val ~= nil then
+                self.Data[key] = val
+            end
+        end
+    end
+    return self.Data
 end
 
 function ConfigManager:Load()
@@ -551,6 +624,11 @@ function ConfigManager:Load()
             end)
             if ok2 and type(data) == "table" then
                 self.Data = data
+                for key, elem in pairs(self.Elements) do
+                    if elem and elem.Set and self.Data[key] ~= nil then
+                        pcall(function() elem.Set(self.Data[key]) end)
+                    end
+                end
                 return true
             end
         end
@@ -559,11 +637,13 @@ function ConfigManager:Load()
 end
 
 function ConfigManager:Save()
+    self:CollectAllData()
     if typeof(writefile) == "function" then
         local ok, content = pcall(function()
             return HttpService:JSONEncode(self.Data)
         end)
-        if ok then
+        if ok and content then
+            self:EnsureFolder()
             pcall(writefile, self.Path, content)
         end
     end
@@ -581,7 +661,7 @@ function ConfigManager:StartAutoSave()
 end
 
 function ConfigManager:EnableAutoSave(interval)
-    self.AutoSaveInterval = interval or 3
+    self.AutoSaveInterval = interval or 2
     self:StartAutoSave()
 end
 
@@ -598,7 +678,7 @@ function ConfigManager:SaveNow()
 end
 
 function ConfigManager:SetAutoSaveInterval(interval)
-    self.AutoSaveInterval = interval or 3
+    self.AutoSaveInterval = interval or 2
     if self.AutoSave then
         self:StopAutoSave()
         self:StartAutoSave()
@@ -638,20 +718,31 @@ end
 
 function ConfigManager:SaveNamedConfig(name)
     if typeof(writefile) ~= "function" then return false end
-    local path = self.WindowName .. "_" .. name .. "_W424.json"
+    self:CollectAllData()
+    self:EnsureFolder()
+    local path = self:GetConfigFilePath(name)
     local ok, content = pcall(function()
         return HttpService:JSONEncode(self.Data)
     end)
     if ok and content then
-        return pcall(writefile, path, content)
+        local writeOk = pcall(writefile, path, content)
+        if writeOk then
+            self.SavedConfigs[name] = true
+            self:SaveIndex()
+            return true
+        end
     end
     return false
 end
 
 function ConfigManager:LoadNamedConfig(name)
     if typeof(readfile) ~= "function" then return false end
-    local path = self.WindowName .. "_" .. name .. "_W424.json"
+    local path = self:GetConfigFilePath(name)
     local ok, content = pcall(readfile, path)
+    if not (ok and content and content ~= "") then
+        local legacyPath = self.WindowName .. "_" .. name .. "_W424.json"
+        ok, content = pcall(readfile, legacyPath)
+    end
     if ok and content and content ~= "" then
         local ok2, data = pcall(function()
             return HttpService:JSONDecode(content)
@@ -659,7 +750,7 @@ function ConfigManager:LoadNamedConfig(name)
         if ok2 and type(data) == "table" then
             self.Data = data
             for key, elem in pairs(self.Elements) do
-                if elem.Set and self.Data[key] ~= nil then
+                if elem and elem.Set and self.Data[key] ~= nil then
                     pcall(function() elem.Set(self.Data[key]) end)
                 end
             end
@@ -670,29 +761,56 @@ function ConfigManager:LoadNamedConfig(name)
 end
 
 function ConfigManager:DeleteNamedConfig(name)
+    self.SavedConfigs[name] = nil
+    self:SaveIndex()
     if typeof(delfile) == "function" then
-        local path = self.WindowName .. "_" .. name .. "_W424.json"
-        return pcall(delfile, path)
+        local path = self:GetConfigFilePath(name)
+        pcall(delfile, path)
+        local legacyPath = self.WindowName .. "_" .. name .. "_W424.json"
+        pcall(delfile, legacyPath)
+        return true
     end
     return false
 end
 
 function ConfigManager:GetAllConfigNames()
-    local names = {}
+    self:LoadIndex()
+    local uniqueNames = {}
+    for n, _ in pairs(self.SavedConfigs) do
+        if n and n ~= "" then
+            uniqueNames[n] = true
+        end
+    end
+
     if typeof(listfiles) == "function" then
-        local ok, files = pcall(listfiles)
-        if ok and files then
-            for _, file in ipairs(files) do
-                local prefix = self.WindowName .. "_"
-                local suffix = "_W424.json"
-                if file:sub(1, #prefix) == prefix and file:sub(-#suffix) == suffix then
-                    local name = file:sub(#prefix + 1, -#suffix - 1)
-                    table.insert(names, name)
+        local foldersToCheck = {"W424_Configs", ""}
+        for _, folder in ipairs(foldersToCheck) do
+            local ok, files = pcall(listfiles, folder)
+            if ok and type(files) == "table" then
+                for _, file in ipairs(files) do
+                    local filename = file:match("([^/\\]+)$") or file
+                    if filename:sub(-5) == ".json" and filename ~= "_index.json" and filename ~= "index.json" and not filename:find("_W424Config%.json") and not filename:find("_ConfigsIndex%.json") then
+                        local prefix = self.WindowName .. "_"
+                        local suffix = "_W424.json"
+                        if filename:sub(1, #prefix) == prefix and filename:sub(-#suffix) == suffix then
+                            local name = filename:sub(#prefix + 1, -#suffix - 1)
+                            if name ~= "" then uniqueNames[name] = true end
+                        else
+                            local clean = filename:sub(1, -6)
+                            if clean ~= "" then uniqueNames[clean] = true end
+                        end
+                    end
                 end
             end
         end
     end
-    return names
+
+    local result = {}
+    for n, _ in pairs(uniqueNames) do
+        table.insert(result, n)
+    end
+    table.sort(result)
+    return result
 end
 
 function ConfigManager:BuildConfigSection(tab)
@@ -712,16 +830,23 @@ function ConfigManager:BuildConfigSection(tab)
         end
     })
 
-    local configListDropdown = section:CreateDropdown({
+    local allConfigNames = self:GetAllConfigNames()
+    local defaultVal = (self.SelectedConfig and self.SelectedConfig ~= "") and self.SelectedConfig or "Select Config"
+
+    local configListDropdown
+    configListDropdown = section:CreateDropdown({
         Name = "Config List",
-        Options = self:GetAllConfigNames(),
-        Default = "Select Config",
+        Options = allConfigNames,
+        Default = defaultVal,
         Callback = function(val)
-            self.SelectedConfig = val
+            if val and val ~= "Select Config" and val ~= "" then
+                self.SelectedConfig = val
+            end
         end
     })
     
-    local configInput = section:CreateInput({
+    local configInput
+    configInput = section:CreateInput({
         Name = "Config Name",
         PlaceholderText = "Enter config name...",
         Callback = function(val)
@@ -733,11 +858,19 @@ function ConfigManager:BuildConfigSection(tab)
         {
             Name = "Save",
             Callback = function()
-                local nameToSave = (self.InputConfigName and self.InputConfigName ~= "") and self.InputConfigName or self.SelectedConfig
-                if nameToSave and nameToSave ~= "Select Config" then
-                    self:SaveNamedConfig(nameToSave)
-                    W424:Notify({Title = "Config Saved", Content = "Saved config: " .. nameToSave, Duration = 3, Icon = "Check"})
-                    configListDropdown:Refresh(self:GetAllConfigNames(), nameToSave)
+                local typed = configInput and configInput:Get() or ""
+                local nameToSave = (typed and typed ~= "") and typed or self.InputConfigName or self.SelectedConfig
+                if nameToSave and nameToSave ~= "" and nameToSave ~= "Select Config" then
+                    nameToSave = nameToSave:gsub("^%s*(.-)%s*$", "%1")
+                    local success = self:SaveNamedConfig(nameToSave)
+                    if success then
+                        self.SelectedConfig = nameToSave
+                        local updatedList = self:GetAllConfigNames()
+                        configListDropdown:Refresh(updatedList, nameToSave)
+                        W424:Notify({Title = "Config Saved", Content = "Saved config: " .. nameToSave, Duration = 3, Icon = "Check"})
+                    else
+                        W424:Notify({Title = "Error", Content = "Failed to write config file", Duration = 3, Icon = "AlertTriangle"})
+                    end
                 else
                     W424:Notify({Title = "Error", Content = "Please enter or select a config name", Duration = 3, Icon = "AlertTriangle"})
                 end
@@ -746,24 +879,35 @@ function ConfigManager:BuildConfigSection(tab)
         {
             Name = "Load",
             Callback = function()
-                if self.SelectedConfig and self.SelectedConfig ~= "Select Config" then
-                    local success = self:LoadNamedConfig(self.SelectedConfig)
+                local typed = configInput and configInput:Get() or ""
+                local nameToLoad = (self.SelectedConfig and self.SelectedConfig ~= "Select Config" and self.SelectedConfig ~= "") and self.SelectedConfig or (typed ~= "" and typed)
+                if nameToLoad and nameToLoad ~= "Select Config" and nameToLoad ~= "" then
+                    local success = self:LoadNamedConfig(nameToLoad)
                     if success then
-                        W424:Notify({Title = "Config Loaded", Content = "Loaded config: " .. self.SelectedConfig, Duration = 3, Icon = "Check"})
+                        self.SelectedConfig = nameToLoad
+                        configListDropdown:Refresh(self:GetAllConfigNames(), nameToLoad)
+                        W424:Notify({Title = "Config Loaded", Content = "Loaded config: " .. nameToLoad, Duration = 3, Icon = "Check"})
                     else
-                        W424:Notify({Title = "Error", Content = "Failed to load config", Duration = 3, Icon = "AlertTriangle"})
+                        W424:Notify({Title = "Error", Content = "Failed to load config: " .. nameToLoad, Duration = 3, Icon = "AlertTriangle"})
                     end
+                else
+                    W424:Notify({Title = "Error", Content = "Select a config to load", Duration = 3, Icon = "AlertTriangle"})
                 end
             end
         },
         {
             Name = "Remove",
             Callback = function()
-                if self.SelectedConfig and self.SelectedConfig ~= "Select Config" then
-                    self:DeleteNamedConfig(self.SelectedConfig)
-                    W424:Notify({Title = "Config Removed", Content = "Removed config: " .. self.SelectedConfig, Duration = 3, Icon = "Trash"})
+                if self.SelectedConfig and self.SelectedConfig ~= "Select Config" and self.SelectedConfig ~= "" then
+                    local nameToRemove = self.SelectedConfig
+                    self:DeleteNamedConfig(nameToRemove)
                     self.SelectedConfig = nil
-                    configListDropdown:Refresh(self:GetAllConfigNames(), "Select Config")
+                    if configInput and configInput.Set then configInput:Set("") end
+                    local updatedList = self:GetAllConfigNames()
+                    configListDropdown:Refresh(updatedList, "Select Config")
+                    W424:Notify({Title = "Config Removed", Content = "Removed: " .. nameToRemove, Duration = 3, Icon = "Trash"})
+                else
+                    W424:Notify({Title = "Error", Content = "Select a config to remove", Duration = 3, Icon = "AlertTriangle"})
                 end
             end
         },
@@ -774,9 +918,10 @@ function ConfigManager:BuildConfigSection(tab)
                 for _, name in ipairs(allConfigs) do
                     self:DeleteNamedConfig(name)
                 end
-                W424:Notify({Title = "Configs Cleared", Content = "All configs removed", Duration = 3, Icon = "Trash"})
                 self.SelectedConfig = nil
+                if configInput and configInput.Set then configInput:Set("") end
                 configListDropdown:Refresh({}, "Select Config")
+                W424:Notify({Title = "Configs Cleared", Content = "All configs removed", Duration = 3, Icon = "Trash"})
             end
         }
     })
@@ -1679,29 +1824,112 @@ function W424:CreateWindow(data)
         PaddingBottom = UDim.new(0, 40)
     })
 
-    ResizeHandle = Create("ImageButton", {
+    ResizeHandle = Create("Frame", {
         Name = "ResizeHandle",
         Parent = MainFrame,
-        Size = UDim2.new(0, 22, 0, 22),
-        Position = UDim2.new(1, -20, 1, -20),
+        Size = UDim2.new(0, 24, 0, 24),
+        Position = UDim2.new(1, -22, 1, -22),
         BackgroundTransparency = 1,
-        Image = GetIcon("ChevronLeft"),
-        ImageColor3 = CurrentTheme.SubText,
-        ImageTransparency = 0.4,
+        Active = true,
+        ZIndex = 30
+    })
+
+    local GripPill = Create("Frame", {
+        Name = "GripPill",
+        Parent = ResizeHandle,
+        Size = UDim2.new(0, 18, 0, 18),
+        Position = UDim2.new(0.5, -9, 0.5, -9),
+        BackgroundColor3 = Color3.fromRGB(18, 18, 22),
+        BackgroundTransparency = 0.4,
+        BorderSizePixel = 0,
+        ZIndex = 31
+    })
+    Create("UICorner", {CornerRadius = UDim.new(0, 6), Parent = GripPill})
+    local GripStroke = Create("UIStroke", {
+        Color = CurrentTheme.Border,
+        Thickness = 1,
+        Transparency = 0.5,
+        Parent = GripPill
+    })
+
+    local GripLine1 = Create("Frame", {
+        Parent = GripPill,
+        Size = UDim2.new(0, 9, 0, 2),
+        Position = UDim2.new(1, -12, 1, -5),
+        BackgroundColor3 = CurrentTheme.SubText,
+        BorderSizePixel = 0,
         Rotation = -45,
-        ZIndex = 30,
-        Active = true
+        ZIndex = 32
+    })
+    Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = GripLine1})
+
+    local GripLine2 = Create("Frame", {
+        Parent = GripPill,
+        Size = UDim2.new(0, 6, 0, 2),
+        Position = UDim2.new(1, -8, 1, -5),
+        BackgroundColor3 = CurrentTheme.SubText,
+        BorderSizePixel = 0,
+        Rotation = -45,
+        ZIndex = 32
+    })
+    Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = GripLine2})
+
+    local GripLine3 = Create("Frame", {
+        Parent = GripPill,
+        Size = UDim2.new(0, 3, 0, 2),
+        Position = UDim2.new(1, -4, 1, -5),
+        BackgroundColor3 = CurrentTheme.SubText,
+        BorderSizePixel = 0,
+        Rotation = -45,
+        ZIndex = 32
+    })
+    Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = GripLine3})
+
+    local ResizeLines = {GripLine1, GripLine2, GripLine3}
+
+    local ResizeTrigger = Create("TextButton", {
+        Name = "ResizeTrigger",
+        Parent = ResizeHandle,
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Text = "",
+        AutoButtonColor = false,
+        Active = true,
+        ZIndex = 33
     })
 
     local resizing = false
     local resizeStart = nil
     local startSize = nil
 
-    ResizeHandle.InputBegan:Connect(function(input)
+    ResizeTrigger.MouseEnter:Connect(function()
+        Tween(GripPill, {BackgroundTransparency = 0.1, BackgroundColor3 = Color3.fromRGB(24, 24, 32)}, 0.15)
+        Tween(GripStroke, {Color = CurrentTheme.Accent, Transparency = 0.2}, 0.15)
+        for _, line in ipairs(ResizeLines) do
+            Tween(line, {BackgroundColor3 = CurrentTheme.Accent}, 0.15)
+        end
+    end)
+
+    ResizeTrigger.MouseLeave:Connect(function()
+        if not resizing then
+            Tween(GripPill, {BackgroundTransparency = 0.4, BackgroundColor3 = Color3.fromRGB(18, 18, 22)}, 0.15)
+            Tween(GripStroke, {Color = CurrentTheme.Border, Transparency = 0.5}, 0.15)
+            for _, line in ipairs(ResizeLines) do
+                Tween(line, {BackgroundColor3 = CurrentTheme.SubText}, 0.15)
+            end
+        end
+    end)
+
+    ResizeTrigger.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             resizing = true
             resizeStart = input.Position
             startSize = MainFrame.Size
+            Tween(GripPill, {BackgroundTransparency = 0, BackgroundColor3 = Color3.fromRGB(15, 25, 45)}, 0.1)
+            Tween(GripStroke, {Color = CurrentTheme.Accent, Transparency = 0}, 0.1)
+            for _, line in ipairs(ResizeLines) do
+                Tween(line, {BackgroundColor3 = CurrentTheme.Accent}, 0.1)
+            end
         end
     end)
 
@@ -1716,7 +1944,14 @@ function W424:CreateWindow(data)
 
     UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            resizing = false
+            if resizing then
+                resizing = false
+                Tween(GripPill, {BackgroundTransparency = 0.4, BackgroundColor3 = Color3.fromRGB(18, 18, 22)}, 0.15)
+                Tween(GripStroke, {Color = CurrentTheme.Border, Transparency = 0.5}, 0.15)
+                for _, line in ipairs(ResizeLines) do
+                    Tween(line, {BackgroundColor3 = CurrentTheme.SubText}, 0.15)
+                end
+            end
         end
     end)
 
@@ -1851,9 +2086,10 @@ function W424:CreateWindow(data)
         discordLink = link
         DiscordText.Text = link
     end
-    WindowAPI.Config = ConfigManager.new(windowName)
-    WindowAPI.Config:Load()
-    WindowAPI.Config:StartAutoSave()
+    ActiveConfigManager = ConfigManager.new(windowName)
+    WindowAPI.Config = ActiveConfigManager
+    ActiveConfigManager:Load()
+    ActiveConfigManager:StartAutoSave()
 
     WindowAPI.EnableAutoSave = function(_, interval)
         WindowAPI.Config:EnableAutoSave(interval)
@@ -2110,18 +2346,54 @@ function W424:CreateWindow(data)
                 SortOrder = Enum.SortOrder.LayoutOrder
             })
 
-            local isCollapsed = collapsed
-            local targetHeight = 36
+            local targetHeight = 44
             local sectionDropdowns = {}
+            local currentTween = nil
+            local currentArrowTween = nil
+            local animStepConn = nil
 
-            local function UpdateSize()
+            local function UpdateSize(animate)
                 local itemsHeight = SectionItems.UIListLayout.AbsoluteContentSize.Y
-                targetHeight = 40 + itemsHeight + 6
+                targetHeight = 44 + itemsHeight + 4
+
+                if currentTween then
+                    pcall(function() currentTween:Cancel() end)
+                    currentTween = nil
+                end
+                if currentArrowTween then
+                    pcall(function() currentArrowTween:Cancel() end)
+                    currentArrowTween = nil
+                end
+                if animStepConn then
+                    pcall(function() animStepConn:Disconnect() end)
+                    animStepConn = nil
+                end
+
                 if isCollapsed then
-                    SectionFrame.Size = UDim2.new(1, 0, 0, 44)
-                    SectionItems.Visible = false
-                    SectionItems.Size = UDim2.new(1, -12, 0, 0)
-                    Arrow.Rotation = 0
+                    local targetSize = UDim2.new(1, 0, 0, 44)
+                    if animate then
+                        currentArrowTween = Tween(Arrow, {Rotation = 0}, 0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+                        currentTween = Tween(SectionFrame, {Size = targetSize}, 0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+                        
+                        local startTime = os.clock()
+                        animStepConn = RunService.Heartbeat:Connect(function()
+                            if os.clock() - startTime > 0.28 or not SectionFrame.Parent then
+                                if animStepConn then animStepConn:Disconnect() animStepConn = nil end
+                                if isCollapsed then
+                                    SectionItems.Visible = false
+                                end
+                                TabContent.CanvasSize = UDim2.new(0, 0, 0, TabContent.UIListLayout.AbsoluteContentSize.Y + 16)
+                            else
+                                TabContent.CanvasSize = UDim2.new(0, 0, 0, TabContent.UIListLayout.AbsoluteContentSize.Y + 16)
+                            end
+                        end)
+                    else
+                        Arrow.Rotation = 0
+                        SectionFrame.Size = targetSize
+                        SectionItems.Visible = false
+                        TabContent.CanvasSize = UDim2.new(0, 0, 0, TabContent.UIListLayout.AbsoluteContentSize.Y + 16)
+                    end
+
                     for _, dd in ipairs(sectionDropdowns) do
                         if dd and dd.Menu and dd.Menu.Parent then
                             dd.Menu.Visible = false
@@ -2135,29 +2407,55 @@ function W424:CreateWindow(data)
                         end
                     end
                 else
-                    SectionFrame.Size = UDim2.new(1, 0, 0, targetHeight)
                     SectionItems.Visible = true
-                    SectionItems.Size = UDim2.new(1, -12, 0, itemsHeight + 6)
-                    Arrow.Rotation = 180
+                    local targetSize = UDim2.new(1, 0, 0, targetHeight)
+                    SectionItems.Size = UDim2.new(1, -12, 0, itemsHeight + 4)
+
+                    if animate then
+                        currentArrowTween = Tween(Arrow, {Rotation = 180}, 0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+                        currentTween = Tween(SectionFrame, {Size = targetSize}, 0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+
+                        local startTime = os.clock()
+                        animStepConn = RunService.Heartbeat:Connect(function()
+                            if os.clock() - startTime > 0.28 or not SectionFrame.Parent then
+                                if animStepConn then animStepConn:Disconnect() animStepConn = nil end
+                                TabContent.CanvasSize = UDim2.new(0, 0, 0, TabContent.UIListLayout.AbsoluteContentSize.Y + 16)
+                            else
+                                TabContent.CanvasSize = UDim2.new(0, 0, 0, TabContent.UIListLayout.AbsoluteContentSize.Y + 16)
+                            end
+                        end)
+                    else
+                        Arrow.Rotation = 180
+                        SectionFrame.Size = targetSize
+                        TabContent.CanvasSize = UDim2.new(0, 0, 0, TabContent.UIListLayout.AbsoluteContentSize.Y + 16)
+                    end
                 end
-                TabContent.CanvasSize = UDim2.new(0, 0, 0, TabContent.UIListLayout.AbsoluteContentSize.Y + 16)
             end
 
             SectionItems.UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
                 if not isCollapsed then
-                    UpdateSize()
+                    UpdateSize(false)
                 end
             end)
 
-            SectionHeader.MouseButton1Click:Connect(function()
+            ConnectButton(SectionHeader, function()
                 isCollapsed = not isCollapsed
-                UpdateSize()
+                UpdateSize(true)
+            end)
+
+            SectionHeader.MouseEnter:Connect(function()
+                Tween(SectionHeader, {BackgroundTransparency = 0.88, BackgroundColor3 = CurrentTheme.ElementHover}, 0.15)
+                Tween(Arrow, {ImageColor3 = CurrentTheme.Accent}, 0.15)
+            end)
+            SectionHeader.MouseLeave:Connect(function()
+                Tween(SectionHeader, {BackgroundTransparency = 1}, 0.15)
+                Tween(Arrow, {ImageColor3 = CurrentTheme.SubText}, 0.15)
             end)
 
             if not collapsed then
                 Arrow.Rotation = 180
                 task.wait(0.05)
-                UpdateSize()
+                UpdateSize(false)
             end
 
             table.insert(RegisteredSections, {
@@ -2166,10 +2464,18 @@ function W424:CreateWindow(data)
                 Items = SectionItems,
                 Name = sectionName,
                 Expand = function()
-                    isCollapsed = false
-                    UpdateSize()
+                    if isCollapsed then
+                        isCollapsed = false
+                        UpdateSize(true)
+                    end
                 end,
-                UpdateSize = UpdateSize
+                Collapse = function()
+                    if not isCollapsed then
+                        isCollapsed = true
+                        UpdateSize(true)
+                    end
+                end,
+                UpdateSize = function() UpdateSize(false) end
             })
 
             ListenTheme(function(theme)
@@ -2177,9 +2483,9 @@ function W424:CreateWindow(data)
             end)
 
             SectionItems.ChildAdded:Connect(function()
-                task.wait(0.1)
+                task.wait(0.05)
                 if not isCollapsed then
-                    UpdateSize()
+                    UpdateSize(false)
                 end
             end)
 
@@ -2279,6 +2585,8 @@ function W424:CreateWindow(data)
                 })
 
                 local state = default
+                local flag = toggleData.Flag or toggleData.Name or "Toggle"
+                local configKey = sectionName .. "/" .. flag
 
                 local function UpdateToggleVisual(animate)
                     local targetPos = state and UDim2.new(0, 21, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
@@ -2294,9 +2602,24 @@ function W424:CreateWindow(data)
 
                 UpdateToggleVisual(false)
 
+                if ActiveConfigManager then
+                    ActiveConfigManager:BindElement(configKey, "Toggle", function()
+                        return state
+                    end, function(val)
+                        if val ~= nil and val ~= state then
+                            state = val
+                            UpdateToggleVisual(true)
+                            callback(state)
+                        end
+                    end)
+                end
+
                 ConnectButton(ToggleClick, function()
                     state = not state
                     UpdateToggleVisual(true)
+                    if ActiveConfigManager then
+                        ActiveConfigManager:Set(configKey, state)
+                    end
                     callback(state)
                 end)
 
@@ -2434,6 +2757,9 @@ function W424:CreateWindow(data)
 
                 local draggingSlider = false
 
+                local flag = sliderData.Flag or sliderData.Name or "Slider"
+                local configKey = sectionName .. "/" .. flag
+
                 local function UpdateSlider(input)
                     local pos = math.clamp((input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1)
                     local value = math.clamp(Round(min + (pos * (max - min)), math.log10(1/increment)), min, max)
@@ -2441,6 +2767,9 @@ function W424:CreateWindow(data)
                     Fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
                     Knob.Position = UDim2.new((value - min) / (max - min), -6, 0.5, -6)
                     ValueLabel.Text = tostring(value)
+                    if ActiveConfigManager then
+                        ActiveConfigManager:Set(configKey, value)
+                    end
                     callback(value)
                 end
 
@@ -2484,10 +2813,27 @@ function W424:CreateWindow(data)
                         Fill.Size = UDim2.new((val - min) / (max - min), 0, 1, 0)
                         Knob.Position = UDim2.new((val - min) / (max - min), -6, 0.5, -6)
                         ValueLabel.Text = tostring(val)
+                        if ActiveConfigManager then
+                            ActiveConfigManager:Set(configKey, val)
+                        end
                         callback(val)
                     end,
                     Get = function() return tonumber(ValueLabel.Text) or default end
                 }
+
+                if ActiveConfigManager then
+                    ActiveConfigManager:BindElement(configKey, "Slider", function()
+                        return tonumber(ValueLabel.Text) or default
+                    end, function(val)
+                        if val ~= nil then
+                            local num = tonumber(val)
+                            if num then
+                                API.Set(num)
+                            end
+                        end
+                    end)
+                end
+
                 return API
             end
 
@@ -2894,6 +3240,9 @@ function W424:CreateWindow(data)
                                 selected = opt
                                 UpdateButtonText()
                                 CloseAllDropdowns()
+                                if ActiveConfigManager then
+                                    ActiveConfigManager:Set(configKey, opt)
+                                end
                                 callback(opt)
                             end
 
@@ -2959,10 +3308,16 @@ function W424:CreateWindow(data)
                     UpdateButtonText()
                 end)
 
+                local flag = dropdownData.Flag or dropdownData.Name or "Dropdown"
+                local configKey = sectionName .. "/" .. flag
+
                 local DropdownAPI = {}
                 function DropdownAPI:Set(val)
                     selected = val
                     UpdateButtonText()
+                    if ActiveConfigManager then
+                        ActiveConfigManager:Set(configKey, val)
+                    end
                     callback(val)
                 end
                 function DropdownAPI:Refresh(newOptions, newDefault)
@@ -2980,6 +3335,19 @@ function W424:CreateWindow(data)
                 function DropdownAPI:Get()
                     return selected
                 end
+
+                if ActiveConfigManager then
+                    ActiveConfigManager:BindElement(configKey, "Dropdown", function()
+                        return selected
+                    end, function(val)
+                        if val ~= nil then
+                            selected = val
+                            UpdateButtonText()
+                            callback(val)
+                        end
+                    end)
+                end
+
                 return DropdownAPI
             end
 
@@ -3219,6 +3587,9 @@ function W424:CreateWindow(data)
                                 chkIcon.Visible = isSel
                                 optLabel.TextColor3 = isSel and CurrentTheme.Accent or CurrentTheme.Text
                                 UpdateButtonText()
+                                if ActiveConfigManager then
+                                    ActiveConfigManager:Set(configKey, selected)
+                                end
                                 callback(selected)
                             end
 
@@ -3280,10 +3651,16 @@ function W424:CreateWindow(data)
                     UpdateButtonText()
                 end)
 
+                local flag = dropdownData.Flag or dropdownData.Name or "MultiDropdown"
+                local configKey = sectionName .. "/" .. flag
+
                 local MultiDropdownAPI = {}
                 function MultiDropdownAPI:Set(val)
                     selected = type(val) == "table" and val or {val}
                     UpdateButtonText()
+                    if ActiveConfigManager then
+                        ActiveConfigManager:Set(configKey, selected)
+                    end
                     callback(selected)
                 end
                 function MultiDropdownAPI:Refresh(newOptions, newDefault)
@@ -3299,6 +3676,19 @@ function W424:CreateWindow(data)
                 function MultiDropdownAPI:Get()
                     return selected
                 end
+
+                if ActiveConfigManager then
+                    ActiveConfigManager:BindElement(configKey, "MultiDropdown", function()
+                        return selected
+                    end, function(val)
+                        if val ~= nil then
+                            selected = type(val) == "table" and val or {val}
+                            UpdateButtonText()
+                            callback(selected)
+                        end
+                    end)
+                end
+
                 return MultiDropdownAPI
             end
 
@@ -3388,7 +3778,20 @@ function W424:CreateWindow(data)
                     Parent = InputBox
                 })
 
+                local flag = inputData.Flag or inputData.Name or "Input"
+                local configKey = sectionName .. "/" .. flag
+
+                InputBox:GetPropertyChangedSignal("Text"):Connect(function()
+                    if ActiveConfigManager then
+                        ActiveConfigManager:Set(configKey, InputBox.Text)
+                    end
+                    callback(InputBox.Text, false)
+                end)
+
                 InputBox.FocusLost:Connect(function(enterPressed)
+                    if ActiveConfigManager then
+                        ActiveConfigManager:Set(configKey, InputBox.Text)
+                    end
                     callback(InputBox.Text, enterPressed)
                 end)
 
@@ -3408,9 +3811,26 @@ function W424:CreateWindow(data)
                 })
 
                 local API = {
-                    Set = function(text) InputBox.Text = text end,
+                    Set = function(text)
+                        InputBox.Text = tostring(text or "")
+                        if ActiveConfigManager then
+                            ActiveConfigManager:Set(configKey, InputBox.Text)
+                        end
+                    end,
                     Get = function() return InputBox.Text end
                 }
+
+                if ActiveConfigManager then
+                    ActiveConfigManager:BindElement(configKey, "Input", function()
+                        return InputBox.Text
+                    end, function(val)
+                        if val ~= nil then
+                            InputBox.Text = tostring(val)
+                            callback(InputBox.Text, false)
+                        end
+                    end)
+                end
+
                 return API
             end
 
@@ -3489,6 +3909,9 @@ function W424:CreateWindow(data)
                 })
                 Create("UICorner", {CornerRadius = UDim.new(0, 4), Parent = BindBtn})
 
+                local flag = bindData.Flag or bindData.Name or "Keybind"
+                local configKey = sectionName .. "/" .. flag
+
                 local listening = false
                 ConnectButton(BindBtn, function()
                     listening = true
@@ -3500,6 +3923,9 @@ function W424:CreateWindow(data)
                             BindBtn.Text = input.KeyCode.Name
                             listening = false
                             conn:Disconnect()
+                            if ActiveConfigManager then
+                                ActiveConfigManager:Set(configKey, default.Name)
+                            end
                             callback(input.KeyCode)
                         end
                     end)
@@ -3525,7 +3951,32 @@ function W424:CreateWindow(data)
                     SectionItems = SectionItems
                 })
 
-                return {Set = function(key) default = key; BindBtn.Text = key.Name end, Get = function() return default end}
+                local API = {
+                    Set = function(key)
+                        default = key
+                        BindBtn.Text = key and key.Name or "None"
+                        if ActiveConfigManager and default then
+                            ActiveConfigManager:Set(configKey, default.Name)
+                        end
+                    end,
+                    Get = function() return default end
+                }
+
+                if ActiveConfigManager then
+                    ActiveConfigManager:BindElement(configKey, "Keybind", function()
+                        return default and default.Name or ""
+                    end, function(val)
+                        if val ~= nil and val ~= "" then
+                            local ok, kc = pcall(function() return Enum.KeyCode[val] end)
+                            if ok and kc then
+                                default = kc
+                                BindBtn.Text = default.Name
+                            end
+                        end
+                    end)
+                end
+
+                return API
             end
 
             function SectionAPI:CreateLabel(labelData)
@@ -3975,10 +4426,16 @@ function W424:CreateWindow(data)
 
                 ConnectButton(ColorPreview, OpenColorPicker)
 
+                local flag = pickerData.Flag or pickerData.Name or "ColorPicker"
+                local configKey = sectionName .. "/" .. flag
+
                 local function DoApplyColor()
                     local finalColor = ReadInputs()
                     selectedColor = finalColor
                     ColorPreview.BackgroundColor3 = finalColor
+                    if ActiveConfigManager then
+                        ActiveConfigManager:Set(configKey, {R = finalColor.R, G = finalColor.G, B = finalColor.B})
+                    end
                     callback(finalColor)
                     CloseColorPickerModal()
                 end
@@ -4009,14 +4466,32 @@ function W424:CreateWindow(data)
                     SectionItems = SectionItems
                 })
 
-                return {
+                local API = {
                     Set = function(c)
                         selectedColor = c
                         ColorPreview.BackgroundColor3 = c
+                        if ActiveConfigManager then
+                            ActiveConfigManager:Set(configKey, {R = c.R, G = c.G, B = c.B})
+                        end
                         callback(c)
                     end,
                     Get = function() return selectedColor end
                 }
+
+                if ActiveConfigManager then
+                    ActiveConfigManager:BindElement(configKey, "ColorPicker", function()
+                        return {R = selectedColor.R, G = selectedColor.G, B = selectedColor.B}
+                    end, function(val)
+                        if type(val) == "table" and val.R and val.G and val.B then
+                            local col = Color3.new(val.R, val.G, val.B)
+                            selectedColor = col
+                            ColorPreview.BackgroundColor3 = col
+                            callback(col)
+                        end
+                    end)
+                end
+
+                return API
             end
 
             function SectionAPI:CreateDivider()
