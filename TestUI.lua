@@ -544,16 +544,20 @@ ConfigManager.__index = ConfigManager
 function ConfigManager.new(windowName)
     local self = setmetatable({}, ConfigManager)
     self.WindowName = windowName or "W424"
+    self.CleanWindow = tostring(self.WindowName):gsub("[^%w%-_]", "_")
+    if self.CleanWindow == "" then self.CleanWindow = "W424" end
+
     self.Data = {}
     self.SavedConfigs = {}
-    self.Path = self.WindowName .. "_W424Config.json"
     self.AutoSave = false
     self.AutoSaveInterval = 2
     self.Thread = nil
     self.Elements = {}
     self.SelectedConfig = nil
     self.InputConfigName = ""
+
     self:EnsureFolder()
+    self.Path = self:GetAutoSavePath()
     self:LoadIndex()
     return self
 end
@@ -564,23 +568,56 @@ function ConfigManager:EnsureFolder()
             if not isfolder("W424_Configs") then
                 makefolder("W424_Configs")
             end
+            local sub = "W424_Configs/" .. self.CleanWindow
+            if not isfolder(sub) then
+                makefolder(sub)
+            end
         end)
     end
 end
 
+function ConfigManager:GetFolder()
+    if typeof(isfolder) == "function" then
+        local sub = "W424_Configs/" .. self.CleanWindow
+        if isfolder(sub) then
+            return sub
+        elseif isfolder("W424_Configs") then
+            return "W424_Configs"
+        end
+    end
+    return nil
+end
+
+function ConfigManager:GetAutoSavePath()
+    local folder = self:GetFolder()
+    if folder == "W424_Configs/" .. self.CleanWindow then
+        return folder .. "/_default.json"
+    elseif folder == "W424_Configs" then
+        return "W424_Configs/" .. self.CleanWindow .. "_default.json"
+    end
+    return "W424_" .. self.CleanWindow .. "_default.json"
+end
+
 function ConfigManager:GetConfigFilePath(name)
     local clean = tostring(name or ""):gsub("[^%w%-_]", "_")
-    if typeof(isfolder) == "function" and isfolder("W424_Configs") then
-        return "W424_Configs/" .. clean .. ".json"
+    if clean == "" then return nil end
+    local folder = self:GetFolder()
+    if folder == "W424_Configs/" .. self.CleanWindow then
+        return folder .. "/" .. clean .. ".json"
+    elseif folder == "W424_Configs" then
+        return "W424_Configs/" .. self.CleanWindow .. "_" .. clean .. ".json"
     end
-    return self.WindowName .. "_" .. clean .. "_W424.json"
+    return "W424_" .. self.CleanWindow .. "_" .. clean .. ".json"
 end
 
 function ConfigManager:GetIndexPath()
-    if typeof(isfolder) == "function" and isfolder("W424_Configs") then
-        return "W424_Configs/_index.json"
+    local folder = self:GetFolder()
+    if folder == "W424_Configs/" .. self.CleanWindow then
+        return folder .. "/_index.json"
+    elseif folder == "W424_Configs" then
+        return "W424_Configs/" .. self.CleanWindow .. "_index.json"
     end
-    return self.WindowName .. "_ConfigsIndex.json"
+    return "W424_" .. self.CleanWindow .. "_index.json"
 end
 
 function ConfigManager:SaveIndex()
@@ -588,8 +625,11 @@ function ConfigManager:SaveIndex()
     self:EnsureFolder()
     local names = {}
     for n, _ in pairs(self.SavedConfigs) do
-        table.insert(names, n)
+        if n and n ~= "" and not n:find("^_") then
+            table.insert(names, n)
+        end
     end
+    table.sort(names)
     pcall(function()
         local content = HttpService:JSONEncode(names)
         writefile(self:GetIndexPath(), content)
@@ -599,13 +639,24 @@ end
 function ConfigManager:LoadIndex()
     if typeof(readfile) ~= "function" then return end
     local ok, content = pcall(readfile, self:GetIndexPath())
+    if not (ok and content and content ~= "") then
+        local legacyPaths = {
+            "W424_Configs/" .. self.CleanWindow .. "_index.json",
+            "W424_Configs/_index.json",
+            self.WindowName .. "_ConfigsIndex.json"
+        }
+        for _, lp in ipairs(legacyPaths) do
+            ok, content = pcall(readfile, lp)
+            if ok and content and content ~= "" then break end
+        end
+    end
     if ok and content and content ~= "" then
         local ok2, names = pcall(function()
             return HttpService:JSONDecode(content)
         end)
         if ok2 and type(names) == "table" then
             for _, n in ipairs(names) do
-                if type(n) == "string" and n ~= "" then
+                if type(n) == "string" and n ~= "" and not n:find("^_") then
                     self.SavedConfigs[n] = true
                 end
             end
@@ -627,7 +678,19 @@ end
 
 function ConfigManager:Load()
     if typeof(readfile) == "function" then
-        local ok, content = pcall(readfile, self.Path)
+        local targetPath = self.Path or self:GetAutoSavePath()
+        local ok, content = pcall(readfile, targetPath)
+        if not (ok and content and content ~= "") then
+            local legacyPaths = {
+                "W424_Configs/" .. self.CleanWindow .. "_default.json",
+                "W424_" .. self.CleanWindow .. "_default.json",
+                self.WindowName .. "_W424Config.json"
+            }
+            for _, lp in ipairs(legacyPaths) do
+                ok, content = pcall(readfile, lp)
+                if ok and content and content ~= "" then break end
+            end
+        end
         if ok and content and content ~= "" then
             local ok2, data = pcall(function()
                 return HttpService:JSONDecode(content)
@@ -654,7 +717,8 @@ function ConfigManager:Save()
         end)
         if ok and content then
             self:EnsureFolder()
-            pcall(writefile, self.Path, content)
+            local targetPath = self.Path or self:GetAutoSavePath()
+            pcall(writefile, targetPath, content)
         end
     end
 end
@@ -728,9 +792,16 @@ end
 
 function ConfigManager:SaveNamedConfig(name)
     if typeof(writefile) ~= "function" then return false end
+    name = tostring(name or ""):gsub("^%s*(.-)%s*$", "%1")
+    if name == "" or name == "Select Config" or name == "No Configs Available" or name:find("^_") then
+        return false
+    end
+
     self:CollectAllData()
     self:EnsureFolder()
     local path = self:GetConfigFilePath(name)
+    if not path then return false end
+
     local ok, content = pcall(function()
         return HttpService:JSONEncode(self.Data)
     end)
@@ -747,12 +818,31 @@ end
 
 function ConfigManager:LoadNamedConfig(name)
     if typeof(readfile) ~= "function" then return false end
-    local path = self:GetConfigFilePath(name)
-    local ok, content = pcall(readfile, path)
-    if not (ok and content and content ~= "") then
-        local legacyPath = self.WindowName .. "_" .. name .. "_W424.json"
-        ok, content = pcall(readfile, legacyPath)
+    name = tostring(name or ""):gsub("^%s*(.-)%s*$", "%1")
+    if name == "" or name == "Select Config" or name == "No Configs Available" then
+        return false
     end
+
+    local path = self:GetConfigFilePath(name)
+    local ok, content
+    if path then
+        ok, content = pcall(readfile, path)
+    end
+    if not (ok and content and content ~= "") then
+        local clean = name:gsub("[^%w%-_]", "_")
+        local legacyPaths = {
+            "W424_Configs/" .. self.CleanWindow .. "/" .. clean .. ".json",
+            "W424_Configs/" .. self.CleanWindow .. "_" .. clean .. ".json",
+            "W424_" .. self.CleanWindow .. "_" .. clean .. ".json",
+            "W424_Configs/" .. clean .. ".json",
+            self.WindowName .. "_" .. clean .. "_W424.json"
+        }
+        for _, lp in ipairs(legacyPaths) do
+            ok, content = pcall(readfile, lp)
+            if ok and content and content ~= "" then break end
+        end
+    end
+
     if ok and content and content ~= "" then
         local ok2, data = pcall(function()
             return HttpService:JSONDecode(content)
@@ -771,43 +861,73 @@ function ConfigManager:LoadNamedConfig(name)
 end
 
 function ConfigManager:DeleteNamedConfig(name)
+    name = tostring(name or ""):gsub("^%s*(.-)%s*$", "%1")
+    if name == "" then return false end
+
     self.SavedConfigs[name] = nil
     self:SaveIndex()
+
     if typeof(delfile) == "function" then
+        local clean = name:gsub("[^%w%-_]", "_")
         local path = self:GetConfigFilePath(name)
-        pcall(delfile, path)
-        local legacyPath = self.WindowName .. "_" .. name .. "_W424.json"
-        pcall(delfile, legacyPath)
+        if path then pcall(delfile, path) end
+        local pathsToDelete = {
+            "W424_Configs/" .. self.CleanWindow .. "/" .. clean .. ".json",
+            "W424_Configs/" .. self.CleanWindow .. "_" .. clean .. ".json",
+            "W424_" .. self.CleanWindow .. "_" .. clean .. ".json",
+            "W424_Configs/" .. clean .. ".json",
+            self.WindowName .. "_" .. clean .. "_W424.json"
+        }
+        for _, p in ipairs(pathsToDelete) do
+            pcall(delfile, p)
+        end
         return true
     end
-    return false
+    return true
 end
 
 function ConfigManager:GetAllConfigNames()
     self:LoadIndex()
     local uniqueNames = {}
+    local fileToSavedName = {}
+
     for n, _ in pairs(self.SavedConfigs) do
-        if n and n ~= "" then
+        if n and n ~= "" and not n:find("^_") then
             uniqueNames[n] = true
+            local clean = tostring(n):gsub("[^%w%-_]", "_")
+            fileToSavedName[clean] = n
         end
     end
 
     if typeof(listfiles) == "function" then
-        local foldersToCheck = {"W424_Configs", ""}
-        for _, folder in ipairs(foldersToCheck) do
-            local ok, files = pcall(listfiles, folder)
+        local subFolder = "W424_Configs/" .. self.CleanWindow
+        if typeof(isfolder) == "function" and isfolder(subFolder) then
+            local ok, files = pcall(listfiles, subFolder)
             if ok and type(files) == "table" then
                 for _, file in ipairs(files) do
                     local filename = file:match("([^/\\]+)$") or file
-                    if filename:sub(-5) == ".json" and filename ~= "_index.json" and filename ~= "index.json" and not filename:find("_W424Config%.json") and not filename:find("_ConfigsIndex%.json") then
-                        local prefix = self.WindowName .. "_"
-                        local suffix = "_W424.json"
-                        if filename:sub(1, #prefix) == prefix and filename:sub(-#suffix) == suffix then
-                            local name = filename:sub(#prefix + 1, -#suffix - 1)
-                            if name ~= "" then uniqueNames[name] = true end
-                        else
-                            local clean = filename:sub(1, -6)
-                            if clean ~= "" then uniqueNames[clean] = true end
+                    if filename:sub(-5) == ".json" and not filename:find("^_") then
+                        local cleanName = filename:sub(1, -6)
+                        if cleanName ~= "" then
+                            local origName = fileToSavedName[cleanName] or cleanName
+                            uniqueNames[origName] = true
+                        end
+                    end
+                end
+            end
+        elseif typeof(isfolder) == "function" and isfolder("W424_Configs") then
+            local ok, files = pcall(listfiles, "W424_Configs")
+            if ok and type(files) == "table" then
+                local prefix = self.CleanWindow .. "_"
+                for _, file in ipairs(files) do
+                    local filename = file:match("([^/\\]+)$") or file
+                    if filename:sub(-5) == ".json" and not filename:find("^_") then
+                        if filename:sub(1, #prefix) == prefix then
+                            local cleanName = filename:sub(#prefix + 1, -6)
+                            if cleanName ~= "" and not cleanName:find("^_") then
+                                local origName = fileToSavedName[cleanName] or cleanName
+                                uniqueNames[origName] = true
+                            end
                         end
                     end
                 end
@@ -824,11 +944,12 @@ function ConfigManager:GetAllConfigNames()
 end
 
 function ConfigManager:BuildConfigSection(tab)
-    local section = tab:CreateSection({Name = "Configuration", Icon = "Settings", Collapsed = false})
-    
+    local section = tab:CreateSection({Name = "Configuration", Icon = "Settings", Opened = true})
+
     section:CreateToggle({
         Name = "Auto Save Config",
         Default = self.AutoSave,
+        Desc = "Automatically persist UI changes",
         Callback = function(state)
             if state then
                 self:EnableAutoSave(2)
@@ -841,24 +962,29 @@ function ConfigManager:BuildConfigSection(tab)
     })
 
     local allConfigNames = self:GetAllConfigNames()
-    local defaultVal = (self.SelectedConfig and self.SelectedConfig ~= "") and self.SelectedConfig or "Select Config"
+    local defaultVal = (#allConfigNames > 0 and allConfigNames[1]) or "Select Config"
+    if self.SelectedConfig and self.SelectedConfig ~= "" then
+        defaultVal = self.SelectedConfig
+    end
 
     local configListDropdown
     configListDropdown = section:CreateDropdown({
         Name = "Config List",
         Options = allConfigNames,
         Default = defaultVal,
+        Desc = "Select a saved configuration",
         Callback = function(val)
-            if val and val ~= "Select Config" and val ~= "" then
+            if val and val ~= "Select Config" and val ~= "No Configs Available" and val ~= "" then
                 self.SelectedConfig = val
             end
         end
     })
-    
+
     local configInput
     configInput = section:CreateInput({
         Name = "Config Name",
         PlaceholderText = "Enter config name...",
+        Desc = "Type custom name to save profile",
         Callback = function(val)
             self.InputConfigName = val
         end
@@ -870,19 +996,20 @@ function ConfigManager:BuildConfigSection(tab)
             Callback = function()
                 local typed = configInput and configInput:Get() or ""
                 local nameToSave = (typed and typed ~= "") and typed or self.InputConfigName or self.SelectedConfig
-                if nameToSave and nameToSave ~= "" and nameToSave ~= "Select Config" then
+                if nameToSave and nameToSave ~= "" and nameToSave ~= "Select Config" and nameToSave ~= "No Configs Available" then
                     nameToSave = nameToSave:gsub("^%s*(.-)%s*$", "%1")
                     local success = self:SaveNamedConfig(nameToSave)
                     if success then
                         self.SelectedConfig = nameToSave
                         local updatedList = self:GetAllConfigNames()
                         configListDropdown:Refresh(updatedList, nameToSave)
-                        W424:Notify({Title = "Config Saved", Content = "Saved config: " .. nameToSave, Duration = 3, Icon = "Check"})
+                        if configInput and configInput.Set then configInput:Set("") end
+                        W424:Notify({Title = "Config Saved", Content = "Saved: " .. nameToSave, Duration = 3, Icon = "Check"})
                     else
                         W424:Notify({Title = "Error", Content = "Failed to write config file", Duration = 3, Icon = "AlertTriangle"})
                     end
                 else
-                    W424:Notify({Title = "Error", Content = "Please enter or select a config name", Duration = 3, Icon = "AlertTriangle"})
+                    W424:Notify({Title = "Error", Content = "Please enter a config name to save", Duration = 3, Icon = "AlertTriangle"})
                 end
             end
         },
@@ -890,34 +1017,35 @@ function ConfigManager:BuildConfigSection(tab)
             Name = "Load",
             Callback = function()
                 local typed = configInput and configInput:Get() or ""
-                local nameToLoad = (self.SelectedConfig and self.SelectedConfig ~= "Select Config" and self.SelectedConfig ~= "") and self.SelectedConfig or (typed ~= "" and typed)
-                if nameToLoad and nameToLoad ~= "Select Config" and nameToLoad ~= "" then
+                local nameToLoad = (self.SelectedConfig and self.SelectedConfig ~= "Select Config" and self.SelectedConfig ~= "No Configs Available" and self.SelectedConfig ~= "") and self.SelectedConfig or (typed ~= "" and typed)
+                if nameToLoad and nameToLoad ~= "Select Config" and nameToLoad ~= "No Configs Available" and nameToLoad ~= "" then
                     local success = self:LoadNamedConfig(nameToLoad)
                     if success then
                         self.SelectedConfig = nameToLoad
                         configListDropdown:Refresh(self:GetAllConfigNames(), nameToLoad)
-                        W424:Notify({Title = "Config Loaded", Content = "Loaded config: " .. nameToLoad, Duration = 3, Icon = "Check"})
+                        W424:Notify({Title = "Config Loaded", Content = "Loaded: " .. nameToLoad, Duration = 3, Icon = "Check"})
                     else
                         W424:Notify({Title = "Error", Content = "Failed to load config: " .. nameToLoad, Duration = 3, Icon = "AlertTriangle"})
                     end
                 else
-                    W424:Notify({Title = "Error", Content = "Select a config to load", Duration = 3, Icon = "AlertTriangle"})
+                    W424:Notify({Title = "Error", Content = "Please select a config to load", Duration = 3, Icon = "AlertTriangle"})
                 end
             end
         },
         {
             Name = "Remove",
             Callback = function()
-                if self.SelectedConfig and self.SelectedConfig ~= "Select Config" and self.SelectedConfig ~= "" then
+                if self.SelectedConfig and self.SelectedConfig ~= "Select Config" and self.SelectedConfig ~= "No Configs Available" and self.SelectedConfig ~= "" then
                     local nameToRemove = self.SelectedConfig
                     self:DeleteNamedConfig(nameToRemove)
                     self.SelectedConfig = nil
                     if configInput and configInput.Set then configInput:Set("") end
                     local updatedList = self:GetAllConfigNames()
-                    configListDropdown:Refresh(updatedList, "Select Config")
+                    local newDefault = (#updatedList > 0 and updatedList[1]) or "Select Config"
+                    configListDropdown:Refresh(updatedList, newDefault)
                     W424:Notify({Title = "Config Removed", Content = "Removed: " .. nameToRemove, Duration = 3, Icon = "Trash"})
                 else
-                    W424:Notify({Title = "Error", Content = "Select a config to remove", Duration = 3, Icon = "AlertTriangle"})
+                    W424:Notify({Title = "Error", Content = "Please select a config to remove", Duration = 3, Icon = "AlertTriangle"})
                 end
             end
         },
@@ -3355,7 +3483,23 @@ function W424:CreateWindow(data)
                         end
                     end
 
-                    DropdownPanelScroll.CanvasSize = UDim2.new(0, 0, 0, count * 33 + 40)
+                    if count == 0 then
+                        local emptyLabel = Create("TextLabel", {
+                            Parent = DropdownPanelScroll,
+                            Size = UDim2.new(1, 0, 0, 36),
+                            BackgroundTransparency = 1,
+                            Text = (filterText and filterText ~= "") and "No matching results" or "No options available",
+                            TextColor3 = CurrentTheme.SubText,
+                            TextSize = 11,
+                            Font = Enum.Font.Gotham,
+                            TextXAlignment = Enum.TextXAlignment.Center,
+                            ZIndex = 156
+                        })
+                        table.insert(optionButtons, emptyLabel)
+                        DropdownPanelScroll.CanvasSize = UDim2.new(0, 0, 0, 45)
+                    else
+                        DropdownPanelScroll.CanvasSize = UDim2.new(0, 0, 0, count * 33 + 40)
+                    end
                     CurrentDropdownState.OptionButtons = optionButtons
                 end
 
@@ -3710,7 +3854,23 @@ function W424:CreateWindow(data)
                         end
                     end
 
-                    DropdownPanelScroll.CanvasSize = UDim2.new(0, 0, 0, count * 33 + 40)
+                    if count == 0 then
+                        local emptyLabel = Create("TextLabel", {
+                            Parent = DropdownPanelScroll,
+                            Size = UDim2.new(1, 0, 0, 36),
+                            BackgroundTransparency = 1,
+                            Text = (filterText and filterText ~= "") and "No matching results" or "No options available",
+                            TextColor3 = CurrentTheme.SubText,
+                            TextSize = 11,
+                            Font = Enum.Font.Gotham,
+                            TextXAlignment = Enum.TextXAlignment.Center,
+                            ZIndex = 156
+                        })
+                        table.insert(optionItems, emptyLabel)
+                        DropdownPanelScroll.CanvasSize = UDim2.new(0, 0, 0, 45)
+                    else
+                        DropdownPanelScroll.CanvasSize = UDim2.new(0, 0, 0, count * 33 + 40)
+                    end
                     CurrentDropdownState.OptionButtons = optionItems
                 end
 
