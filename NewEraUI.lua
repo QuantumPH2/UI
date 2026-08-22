@@ -1017,13 +1017,13 @@ local aa = {
             end
             local sidebarW = D.SidebarWidth or D.TabWidth or 150
             local topbarH  = D.TopbarHeight or 40
-            local minWinSz = D.MinWindowSize or D.MinSize or Vector2.new(360, 240)
+            local minWinSz = D.MinWindowSize or D.MinSize or Vector2.new(450, 280)
             D.SidebarWidth = sidebarW
             D.TabWidth = sidebarW
             D.TopbarHeight = topbarH
             D.MinWindowSize = minWinSz
             D.MinSize = minWinSz
-            D.Size = D.Size or UDim2.fromOffset(math.max(minWinSz.X, 360), math.max(minWinSz.Y, 240))
+            D.Size = D.Size or UDim2.fromOffset(math.max(minWinSz.X, 520), math.max(minWinSz.Y, 320))
             x.MinimizeKey = D.MinimizeKey
             x.UseAcrylic = false
             x.Acrylic = false
@@ -3741,13 +3741,13 @@ local aa = {
         return function(t)
             local sidebarWidth = t.SidebarWidth or t.TabWidth or 150
             local topbarHeight = t.TopbarHeight or 40
-            local minSize = t.MinWindowSize or t.MinSize or Vector2.new(360, 240)
+            local minSize = t.MinWindowSize or t.MinSize or Vector2.new(450, 280)
             t.SidebarWidth = sidebarWidth
             t.TabWidth = sidebarWidth
             t.TopbarHeight = topbarHeight
             t.MinWindowSize = minSize
             t.MinSize = minSize
-            t.Size = t.Size or UDim2.fromOffset(math.max(minSize.X, 360), math.max(minSize.Y, 240))
+            t.Size = t.Size or UDim2.fromOffset(math.max(minSize.X, 520), math.max(minSize.Y, 320))
             local u, v, w, x, y, z =
                 e(k),
                 {
@@ -4516,8 +4516,8 @@ local aa = {
                             local delta = mousePos - _resizeStartMouse
                             local vpX = j.ViewportSize.X
                             local vpY = j.ViewportSize.Y
-                            local minW = (v.MinWindowSize and v.MinWindowSize.X) or (t.MinWindowSize and t.MinWindowSize.X) or (t.MinSize and t.MinSize.X) or 360
-                            local minH = (v.MinWindowSize and v.MinWindowSize.Y) or (t.MinWindowSize and t.MinWindowSize.Y) or (t.MinSize and t.MinSize.Y) or 240
+                            local minW = (v.MinWindowSize and v.MinWindowSize.X) or (t.MinWindowSize and t.MinWindowSize.X) or (t.MinSize and t.MinSize.X) or 450
+                            local minH = (v.MinWindowSize and v.MinWindowSize.Y) or (t.MinWindowSize and t.MinWindowSize.Y) or (t.MinSize and t.MinSize.Y) or 280
                             local maxW = math.max(vpX - 20, minW)
                             local maxH = math.max(vpY - 20, minH)
                             local newW = math.clamp(_resizeStartSize.X.Offset + delta.X, minW, maxW)
