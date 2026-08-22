@@ -4320,45 +4320,69 @@ local aa = {
                 Parent = floatBtn
             })
 
+            local function getSafeViewportSize()
+                local vp = j and j.ViewportSize
+                local vx = (vp and vp.X and vp.X > 50) and vp.X or 1920
+                local vy = (vp and vp.Y and vp.Y > 50) and vp.Y or 1080
+                return vx, vy
+            end
+
             local fDragging = false
             local fDragMoved = false
+            local fDragInput = nil
             local fDragStartMouse = Vector2.new()
             local fStartCenter = Vector2.new()
-            local fBtnHalfW = 25
-            local fBtnHalfH = 25
             m.AddSignal(floatBtn.InputBegan, function(M)
                 if (M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch) and not fDragging then
                     fDragging = true
                     fDragMoved = false
+                    fDragInput = M
                     fDragStartMouse = Vector2.new(M.Position.X, M.Position.Y)
-                    fBtnHalfW = floatBtn.AbsoluteSize.X * 0.5
-                    fBtnHalfH = floatBtn.AbsoluteSize.Y * 0.5
-                    fStartCenter = Vector2.new(
-                        floatBtn.AbsolutePosition.X + fBtnHalfW,
-                        floatBtn.AbsolutePosition.Y + fBtnHalfH
-                    )
+                    local vpX, vpY = getSafeViewportSize()
+                    local curCenterX = floatBtn.Position.X.Scale * vpX + floatBtn.Position.X.Offset
+                    local curCenterY = floatBtn.Position.Y.Scale * vpY + floatBtn.Position.Y.Offset
+                    fStartCenter = Vector2.new(curCenterX, curCenterY)
                 end
             end)
             m.AddSignal(h.InputChanged, function(M)
                 if not fDragging then return end
-                if M.UserInputType == Enum.UserInputType.MouseMovement or M.UserInputType == Enum.UserInputType.Touch then
-                    local mousePos = Vector2.new(M.Position.X, M.Position.Y)
-                    local deltaX = mousePos.X - fDragStartMouse.X
-                    local deltaY = mousePos.Y - fDragStartMouse.Y
+                local isMatch = false
+                if fDragInput and fDragInput.UserInputType == Enum.UserInputType.Touch then
+                    isMatch = (M == fDragInput)
+                elseif M.UserInputType == Enum.UserInputType.MouseMovement or M == fDragInput then
+                    isMatch = true
+                end
+
+                if isMatch then
+                    local deltaX = M.Position.X - fDragStartMouse.X
+                    local deltaY = M.Position.Y - fDragStartMouse.Y
                     if math.abs(deltaX) > 5 or math.abs(deltaY) > 5 then
                         fDragMoved = true
                     end
-                    local vpX = j.ViewportSize.X
-                    local vpY = j.ViewportSize.Y
-                    local newCenterX = math.clamp(fStartCenter.X + deltaX, fBtnHalfW, math.max(vpX - fBtnHalfW, fBtnHalfW))
-                    local newCenterY = math.clamp(fStartCenter.Y + deltaY, fBtnHalfH, math.max(vpY - fBtnHalfH, fBtnHalfH))
+                    local vpX, vpY = getSafeViewportSize()
+                    local newCenterX = fStartCenter.X + deltaX
+                    local newCenterY = fStartCenter.Y + deltaY
+                    local minX = 0
+                    local maxX = math.max(vpX, minX)
+                    local minY = 0
+                    local maxY = math.max(vpY, minY)
+                    newCenterX = math.clamp(newCenterX, minX, maxX)
+                    newCenterY = math.clamp(newCenterY, minY, maxY)
                     floatBtn.Position = UDim2.fromOffset(math.floor(newCenterX), math.floor(newCenterY))
                 end
             end)
             m.AddSignal(h.InputEnded, function(M)
                 if not fDragging then return end
-                if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
+                local isEnd = false
+                if fDragInput and fDragInput.UserInputType == Enum.UserInputType.Touch then
+                    isEnd = (M == fDragInput)
+                elseif M.UserInputType == Enum.UserInputType.MouseButton1 or M == fDragInput then
+                    isEnd = true
+                end
+
+                if isEnd then
                     fDragging = false
+                    fDragInput = nil
                 end
             end)
 
@@ -4383,12 +4407,14 @@ local aa = {
             v.ContainerPosMotor = l.SingleMotor.new(68)
 
             local _isDragging = false
+            local _dragInput = nil
             local _dragStartMouse = Vector2.new()
             local _dragStartPos = Vector2.new()
             local _dragWidth = 0
             local _dragHeight = 0
 
             local _isResizing = false
+            local _resizeInput = nil
             local _resizeStartMouse = Vector2.new()
             local _resizeStartSize = Vector2.new()
 
@@ -4430,8 +4456,6 @@ local aa = {
                 end
             )
             v.Maximize = function() end
-            local _dragInput = nil
-            local _resizeInput = nil
             m.AddSignal(
                 v.TitleBar.Frame.InputBegan,
                 function(M)
@@ -4439,19 +4463,14 @@ local aa = {
                         _isDragging = true
                         _dragInput = M
                         _dragStartMouse = Vector2.new(M.Position.X, M.Position.Y)
-                        _dragStartPos = Vector2.new(v.Root.AbsolutePosition.X, v.Root.AbsolutePosition.Y)
-                        _dragWidth = v.Root.AbsoluteSize.X
-                        _dragHeight = v.Root.AbsoluteSize.Y
+                        local vpX, vpY = getSafeViewportSize()
+                        local curPosX = v.Root.Position.X.Scale * vpX + v.Root.Position.X.Offset
+                        local curPosY = v.Root.Position.Y.Scale * vpY + v.Root.Position.Y.Offset
+                        _dragStartPos = Vector2.new(curPosX, curPosY)
+                        _dragWidth = (v.Root.AbsoluteSize.X > 0 and v.Root.AbsoluteSize.X) or v.Size.X.Offset
+                        _dragHeight = (v.Root.AbsoluteSize.Y > 0 and v.Root.AbsoluteSize.Y) or v.Size.Y.Offset
                         v._isInteracting = true
                         getgenv()._FluentWindowInteracting = true
-                    end
-                end
-            )
-            m.AddSignal(
-                v.TitleBar.Frame.InputChanged,
-                function(M)
-                    if M.UserInputType == Enum.UserInputType.MouseMovement or M.UserInputType == Enum.UserInputType.Touch then
-                        _dragInput = M
                     end
                 end
             )
@@ -4462,17 +4481,12 @@ local aa = {
                         _isResizing = true
                         _resizeInput = M
                         _resizeStartMouse = Vector2.new(M.Position.X, M.Position.Y)
-                        _resizeStartSize = Vector2.new(v.Root.AbsoluteSize.X, v.Root.AbsoluteSize.Y)
+                        _resizeStartSize = Vector2.new(
+                            (v.Root.AbsoluteSize.X > 0 and v.Root.AbsoluteSize.X) or v.Size.X.Offset,
+                            (v.Root.AbsoluteSize.Y > 0 and v.Root.AbsoluteSize.Y) or v.Size.Y.Offset
+                        )
                         v._isInteracting = true
                         getgenv()._FluentWindowInteracting = true
-                    end
-                end
-            )
-            m.AddSignal(
-                E.InputChanged,
-                function(M)
-                    if M.UserInputType == Enum.UserInputType.MouseMovement or M.UserInputType == Enum.UserInputType.Touch then
-                        _resizeInput = M
                     end
                 end
             )
@@ -4490,28 +4504,55 @@ local aa = {
                 h.InputChanged,
                 function(M)
                     if not _isDragging and not _isResizing then return end
-                    if M == _dragInput or M == _resizeInput or M.UserInputType == Enum.UserInputType.MouseMovement or M.UserInputType == Enum.UserInputType.Touch then
-                        local mousePos = Vector2.new(M.Position.X, M.Position.Y)
-                        local vpX = j.ViewportSize.X
-                        local vpY = j.ViewportSize.Y
+                    local vpX, vpY = getSafeViewportSize()
 
-                        if _isDragging then
-                            local deltaX = mousePos.X - _dragStartMouse.X
-                            local deltaY = mousePos.Y - _dragStartMouse.Y
-                            local newX = math.clamp(_dragStartPos.X + deltaX, 0, math.max(vpX - _dragWidth, 0))
-                            local newY = math.clamp(_dragStartPos.Y + deltaY, 0, math.max(vpY - _dragHeight, 0))
+                    if _isDragging then
+                        local isDragMatch = false
+                        if _dragInput and _dragInput.UserInputType == Enum.UserInputType.Touch then
+                            isDragMatch = (M == _dragInput)
+                        elseif M.UserInputType == Enum.UserInputType.MouseMovement or M == _dragInput then
+                            isDragMatch = true
+                        end
+
+                        if isDragMatch then
+                            local deltaX = M.Position.X - _dragStartMouse.X
+                            local deltaY = M.Position.Y - _dragStartMouse.Y
+
+                            local rawX = _dragStartPos.X + deltaX
+                            local rawY = _dragStartPos.Y + deltaY
+
+                            local minX = -_dragWidth + 50
+                            local maxX = math.max(vpX - 50, minX)
+                            local minY = 0
+                            local maxY = math.max(vpY - 30, minY)
+
+                            local newX = math.clamp(rawX, minX, maxX)
+                            local newY = math.clamp(rawY, minY, maxY)
+
                             local newPos = UDim2.fromOffset(math.floor(newX), math.floor(newY))
                             v.Position = newPos
                             v.Root.Position = newPos
-                        elseif _isResizing then
-                            local deltaX = mousePos.X - _resizeStartMouse.X
-                            local deltaY = mousePos.Y - _resizeStartMouse.Y
+                        end
+                    elseif _isResizing then
+                        local isResizeMatch = false
+                        if _resizeInput and _resizeInput.UserInputType == Enum.UserInputType.Touch then
+                            isResizeMatch = (M == _resizeInput)
+                        elseif M.UserInputType == Enum.UserInputType.MouseMovement or M == _resizeInput then
+                            isResizeMatch = true
+                        end
+
+                        if isResizeMatch then
+                            local deltaX = M.Position.X - _resizeStartMouse.X
+                            local deltaY = M.Position.Y - _resizeStartMouse.Y
+
                             local minW = (v.MinWindowSize and v.MinWindowSize.X) or (t.MinWindowSize and t.MinWindowSize.X) or (t.MinSize and t.MinSize.X) or 440
                             local minH = (v.MinWindowSize and v.MinWindowSize.Y) or (t.MinWindowSize and t.MinWindowSize.Y) or (t.MinSize and t.MinSize.Y) or 250
                             local maxW = math.max(vpX - 20, minW)
                             local maxH = math.max(vpY - 20, minH)
+
                             local newW = math.clamp(_resizeStartSize.X + deltaX, minW, maxW)
                             local newH = math.clamp(_resizeStartSize.Y + deltaY, minH, maxH)
+
                             local newSize = UDim2.fromOffset(math.floor(newW), math.floor(newH))
                             v.Size = newSize
                             v.Root.Size = newSize
@@ -4522,14 +4563,36 @@ local aa = {
             m.AddSignal(
                 h.InputEnded,
                 function(M)
-                    if not _isDragging and not _isResizing then return end
-                    if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
-                        _isDragging = false
-                        _isResizing = false
-                        _dragInput = nil
-                        _resizeInput = nil
-                        v._isInteracting = false
-                        getgenv()._FluentWindowInteracting = false
+                    if _isDragging then
+                        local isDragEnd = false
+                        if _dragInput and _dragInput.UserInputType == Enum.UserInputType.Touch then
+                            isDragEnd = (M == _dragInput)
+                        elseif M.UserInputType == Enum.UserInputType.MouseButton1 or M == _dragInput then
+                            isDragEnd = true
+                        end
+
+                        if isDragEnd then
+                            _isDragging = false
+                            _dragInput = nil
+                            v._isInteracting = false
+                            getgenv()._FluentWindowInteracting = false
+                        end
+                    end
+
+                    if _isResizing then
+                        local isResizeEnd = false
+                        if _resizeInput and _resizeInput.UserInputType == Enum.UserInputType.Touch then
+                            isResizeEnd = (M == _resizeInput)
+                        elseif M.UserInputType == Enum.UserInputType.MouseButton1 or M == _resizeInput then
+                            isResizeEnd = true
+                        end
+
+                        if isResizeEnd then
+                            _isResizing = false
+                            _resizeInput = nil
+                            v._isInteracting = false
+                            getgenv()._FluentWindowInteracting = false
+                        end
                     end
                 end
             )
