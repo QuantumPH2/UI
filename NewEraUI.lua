@@ -2752,33 +2752,33 @@ local aa = {
                         if sbHolder then sbHolder.Visible = false end
                         return
                     end
-                    pcall(function()
-                        local _libCheck = e(h)
-                        if not _libCheck or _libCheck.Unloaded then
-                            sbHolder.Visible = false
-                            task.defer(_teardown)
-                            return
-                        end
-                        local win = _libCheck.Window
-                        if win and win.Minimized then sbHolder.Visible = false; return end
-                        if _libCheck.DialogOpen then sbHolder.Visible = false; return end
-                        local canvasH = sf.CanvasSize.Y.Offset
-                        local frameH = sf.AbsoluteSize.Y
-                        if canvasH <= frameH + 4 or frameH <= 0 then
-                            sbHolder.Visible = false
-                            return
-                        end
-                        sbHolder.Visible = true
-                        local ratio = math.clamp(frameH / canvasH, 0.05, 1)
-                        local totalTrackH = math.max(frameH - 8, 1)
-                        local barH = math.max(math.floor(totalTrackH * ratio), 20)
-                        local maxScrollY = math.max(canvasH - frameH, 1)
-                        local scrollRatio = math.clamp(sf.CanvasPosition.Y / maxScrollY, 0, 1)
-                        local maxY = math.max(totalTrackH - barH, 0)
-                        local barY = math.floor(scrollRatio * maxY)
-                        sbBar.Size = UDim2.fromOffset(3, barH)
-                        sbBar.Position = UDim2.fromOffset(1.5, barY)
-                    end)
+                    local _libCheck = e(h)
+                    if not _libCheck or _libCheck.Unloaded then
+                        if sbHolder then sbHolder.Visible = false end
+                        task.defer(_teardown)
+                        return
+                    end
+                    local win = _libCheck.Window
+                    if (win and win.Minimized) or _libCheck.DialogOpen then
+                        if sbHolder then sbHolder.Visible = false end
+                        return
+                    end
+                    local canvasH = sf.CanvasSize.Y.Offset
+                    local frameH = sf.AbsoluteSize.Y
+                    if canvasH <= frameH + 4 or frameH <= 0 then
+                        if sbHolder then sbHolder.Visible = false end
+                        return
+                    end
+                    sbHolder.Visible = true
+                    local ratio = math.clamp(frameH / canvasH, 0.05, 1)
+                    local totalTrackH = math.max(frameH - 8, 1)
+                    local barH = math.max(math.floor(totalTrackH * ratio), 20)
+                    local maxScrollY = math.max(canvasH - frameH, 1)
+                    local scrollRatio = math.clamp(sf.CanvasPosition.Y / maxScrollY, 0, 1)
+                    local maxY = math.max(totalTrackH - barH, 0)
+                    local barY = math.floor(scrollRatio * maxY)
+                    sbBar.Size = UDim2.fromOffset(3, barH)
+                    sbBar.Position = UDim2.fromOffset(1.5, barY)
                 end
                 x._updateScrollbar = updateScrollbar
                 local function _teardown()
@@ -4327,11 +4327,40 @@ local aa = {
                 return vx, vy
             end
 
+            local rs = game:GetService("RunService")
+
             local fDragging = false
             local fDragMoved = false
             local fDragInput = nil
             local fDragStartMouse = Vector2.new()
             local fStartCenter = Vector2.new()
+            local fTargetPos = nil
+            local fDragConn = nil
+
+            local function startFloatDragLoop()
+                if fDragConn then return end
+                fDragConn = rs.RenderStepped:Connect(function()
+                    if not fDragging then
+                        if fDragConn then
+                            fDragConn:Disconnect()
+                            fDragConn = nil
+                        end
+                        return
+                    end
+                    if fTargetPos then
+                        floatBtn.Position = fTargetPos
+                        fTargetPos = nil
+                    end
+                end)
+            end
+
+            local function stopFloatDragLoop()
+                if fDragConn then
+                    fDragConn:Disconnect()
+                    fDragConn = nil
+                end
+            end
+
             m.AddSignal(floatBtn.InputBegan, function(M)
                 if (M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch) and not fDragging then
                     fDragging = true
@@ -4342,6 +4371,7 @@ local aa = {
                     local curCenterX = floatBtn.Position.X.Scale * vpX + floatBtn.Position.X.Offset
                     local curCenterY = floatBtn.Position.Y.Scale * vpY + floatBtn.Position.Y.Offset
                     fStartCenter = Vector2.new(curCenterX, curCenterY)
+                    startFloatDragLoop()
                 end
             end)
             m.AddSignal(h.InputChanged, function(M)
@@ -4368,7 +4398,7 @@ local aa = {
                     local maxY = math.max(vpY, minY)
                     newCenterX = math.clamp(newCenterX, minX, maxX)
                     newCenterY = math.clamp(newCenterY, minY, maxY)
-                    floatBtn.Position = UDim2.fromOffset(math.floor(newCenterX), math.floor(newCenterY))
+                    fTargetPos = UDim2.fromOffset(math.floor(newCenterX), math.floor(newCenterY))
                 end
             end)
             m.AddSignal(h.InputEnded, function(M)
@@ -4383,6 +4413,11 @@ local aa = {
                 if isEnd then
                     fDragging = false
                     fDragInput = nil
+                    if fTargetPos then
+                        floatBtn.Position = fTargetPos
+                        fTargetPos = nil
+                    end
+                    stopFloatDragLoop()
                 end
             end)
 
@@ -4412,16 +4447,55 @@ local aa = {
             local _dragStartPos = Vector2.new()
             local _dragWidth = 0
             local _dragHeight = 0
+            local _targetDragPos = nil
 
             local _isResizing = false
             local _resizeInput = nil
             local _resizeStartMouse = Vector2.new()
             local _resizeStartSize = Vector2.new()
+            local _targetResizeSize = nil
+
+            local _dragConn = nil
+
+            local function startDragLoop()
+                if _dragConn then return end
+                _dragConn = rs.RenderStepped:Connect(function()
+                    if not _isDragging and not _isResizing then
+                        if _dragConn then
+                            _dragConn:Disconnect()
+                            _dragConn = nil
+                        end
+                        return
+                    end
+
+                    if _isDragging and _targetDragPos then
+                        v.Position = _targetDragPos
+                        v.Root.Position = _targetDragPos
+                        _targetDragPos = nil
+                    end
+
+                    if _isResizing and _targetResizeSize then
+                        v.Size = _targetResizeSize
+                        v.Root.Size = _targetResizeSize
+                        _targetResizeSize = nil
+                    end
+                end)
+            end
+
+            local function stopDragLoop()
+                if not _isDragging and not _isResizing then
+                    if _dragConn then
+                        _dragConn:Disconnect()
+                        _dragConn = nil
+                    end
+                end
+            end
 
             v._isInteracting = false
             getgenv()._FluentWindowInteracting = false
 
             local I, J = 17, tick()
+            local lastSz = 16
             v.SelectorPosMotor:onStep(
                 function(K)
                     D.Position = UDim2.new(0, 0, 0, K)
@@ -4430,7 +4504,10 @@ local aa = {
                     if I ~= nil then
                         local spd = math.abs(K - I) / (M * 60)
                         local sz = math.clamp(spd + 16, 16, 28)
-                        v.SelectorSizeMotor:setGoal(q(sz, {frequency = 8}))
+                        if math.abs(sz - lastSz) > 0.8 then
+                            lastSz = sz
+                            v.SelectorSizeMotor:setGoal(q(sz, {frequency = 8}))
+                        end
                         I = K
                     end
                     J = L
@@ -4445,8 +4522,6 @@ local aa = {
                 function(K)
                     if v.ContainerHolder and v.ContainerHolder:IsA("CanvasGroup") then
                         v.ContainerHolder.GroupTransparency = K
-                    else
-                        pcall(function() v.ContainerHolder.GroupTransparency = K end)
                     end
                 end
             )
@@ -4471,6 +4546,7 @@ local aa = {
                         _dragHeight = (v.Root.AbsoluteSize.Y > 0 and v.Root.AbsoluteSize.Y) or v.Size.Y.Offset
                         v._isInteracting = true
                         getgenv()._FluentWindowInteracting = true
+                        startDragLoop()
                     end
                 end
             )
@@ -4487,6 +4563,7 @@ local aa = {
                         )
                         v._isInteracting = true
                         getgenv()._FluentWindowInteracting = true
+                        startDragLoop()
                     end
                 end
             )
@@ -4529,9 +4606,7 @@ local aa = {
                             local newX = math.clamp(rawX, minX, maxX)
                             local newY = math.clamp(rawY, minY, maxY)
 
-                            local newPos = UDim2.fromOffset(math.floor(newX), math.floor(newY))
-                            v.Position = newPos
-                            v.Root.Position = newPos
+                            _targetDragPos = UDim2.fromOffset(math.floor(newX), math.floor(newY))
                         end
                     elseif _isResizing then
                         local isResizeMatch = false
@@ -4553,9 +4628,7 @@ local aa = {
                             local newW = math.clamp(_resizeStartSize.X + deltaX, minW, maxW)
                             local newH = math.clamp(_resizeStartSize.Y + deltaY, minH, maxH)
 
-                            local newSize = UDim2.fromOffset(math.floor(newW), math.floor(newH))
-                            v.Size = newSize
-                            v.Root.Size = newSize
+                            _targetResizeSize = UDim2.fromOffset(math.floor(newW), math.floor(newH))
                         end
                     end
                 end
@@ -4576,6 +4649,12 @@ local aa = {
                             _dragInput = nil
                             v._isInteracting = false
                             getgenv()._FluentWindowInteracting = false
+                            if _targetDragPos then
+                                v.Position = _targetDragPos
+                                v.Root.Position = _targetDragPos
+                                _targetDragPos = nil
+                            end
+                            stopDragLoop()
                         end
                     end
 
@@ -4592,6 +4671,12 @@ local aa = {
                             _resizeInput = nil
                             v._isInteracting = false
                             getgenv()._FluentWindowInteracting = false
+                            if _targetResizeSize then
+                                v.Size = _targetResizeSize
+                                v.Root.Size = _targetResizeSize
+                                _targetResizeSize = nil
+                            end
+                            stopDragLoop()
                         end
                     end
                 end
@@ -4805,9 +4890,9 @@ local aa = {
             e(h.Themes),
             e(h.Packages.Flipper),
             {
-                Registry = {},
+                Registry = setmetatable({}, {__mode = "k"}),
                 Signals = {},
-                TransparencyMotors = {},
+                TransparencyMotors = setmetatable({}, {__mode = "k"}),
                 DefaultProperties = {
                     ScreenGui = {ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling, IgnoreGuiInset = true},
                     Frame = {
@@ -7250,8 +7335,10 @@ local aa = {
                 end
 
                 if not vid then return end
+                if not playing and not seeking and not ctrlVisible then return end
                 local dur=vid.TimeLength or 0
-                local pos=0; pcall(function() pos=vid.TimePosition end)
+                local pos=0
+                pcall(function() pos=vid.TimePosition end)
                 if dur>0 and not seeking then
                     local pct=math.clamp(pos/dur,0,1)
                     seekFill.Size=UDim2.new(pct,0,1,0)
@@ -7748,9 +7835,17 @@ local aa = {
                 end
             end)
             local hbConn
+            local win = d.Library and d.Library.Window
             hbConn = rs.Heartbeat:Connect(function()
                 if not wrap.Parent then if hbConn then hbConn:Disconnect() end return end
                 if not snd then return end
+                if win and win.Minimized and not playOutside and playing then
+                    pcall(function() snd:Stop() end)
+                    playing = false
+                    if playBtn then playBtn.Visible = true end
+                    if _pauseBtn then _pauseBtn.Visible = false end
+                end
+                if not playing and not dragging then return end
                 local dur = snd.TimeLength or 0
                 local pos = snd.TimePosition or 0
                 curLbl.Text = fmtTime(pos)
@@ -7759,21 +7854,6 @@ local aa = {
                 fill.Size     = UDim2.new(pct, 0, 1, 0)
                 knob.Position = UDim2.new(pct, 0, 0.5, 0)
             end)
-            if d.Library and d.Library.Window then
-                local win = d.Library.Window
-                local hideConn
-                hideConn = game:GetService("RunService").Heartbeat:Connect(function()
-                    if not wrap.Parent then if hideConn then hideConn:Disconnect() end return end
-                    if not snd then return end
-                    local isHidden = win.Minimized
-                    if isHidden and not playOutside and playing then
-                        pcall(function() snd:Stop() end)
-                        playing = false
-                        if playBtn  then playBtn.Visible  = true  end
-                        if _pauseBtn then _pauseBtn.Visible = false end
-                    end
-                end)
-            end
             local mod = {Frame=wrap, Type="Audio", Sound=snd}
             function mod:Play()   if snd then pcall(function() pcall(function() snd:Play() end)  end) end end
             function mod:Pause()  if snd then pcall(function() snd:Pause() end) end end
@@ -8930,7 +9010,7 @@ local aa = {
     end,
     [43] = function()
         local aa, ab, ac, ad, ae = b(43)
-        local af, ag, ah, aj = 0.001, 0.001, 0.0001, {}
+        local af, ag, ah, aj = 0.005, 0.005, 0.0001, {}
         aj.__index = aj
         function aj.new(c, d)
             assert(c, "Missing argument #1: targetValue")
