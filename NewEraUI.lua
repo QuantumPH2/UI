@@ -334,102 +334,28 @@ local aa = {
             gmi       = "https://raw.githubusercontent.com/StyearX/Icons/refs/heads/main/GoogleMaterialIcons/dist/Icons.lua",
         }
         local function LoadIconSource(prefix)
+            if not prefix or prefix == "" then return nil end
+            prefix = prefix:lower()
             if IconCache[prefix] then return IconCache[prefix] end
             local url = IconURLs[prefix]
             if not url then return nil end
             local ok, result = pcall(function()
                 return loadstring(game:HttpGet(url, true))()
             end)
-            if not ok then
-                warn("[Icons] Failed to load '" .. prefix .. "': " .. tostring(result))
+            if not ok or not result then
+                warn("[Fluent Icons] Failed to load icon library '" .. prefix .. "': " .. tostring(result))
                 return nil
             end
-            if result and result.Icons then
-                IconCache[prefix] = { _sprites = result.Spritesheets, _icons = result.Icons }
+            if type(result) == "table" then
+                local sprites = result.Spritesheets or result.Sprites or result.spritesheets or result.sprites or {}
+                local icons = result.Icons or result.icons or result
+                IconCache[prefix] = { _sprites = sprites, _icons = icons, _raw = result }
             else
                 IconCache[prefix] = result
             end
             return IconCache[prefix]
         end
-        local SolarFallback = {
-            ["solar/map-point-wave-bold"] = "rbxassetid://10734933966",
-            ["solar/users-group-rounded-bold"] = "rbxassetid://10747373426",
-            ["solar/settings-bold"] = "rbxassetid://10734950309",
-            ["solar/settings-minimalistic-bold"] = "rbxassetid://10734950309",
-            ["solar/info-circle-bold"] = "rbxassetid://10709752996",
-            ["solar/server-bold"] = "rbxassetid://10709782497",
-            ["solar/camera-bold"] = "rbxassetid://10709781461",
-            ["solar/routing-2-bold"] = "rbxassetid://10734933966",
-            ["solar/bomb-bold"] = "rbxassetid://10709753149",
-            ["solar/running-bold"] = "rbxassetid://10709752035",
-            ["solar/game-console-bold"] = "rbxassetid://10723346959",
-            ["solar/shield-bold"] = "rbxassetid://10734975486",
-            ["solar/sword-bold"] = "rbxassetid://10734975486",
-            ["solar/swords-bold"] = "rbxassetid://10734975486",
-            ["solar/target-bold"] = "rbxassetid://10734977012",
-            ["solar/bolt-bold"] = "rbxassetid://10709752035",
-            ["solar/user-plus-bold"] = "rbxassetid://10747372702",
-            ["solar/user-cross-bold"] = "rbxassetid://10747373176",
-            ["solar/widget-bold"] = "rbxassetid://10734950309",
-            ["solar/ghost-bold"] = "rbxassetid://10709753149",
-            ["solar/star-shine-bold"] = "rbxassetid://10747363809",
-            ["solar/star-bold"] = "rbxassetid://10747363809",
-            ["solar/mask-bold"] = "rbxassetid://10747374003",
-            ["solar/scope-bold"] = "rbxassetid://10734977012",
-            ["solar/user-bold"] = "rbxassetid://10747373176",
-            ["solar/map-point-bold"] = "rbxassetid://10734933966",
-            ["solar/palette-bold"] = "rbxassetid://10709752906",
-            ["solar/diskette-bold"] = "rbxassetid://10747362393",
-            ["solar/eye-bold"] = "rbxassetid://10723345518",
-            ["solar/eye-closed-bold"] = "rbxassetid://10723345518",
-            ["solar/copy-bold"] = "rbxassetid://10709753808",
-            ["solar/chat-round-bold"] = "rbxassetid://10709752996",
-            ["solar/fire-bold"] = "rbxassetid://10709752035",
-            ["solar/water-bold"] = "rbxassetid://10734933966",
-            ["solar/shop-bold"] = "rbxassetid://10709750309",
-            ["solar/notes-bold"] = "rbxassetid://10747362393",
-            ["solar/compass-bold"] = "rbxassetid://10734933966",
-            ["solar/gem-bold"] = "rbxassetid://10747363809",
-            ["solar/restart-bold"] = "rbxassetid://10709753808",
-            ["solar/lock-bold"] = "rbxassetid://10734975486",
-            ["solar/wand-bold"] = "rbxassetid://10747363809",
-            ["solar/magic-stick-3-bold"] = "rbxassetid://10747363809",
-            ["solar/coins-bold"] = "rbxassetid://10747363809",
-            ["solar/heart-bold"] = "rbxassetid://10709752035",
-            ["solar/egg-bold"] = "rbxassetid://10747374003",
-            ["solar/smile-bold"] = "rbxassetid://10709752996",
-            ["solar/cloud-bold"] = "rbxassetid://10734933966",
-            ["solar/bug-bold"] = "rbxassetid://10709753149",
-            ["solar/ship-bold"] = "rbxassetid://10734933966",
-            ["solar/clock-circle-bold"] = "rbxassetid://10709752996",
-            ["solar/alt-arrow-right-bold"] = "rbxassetid://10709790948",
-            ["solar/alt-arrow-left-bold"] = "rbxassetid://10709790948",
-            ["solar/monitor-bold"] = "rbxassetid://10723346959",
-            ["solar/tv-bold"] = "rbxassetid://10723346959",
-            ["solar/atom-bold"] = "rbxassetid://10709752035",
-            ["solar/bell-bold"] = "rbxassetid://10709752996",
-            ["solar/home-bold"] = "rbxassetid://10723346959",
-            ["solar/check-circle-bold"] = "rbxassetid://10709752996",
-            ["solar/close-circle-bold"] = "rbxassetid://10709753149",
-            ["solar/danger-triangle-bold"] = "rbxassetid://10709753149",
-            ["solar/crown-star-bold"] = "rbxassetid://10747363809",
-            ["solar/crown-bold"] = "rbxassetid://10747363809",
-            ["solar/stars-bold"] = "rbxassetid://10747363809",
-            ["solar/text-bold"] = "rbxassetid://10709752996",
-            ["solar/keyboard-bold"] = "rbxassetid://10723346959",
-            ["solar/layers-bold"] = "rbxassetid://10734950309",
-            ["home"] = "rbxassetid://10723346959",
-            ["eye"] = "rbxassetid://10723345518",
-            ["user"] = "rbxassetid://10747373176",
-            ["shield"] = "rbxassetid://10734975486",
-            ["sword"] = "rbxassetid://10734975486",
-            ["map-pin"] = "rbxassetid://10734933966",
-            ["crosshair"] = "rbxassetid://10723376114",
-            ["settings"] = "rbxassetid://10734950309",
-            ["lucide/chevron-down"] = "rbxassetid://10709790948",
-            ["lucide/bookmark-check"] = "rbxassetid://10709752405",
-            ["lucide/bookmark"] = "rbxassetid://10709752405"
-        }
+
         function x.GetIcon(z, A)
             if A == nil or A == "" then return nil end
             if type(A) == "table" then return A end
@@ -441,45 +367,74 @@ local aa = {
                     return "rbxassetid://" .. A
                 end
             end
-            if SolarFallback[A] then return SolarFallback[A] end
-            local prefix, name = A:match("^([^/:]+)[/:](.+)$")
-            if prefix then
-                local fullKey = prefix .. "/" .. name
-                if SolarFallback[fullKey] then return SolarFallback[fullKey] end
-                if SolarFallback[name] then return SolarFallback[name] end
-                if SolarFallback["solar/" .. name] then return SolarFallback["solar/" .. name] end
-                if SolarFallback["solar/" .. name .. "-bold"] then return SolarFallback["solar/" .. name .. "-bold"] end
-                local legacy = e(o.Icons) and e(o.Icons).assets
-                if legacy then
-                    if legacy["lucide-" .. name] then return legacy["lucide-" .. name] end
-                    if legacy[name] then return legacy[name] end
-                end
-                if IconCache[prefix] then
-                    local src = IconCache[prefix]
-                    if src._icons then
-                        local entry = src._icons[name] or src._icons[name .. "-bold"]
-                        if entry then
-                            local sheetId = src._sprites[tostring(entry.Image)]
-                            if sheetId then
-                                return { Image = sheetId, ImageRectOffset = entry.ImageRectPosition, ImageRectSize = entry.ImageRectSize }
-                            end
-                        end
-                    elseif src[name] then
-                        return src[name]
+
+            local rawStr = tostring(A)
+            local prefix, name = rawStr:match("^([^/:]+)[/:](.+)$")
+            if not prefix then
+                prefix = "lucide"
+                name = rawStr
+            end
+            prefix = prefix:lower()
+            local lowerName = name:lower()
+
+            -- 1. Try resolving directly from requested Icon Library (solar, lucide, gravity, sfsymbols, craft, geist, hero, gmi)
+            local src = LoadIconSource(prefix)
+            if src and type(src) == "table" then
+                local icons = src._icons or src
+                local sprites = src._sprites or {}
+                local entry = icons[lowerName]
+                    or icons[name]
+                    or icons[lowerName .. "-bold"]
+                    or icons[lowerName:gsub("%-bold$", "")]
+                    or icons[lowerName:gsub("%-", "")]
+                    or icons[lowerName:gsub("_", "-")]
+                if entry then
+                    if type(entry) == "table" and (entry.Image or entry.ImageRectPosition or entry.ImageRectOffset) then
+                        local sheet = sprites[tostring(entry.Image)] or entry.Image
+                        local offset = entry.ImageRectPosition or entry.ImageRectOffset or Vector2.new()
+                        local size = entry.ImageRectSize or Vector2.new()
+                        return {
+                            Image = sheet,
+                            ImageRectOffset = offset,
+                            ImageRectSize = size
+                        }
+                    elseif type(entry) == "string" or type(entry) == "number" then
+                        local s = tostring(entry)
+                        return s:match("^%d+$") and ("rbxassetid://" .. s) or s
                     end
                 end
-                return "rbxassetid://10709752996"
-            else
-                if SolarFallback[A] then return SolarFallback[A] end
-                if SolarFallback["solar/" .. A] then return SolarFallback["solar/" .. A] end
-                if SolarFallback["solar/" .. A .. "-bold"] then return SolarFallback["solar/" .. A .. "-bold"] end
-                local legacy = e(o.Icons) and e(o.Icons).assets
-                if legacy then
-                    if legacy["lucide-" .. A] then return legacy["lucide-" .. A] end
-                    if legacy[A] then return legacy[A] end
-                end
-                return "rbxassetid://10709752996"
             end
+
+            -- 2. Fallback to built-in Fluent Lucide library (Module 28)
+            local legacy = e(o.Icons) and e(o.Icons).assets
+            if legacy then
+                local cleanName = lowerName:gsub("%-bold$", ""):gsub("_", "-")
+                if legacy["lucide-" .. lowerName] then return legacy["lucide-" .. lowerName] end
+                if legacy[lowerName] then return legacy[lowerName] end
+                if legacy["lucide-" .. cleanName] then return legacy["lucide-" .. cleanName] end
+                if legacy[cleanName] then return legacy[cleanName] end
+            end
+
+            -- 3. If requested from another library and not found, try resolving via Lucide library
+            if prefix ~= "lucide" then
+                local lucideSrc = LoadIconSource("lucide")
+                if lucideSrc and type(lucideSrc) == "table" then
+                    local icons = lucideSrc._icons or lucideSrc
+                    local sprites = lucideSrc._sprites or {}
+                    local cleanName = lowerName:gsub("%-bold$", ""):gsub("_", "-")
+                    local entry = icons[cleanName] or icons[lowerName]
+                    if entry and type(entry) == "table" then
+                        local sheet = sprites[tostring(entry.Image)] or entry.Image
+                        return {
+                            Image = sheet,
+                            ImageRectOffset = entry.ImageRectPosition or entry.ImageRectOffset or Vector2.new(),
+                            ImageRectSize = entry.ImageRectSize or Vector2.new()
+                        }
+                    end
+                end
+            end
+
+            return "rbxassetid://10709752996"
         end
         local z = {}
         z.__index = z
@@ -1015,15 +970,15 @@ local aa = {
                 print "You cannot create more than one window."
                 return
             end
-            local sidebarW = D.SidebarWidth or D.TabWidth or 150
-            local topbarH  = D.TopbarHeight or 40
-            local minWinSz = D.MinWindowSize or D.MinSize or Vector2.new(450, 280)
+            local sidebarW = 145
+            local topbarH  = 38
+            local minWinSz = D.MinWindowSize or D.MinSize or Vector2.new(440, 250)
             D.SidebarWidth = sidebarW
             D.TabWidth = sidebarW
             D.TopbarHeight = topbarH
             D.MinWindowSize = minWinSz
             D.MinSize = minWinSz
-            D.Size = D.Size or UDim2.fromOffset(math.max(minWinSz.X, 520), math.max(minWinSz.Y, 320))
+            D.Size = D.Size or UDim2.fromOffset(math.max(minWinSz.X, 525), math.max(minWinSz.Y, 290))
             x.MinimizeKey = D.MinimizeKey
             x.UseAcrylic = false
             x.Acrylic = false
@@ -2862,7 +2817,8 @@ local aa = {
                     end
                 end))
                 table.insert(_conns, uis.InputChanged:Connect(function(inp)
-                    if dragging and inp.UserInputType == Enum.UserInputType.MouseMovement then
+                    if not dragging then return end
+                    if inp.UserInputType == Enum.UserInputType.MouseMovement then
                         local dy = inp.Position.Y - dragStartY
                         local canvasH = sf.CanvasSize.Y.Offset
                         local frameH = sf.AbsoluteSize.Y
@@ -2874,6 +2830,7 @@ local aa = {
                     end
                 end))
                 table.insert(_conns, uis.InputEnded:Connect(function(inp)
+                    if not dragging then return end
                     if inp.UserInputType == Enum.UserInputType.MouseButton1 then
                         dragging = false
                     end
@@ -3739,15 +3696,15 @@ local aa = {
         local l, m, n, o, p = e(k.Packages.Flipper), e(k.Creator), e(k.Acrylic), e(d.Parent.Assets), d.Parent
         local q, r, s = l.Spring.new, l.Instant.new, m.New
         return function(t)
-            local sidebarWidth = t.SidebarWidth or t.TabWidth or 150
-            local topbarHeight = t.TopbarHeight or 40
-            local minSize = t.MinWindowSize or t.MinSize or Vector2.new(450, 280)
+            local sidebarWidth = 145
+            local topbarHeight = 38
+            local minSize = t.MinWindowSize or t.MinSize or Vector2.new(440, 250)
             t.SidebarWidth = sidebarWidth
             t.TabWidth = sidebarWidth
             t.TopbarHeight = topbarHeight
             t.MinWindowSize = minSize
             t.MinSize = minSize
-            t.Size = t.Size or UDim2.fromOffset(math.max(minSize.X, 520), math.max(minSize.Y, 320))
+            t.Size = t.Size or UDim2.fromOffset(math.max(minSize.X, 525), math.max(minSize.Y, 290))
             local u, v, w, x, y, z =
                 e(k),
                 {
@@ -4338,7 +4295,7 @@ local aa = {
                 {v.AcrylicPaint.Frame, v.TabDisplay, v.ContainerHolder, F, E}
             )
             v.TitleBar = e(d.Parent.TitleBar) {Title = t.Title, SubTitle = t.SubTitle, Parent = v.Root, Window = v, Icon = t.TitleIcon}
-            v.MinimizeIcon = t.MinimizeIcon or t.FloatingIcon or "rbxassetid://91021777807919"
+            v.MinimizeIcon = "rbxassetid://91021777807919"
             local floatGui = (u and (u.GUI or u.PopupGUI)) or t.Parent
             local floatBtn = s("TextButton", {
                 Size = UDim2.fromOffset(55, 55),
@@ -4365,31 +4322,34 @@ local aa = {
             local fDragging = false
             local fDragMoved = false
             local fDragStartMouse = Vector2.new()
-            local fStartPos = UDim2.new()
+            local fStartPos = Vector2.new()
             m.AddSignal(floatBtn.InputBegan, function(M)
                 if (M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch) and not fDragging then
                     fDragging = true
                     fDragMoved = false
                     fDragStartMouse = Vector2.new(M.Position.X, M.Position.Y)
-                    fStartPos = floatBtn.Position
+                    fStartPos = Vector2.new(floatBtn.AbsolutePosition.X, floatBtn.AbsolutePosition.Y)
                 end
             end)
             m.AddSignal(h.InputChanged, function(M)
-                if fDragging and (M.UserInputType == Enum.UserInputType.MouseMovement or M.UserInputType == Enum.UserInputType.Touch) then
+                if not fDragging then return end
+                if M.UserInputType == Enum.UserInputType.MouseMovement or M.UserInputType == Enum.UserInputType.Touch then
                     local mousePos = Vector2.new(M.Position.X, M.Position.Y)
-                    local delta = mousePos - fDragStartMouse
-                    if math.abs(delta.X) > 4 or math.abs(delta.Y) > 4 then
+                    local deltaX = mousePos.X - fDragStartMouse.X
+                    local deltaY = mousePos.Y - fDragStartMouse.Y
+                    if math.abs(deltaX) > 4 or math.abs(deltaY) > 4 then
                         fDragMoved = true
                     end
                     local vpX = j.ViewportSize.X
                     local vpY = j.ViewportSize.Y
-                    local newX = math.clamp(fStartPos.X.Offset + delta.X, 0, math.max(vpX - 55, 0))
-                    local newY = math.clamp(fStartPos.Y.Offset + delta.Y, 0, math.max(vpY - 55, 0))
+                    local newX = math.clamp(fStartPos.X + deltaX, 0, math.max(vpX - 55, 0))
+                    local newY = math.clamp(fStartPos.Y + deltaY, 0, math.max(vpY - 55, 0))
                     floatBtn.Position = UDim2.fromOffset(math.floor(newX), math.floor(newY))
                 end
             end)
             m.AddSignal(h.InputEnded, function(M)
-                if fDragging and (M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch) then
+                if not fDragging then return end
+                if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
                     fDragging = false
                 end
             end)
@@ -4416,11 +4376,13 @@ local aa = {
 
             local _isDragging = false
             local _dragStartMouse = Vector2.new()
-            local _dragStartPos = UDim2.new()
+            local _dragStartPos = Vector2.new()
+            local _dragWidth = 0
+            local _dragHeight = 0
 
             local _isResizing = false
             local _resizeStartMouse = Vector2.new()
-            local _resizeStartSize = UDim2.new()
+            local _resizeStartSize = Vector2.new()
 
             v._isInteracting = false
             getgenv()._FluentWindowInteracting = false
@@ -4466,7 +4428,9 @@ local aa = {
                     if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
                         _isDragging = true
                         _dragStartMouse = Vector2.new(M.Position.X, M.Position.Y)
-                        _dragStartPos = v.Root.Position
+                        _dragStartPos = Vector2.new(v.Root.AbsolutePosition.X, v.Root.AbsolutePosition.Y)
+                        _dragWidth = v.Root.AbsoluteSize.X
+                        _dragHeight = v.Root.AbsoluteSize.Y
                         v._isInteracting = true
                         getgenv()._FluentWindowInteracting = true
                     end
@@ -4478,7 +4442,7 @@ local aa = {
                     if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
                         _isResizing = true
                         _resizeStartMouse = Vector2.new(M.Position.X, M.Position.Y)
-                        _resizeStartSize = v.Root.Size
+                        _resizeStartSize = Vector2.new(v.Root.AbsoluteSize.X, v.Root.AbsoluteSize.Y)
                         v._isInteracting = true
                         getgenv()._FluentWindowInteracting = true
                     end
@@ -4497,31 +4461,29 @@ local aa = {
             m.AddSignal(
                 h.InputChanged,
                 function(M)
+                    if not _isDragging and not _isResizing then return end
                     if M.UserInputType == Enum.UserInputType.MouseMovement or M.UserInputType == Enum.UserInputType.Touch then
+                        local mousePos = Vector2.new(M.Position.X, M.Position.Y)
+                        local vpX = j.ViewportSize.X
+                        local vpY = j.ViewportSize.Y
+
                         if _isDragging then
-                            local mousePos = Vector2.new(M.Position.X, M.Position.Y)
-                            local delta = mousePos - _dragStartMouse
-                            local vpX = j.ViewportSize.X
-                            local vpY = j.ViewportSize.Y
-                            local curW = v.Root.AbsoluteSize.X
-                            local curH = v.Root.AbsoluteSize.Y
-                            local newX = math.clamp(_dragStartPos.X.Offset + delta.X, 0, math.max(vpX - curW, 0))
-                            local newY = math.clamp(_dragStartPos.Y.Offset + delta.Y, 0, math.max(vpY - curH, 0))
+                            local deltaX = mousePos.X - _dragStartMouse.X
+                            local deltaY = mousePos.Y - _dragStartMouse.Y
+                            local newX = math.clamp(_dragStartPos.X + deltaX, 0, math.max(vpX - _dragWidth, 0))
+                            local newY = math.clamp(_dragStartPos.Y + deltaY, 0, math.max(vpY - _dragHeight, 0))
                             local newPos = UDim2.fromOffset(math.floor(newX), math.floor(newY))
                             v.Position = newPos
                             v.Root.Position = newPos
-                        end
-                        if _isResizing then
-                            local mousePos = Vector2.new(M.Position.X, M.Position.Y)
-                            local delta = mousePos - _resizeStartMouse
-                            local vpX = j.ViewportSize.X
-                            local vpY = j.ViewportSize.Y
-                            local minW = (v.MinWindowSize and v.MinWindowSize.X) or (t.MinWindowSize and t.MinWindowSize.X) or (t.MinSize and t.MinSize.X) or 450
-                            local minH = (v.MinWindowSize and v.MinWindowSize.Y) or (t.MinWindowSize and t.MinWindowSize.Y) or (t.MinSize and t.MinSize.Y) or 280
+                        elseif _isResizing then
+                            local deltaX = mousePos.X - _resizeStartMouse.X
+                            local deltaY = mousePos.Y - _resizeStartMouse.Y
+                            local minW = (v.MinWindowSize and v.MinWindowSize.X) or (t.MinWindowSize and t.MinWindowSize.X) or (t.MinSize and t.MinSize.X) or 440
+                            local minH = (v.MinWindowSize and v.MinWindowSize.Y) or (t.MinWindowSize and t.MinWindowSize.Y) or (t.MinSize and t.MinSize.Y) or 250
                             local maxW = math.max(vpX - 20, minW)
                             local maxH = math.max(vpY - 20, minH)
-                            local newW = math.clamp(_resizeStartSize.X.Offset + delta.X, minW, maxW)
-                            local newH = math.clamp(_resizeStartSize.Y.Offset + delta.Y, minH, maxH)
+                            local newW = math.clamp(_resizeStartSize.X + deltaX, minW, maxW)
+                            local newH = math.clamp(_resizeStartSize.Y + deltaY, minH, maxH)
                             local newSize = UDim2.fromOffset(math.floor(newW), math.floor(newH))
                             v.Size = newSize
                             v.Root.Size = newSize
@@ -4532,17 +4494,12 @@ local aa = {
             m.AddSignal(
                 h.InputEnded,
                 function(M)
+                    if not _isDragging and not _isResizing then return end
                     if M.UserInputType == Enum.UserInputType.MouseButton1 or M.UserInputType == Enum.UserInputType.Touch then
-                        if _isDragging then
-                            _isDragging = false
-                        end
-                        if _isResizing then
-                            _isResizing = false
-                        end
-                        if not _isDragging and not _isResizing then
-                            v._isInteracting = false
-                            getgenv()._FluentWindowInteracting = false
-                        end
+                        _isDragging = false
+                        _isResizing = false
+                        v._isInteracting = false
+                        getgenv()._FluentWindowInteracting = false
                     end
                 end
             )
